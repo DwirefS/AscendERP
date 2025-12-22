@@ -1,0 +1,181 @@
+# ANTS - AI-Agent Native Tactical System
+# Git Ignore Configuration
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Documentation
+docs/_build/
+site/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Helm
+*.tgz
+charts/
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Docker
+.docker/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Secrets - NEVER COMMIT
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
+credentials.json
+service-account.json
+*.credentials
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# Data files - too large
+*.csv
+*.parquet
+*.avro
+data/raw/
+data/processed/
+
+# Model files - too large
+*.bin
+*.pt
+*.pth
+*.onnx
+*.safetensors
+models/
+*.gguf
+
+# ANF mount paths (local development)
+/mnt/
+
+# Local development overrides
+docker-compose.override.yml
+.local/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Build outputs
+out/
+output/
+artifacts/
+
+# Package lock files (optional - uncomment if not needed)
+# poetry.lock
+# Pipfile.lock
+# package-lock.json
+# yarn.lock
+
+# Spark
+metastore_db/
+spark-warehouse/
+derby.log
+
+# ML experiments
+mlruns/
+wandb/
+*.mlflow

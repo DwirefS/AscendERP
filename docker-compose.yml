@@ -1,0 +1,161 @@
+# ANTS Development Docker Compose
+# For local development and testing
+
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://ants:ants@postgres:5432/ants
+      - REDIS_URL=redis://redis:6379
+      - OPA_URL=http://opa:8181
+    depends_on:
+      - postgres
+      - redis
+      - opa
+    volumes:
+      - ./src:/app/src:ro
+      - ./services:/app/services:ro
+    networks:
+      - ants-network
+
+  # PostgreSQL with pgvector
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=ants
+      - POSTGRES_PASSWORD=ants
+      - POSTGRES_DB=ants
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ants-network
+
+  # Redis for caching and queues
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ants-network
+
+  # Open Policy Agent
+  opa:
+    image: openpolicyagent/opa:0.60.0
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--set=decision_logs.console=true"
+      - "/policies"
+    volumes:
+      - ./platform/policies:/policies:ro
+    networks:
+      - ants-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - ants-network
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:10.2.2
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - ants-network
+
+  # Jaeger for tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - ants-network
+
+  # LocalAI for development (simulates NIM)
+  localai:
+    image: localai/localai:v2.5.1
+    ports:
+      - "8080:8080"
+    volumes:
+      - localai-models:/models
+    environment:
+      - MODELS_PATH=/models
+      - DEBUG=true
+    profiles:
+      - ai
+    networks:
+      - ants-network
+
+  # MCP Server - ERP
+  mcp-erp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "mcp.servers.erp.server"]
+    environment:
+      - MCP_SERVER_NAME=ants-erp-mcp
+    depends_on:
+      - postgres
+    networks:
+      - ants-network
+
+  # MCP Server - Defender
+  mcp-defender:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "mcp.servers.defender.server"]
+    environment:
+      - MCP_SERVER_NAME=ants-defender-mcp
+    networks:
+      - ants-network
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+  localai-models:
+
+networks:
+  ants-network:
+    driver: bridge

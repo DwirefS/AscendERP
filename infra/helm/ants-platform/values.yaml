@@ -1,0 +1,231 @@
+# ANTS Platform Helm Values
+# Default configuration for AI-Agent Native Tactical System
+
+global:
+  environment: production
+  tenantId: ""
+  domain: ants.your-domain.com
+
+# API Gateway Configuration
+apiGateway:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: your-registry.azurecr.io/ants-api-gateway
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  service:
+    type: ClusterIP
+    port: 8000
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: api.ants.your-domain.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-tls
+        hosts:
+          - api.ants.your-domain.com
+
+# Agent Orchestrator
+orchestrator:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: your-registry.azurecr.io/ants-orchestrator
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+
+# Agent Workers
+agentWorkers:
+  enabled: true
+  replicaCount: 5
+  maxReplicaCount: 50
+  image:
+    repository: your-registry.azurecr.io/ants-agent-worker
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+  autoscaling:
+    enabled: true
+    minReplicas: 5
+    maxReplicas: 50
+    targetCPUUtilization: 70
+    targetMemoryUtilization: 80
+
+# GPU Workers for NIM
+gpuWorkers:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: nvcr.io/nim/meta/llama-3.1-8b-instruct
+    tag: "1.2.2"
+  resources:
+    requests:
+      cpu: "4000m"
+      memory: "16Gi"
+      nvidia.com/gpu: 1
+    limits:
+      cpu: "8000m"
+      memory: "32Gi"
+      nvidia.com/gpu: 1
+  nodeSelector:
+    nvidia.com/gpu: "true"
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+# Memory Substrate
+memorySubstrate:
+  enabled: true
+  image:
+    repository: your-registry.azurecr.io/ants-memory
+    tag: "1.0.0"
+  anf:
+    episodicPath: /mnt/anf/memory/episodic
+    semanticPath: /mnt/anf/memory/semantic
+    proceduralPath: /mnt/anf/memory/procedural
+    modelPath: /mnt/anf/memory/models
+
+# Policy Engine
+policyEngine:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: openpolicyagent/opa
+    tag: "0.60.0"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+# Receipt Writer (Audit)
+receiptWriter:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: your-registry.azurecr.io/ants-receipt-writer
+    tag: "1.0.0"
+
+# PostgreSQL with pgvector
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: ""  # Set via secret
+    database: ants
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+    resources:
+      requests:
+        cpu: "1000m"
+        memory: "2Gi"
+  extensions:
+    - pgvector
+
+# Redis for caching and queues
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # Set via secret
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Prometheus monitoring
+prometheus:
+  enabled: true
+  server:
+    retention: 15d
+    persistentVolume:
+      size: 50Gi
+
+# Grafana dashboards
+grafana:
+  enabled: true
+  adminPassword: ""  # Set via secret
+  persistence:
+    enabled: true
+    size: 10Gi
+
+# NVIDIA NIM Configuration
+nim:
+  enabled: true
+  models:
+    nemotron:
+      enabled: true
+      replicas: 2
+      resources:
+        nvidia.com/gpu: 1
+    embedding:
+      enabled: true
+      replicas: 2
+      resources:
+        nvidia.com/gpu: 1
+
+# NVIDIA Guardrails
+guardrails:
+  enabled: true
+  image:
+    repository: nvcr.io/nvidia/nemo-guardrails
+    tag: "0.10.0"
+  config:
+    rails:
+      input:
+        enabled: true
+      output:
+        enabled: true
+
+# Secrets (managed externally via Azure Key Vault)
+secrets:
+  keyVaultName: kv-ants-production
+  secretProviderClass: azure-keyvault
+
+# Azure NetApp Files Volumes
+anfVolumes:
+  - name: models
+    server: 10.0.1.4
+    path: /vol-models
+    mountPath: /mnt/anf/memory/models
+  - name: episodic
+    server: 10.0.1.4
+    path: /vol-episodic
+    mountPath: /mnt/anf/memory/episodic
+  - name: semantic
+    server: 10.0.1.4
+    path: /vol-semantic
+    mountPath: /mnt/anf/memory/semantic
+  - name: receipts
+    server: 10.0.1.4
+    path: /vol-receipts
+    mountPath: /mnt/anf/receipts

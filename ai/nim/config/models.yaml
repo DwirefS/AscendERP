@@ -1,0 +1,118 @@
+# NVIDIA NIM Model Configuration for ANTS
+# Defines available NIM microservices and their deployment settings
+
+models:
+  # Primary LLM for agent reasoning
+  llama-3.1-nemotron-nano-8b:
+    enabled: true
+    nim_image: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-8b-v1:1.3.2
+    replicas: 2
+    gpu_type: A100
+    gpu_count: 1
+    max_batch_size: 32
+    max_tokens: 4096
+    endpoints:
+      completions: /v1/completions
+      chat: /v1/chat/completions
+    resources:
+      requests:
+        cpu: "4"
+        memory: "16Gi"
+        nvidia.com/gpu: "1"
+      limits:
+        cpu: "8"
+        memory: "32Gi"
+        nvidia.com/gpu: "1"
+
+  # Embedding model for semantic memory
+  nv-embedqa-e5-v5:
+    enabled: true
+    nim_image: nvcr.io/nim/nvidia/nv-embedqa-e5-v5:1.2.0
+    replicas: 2
+    gpu_type: A10
+    gpu_count: 1
+    embedding_dimension: 1024
+    max_input_length: 512
+    endpoints:
+      embeddings: /v1/embeddings
+    resources:
+      requests:
+        cpu: "2"
+        memory: "8Gi"
+        nvidia.com/gpu: "1"
+      limits:
+        cpu: "4"
+        memory: "16Gi"
+        nvidia.com/gpu: "1"
+
+  # Reranking model for RAG
+  nv-rerankqa-mistral-4b-v3:
+    enabled: true
+    nim_image: nvcr.io/nim/nvidia/nv-rerankqa-mistral-4b-v3:1.1.0
+    replicas: 1
+    gpu_type: A10
+    gpu_count: 1
+    endpoints:
+      rerank: /v1/ranking
+    resources:
+      requests:
+        cpu: "2"
+        memory: "8Gi"
+        nvidia.com/gpu: "1"
+      limits:
+        cpu: "4"
+        memory: "16Gi"
+        nvidia.com/gpu: "1"
+
+  # Larger model for complex reasoning (optional)
+  llama-3.1-70b-instruct:
+    enabled: false  # Enable for production
+    nim_image: nvcr.io/nim/meta/llama-3.1-70b-instruct:1.2.2
+    replicas: 1
+    gpu_type: A100
+    gpu_count: 4  # Requires 4x A100 80GB
+    max_batch_size: 16
+    max_tokens: 8192
+    endpoints:
+      completions: /v1/completions
+      chat: /v1/chat/completions
+    resources:
+      requests:
+        nvidia.com/gpu: "4"
+      limits:
+        nvidia.com/gpu: "4"
+
+# Model routing configuration
+routing:
+  default_model: llama-3.1-nemotron-nano-8b
+
+  # Route by task complexity
+  task_routing:
+    simple_query:
+      model: llama-3.1-nemotron-nano-8b
+      max_tokens: 1024
+    complex_reasoning:
+      model: llama-3.1-nemotron-nano-8b
+      max_tokens: 4096
+    critical_decision:
+      model: llama-3.1-70b-instruct  # When enabled
+      max_tokens: 4096
+
+  # Route by agent type
+  agent_routing:
+    finance.reconciliation: llama-3.1-nemotron-nano-8b
+    cybersecurity.defender: llama-3.1-nemotron-nano-8b
+    selfops.infra: llama-3.1-nemotron-nano-8b
+
+# Health check configuration
+health:
+  interval_seconds: 30
+  timeout_seconds: 10
+  failure_threshold: 3
+
+# Caching configuration
+cache:
+  enabled: true
+  type: redis
+  ttl_seconds: 3600
+  max_entries: 10000

@@ -1,0 +1,44 @@
+# ANTS Deployment Specification Example
+# Use this template to configure your ANTS deployment
+
+tenant: acme-finance
+
+regions:
+  primary: eastus2
+  dr: centralus
+
+ha:
+  zones: true
+  rpo_minutes: 30
+  rto_minutes: 60
+
+modules:
+  finance: true
+  retail: false
+  manufacturing: false
+  healthcare: false
+  crm: true
+  hr: true
+  supply_chain: true
+
+data:
+  anf:
+    service_level: ultra  # ultra, premium, standard
+    cool_access: true
+    object_rest_api: true
+
+ai:
+  nim_models:
+    - nemotron_reasoning
+    - nemo_retriever_embed
+    - nemo_retriever_rerank
+  use_ai_search: true
+
+analytics:
+  onelake_fabric: true
+  databricks: true
+
+governance:
+  opa: true
+  agent365: true
+  sentinel_defender: true
