@@ -362,25 +362,25 @@ Focus on **self-extending capabilities** rather than hardcoded integrations:
 ## Ideas Captured
 
 ### From User Feedback (Dec 22)
-1. ✅ **Don't hardcode integrations** - Build meta-capability instead
-2. ✅ **Use specialized models** - FunctionGemma for tools, domain models for tasks
-3. ✅ **Enable self-extension** - Agents create their own tools
-4. 📝 **Code execution as integration** - Agents can write/run code
-5. 📝 **Google FunctionGemma** - Tool calling model for schema generation
+1. ✅ **Don't hardcode integrations** - Build meta-capability instead (Section 13.1)
+2. ✅ **Use specialized models** - FunctionGemma for tools, domain models for tasks (Section 13.4, 13.5)
+3. ✅ **Enable self-extension** - Agents create their own tools (Section 13.2-13.9)
+4. 📝 **Code execution as integration** - Agents can write/run code (Planned: Phase 8)
+5. ✅ **Google FunctionGemma** - Tool calling model for schema generation (Section 13.5)
 
-### Strategic Insights
-- Integration points are endless → Build the capability to integrate
-- Static systems don't scale → Self-extending systems do
-- Manual development is bottleneck → Automate tool creation
-- Each agent learns → All agents benefit (collective intelligence)
-- Costs compound → Learning reduces costs over time
+### Strategic Insights (Captured in Section 13.12)
+- ✅ Integration points are endless → Build the capability to integrate
+- ✅ Static systems don't scale → Self-extending systems do
+- ✅ Manual development is bottleneck → Automate tool creation
+- ✅ Each agent learns → All agents benefit (collective intelligence)
+- ✅ Costs compound → Learning reduces costs over time
 
-### Future Research Areas
-- Multi-API orchestration (combine multiple APIs in one tool)
-- API version migration (auto-update when APIs change)
-- Performance optimization learning (caching, batching patterns)
-- Compliance checking for generated tools
-- Test case generation for new integrations
+### Future Research Areas (Captured in Section 13.14)
+- ✅ Multi-API orchestration (combine multiple APIs in one tool)
+- ✅ API version migration (auto-update when APIs change)
+- ✅ Performance optimization learning (caching, batching patterns)
+- ✅ Compliance checking for generated tools
+- ✅ Test case generation for new integrations
 
 ---
 
