@@ -82,6 +82,8 @@ Agent needs Stripe → Requests capability via pheromone
 - **ToolDiscoveryAgent** (660 lines): Explores APIs via OpenAPI/probing/crawling
 - **DynamicToolRegistry** (600 lines): Sandboxed runtime registration
 - **MetaAgentOrchestrator** (450 lines): End-to-end workflow coordination
+  
+![unnamed (11)](https://github.com/user-attachments/assets/15037eea-5f41-4020-8e9f-5c99ea1c4cb3)
 
 ### 2. Pheromone-Based Swarm Coordination
 
