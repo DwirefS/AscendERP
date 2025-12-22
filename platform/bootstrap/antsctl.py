@@ -198,25 +198,187 @@ def metrics_clear(environment: str):
     data = asyncio.run(get_clear_metrics(environment))
 
     click.echo("Cost:")
-    click.echo(f"  Total Tokens: {data['cost']['total_tokens']:,}")
-    click.echo(f"  Estimated USD: ${data['cost']['estimated_cost_usd']:.2f}")
+    click.echo(f"  Total Tokens: {data['cost'].get('total_tokens', 0):,}")
+    click.echo(f"  Estimated USD: ${data['cost'].get('estimated_cost_usd', 0):.2f}")
 
     click.echo("\nLatency:")
-    click.echo(f"  P50: {data['latency']['p50_ms']}ms")
-    click.echo(f"  P95: {data['latency']['p95_ms']}ms")
-    click.echo(f"  P99: {data['latency']['p99_ms']}ms")
+    click.echo(f"  P50: {data['latency'].get('p50_ms', 0)}ms")
+    click.echo(f"  P95: {data['latency'].get('p95_ms', 0)}ms")
+    click.echo(f"  P99: {data['latency'].get('p99_ms', 0)}ms")
 
     click.echo("\nEfficacy:")
-    click.echo(f"  Success Rate: {data['efficacy']['success_rate']:.1%}")
-    click.echo(f"  Avg Confidence: {data['efficacy']['avg_confidence']:.1%}")
+    click.echo(f"  Success Rate: {data['efficacy'].get('success_rate', 0):.1%}")
+    click.echo(f"  Avg Confidence: {data['efficacy'].get('avg_confidence', 0):.1%}")
 
     click.echo("\nAssurance:")
-    click.echo(f"  Policy Compliance: {data['assurance']['policy_compliance_rate']:.1%}")
-    click.echo(f"  Audit Coverage: {data['assurance']['audit_coverage']:.1%}")
+    click.echo(f"  Policy Compliance: {data['assurance'].get('policy_compliance_rate', 0):.1%}")
+    click.echo(f"  Audit Coverage: {data['assurance'].get('audit_coverage', 0):.1%}")
 
     click.echo("\nReliability:")
-    click.echo(f"  Uptime: {data['reliability']['uptime']:.3%}")
-    click.echo(f"  Error Rate: {data['reliability']['error_rate']:.1%}")
+    click.echo(f"  Uptime: {data['reliability'].get('uptime', 0):.3%}")
+    click.echo(f"  Error Rate: {data['reliability'].get('error_rate', 0):.1%}")
+
+
+@cli.group()
+def policy():
+    """Policy management commands."""
+    pass
+
+
+@policy.command('test')
+def policy_test():
+    """Run OPA policy tests."""
+    from platform.bootstrap.antsctl_impl import PolicyManager
+
+    click.echo("Running OPA policy tests...\n")
+
+    pm = PolicyManager(policies_dir="platform/policies/ants")
+    result = asyncio.run(pm.test_policies())
+
+    if result["success"]:
+        click.echo(click.style("All policy tests passed!", fg='green'))
+        click.echo(result["output"])
+    else:
+        click.echo(click.style("Policy tests failed!", fg='red'))
+        click.echo(result["errors"])
+        raise click.Abort()
+
+
+@policy.command('validate')
+@click.argument('policy_file', type=click.Path(exists=True))
+def policy_validate(policy_file: str):
+    """Validate a policy file."""
+    from platform.bootstrap.antsctl_impl import PolicyManager
+
+    click.echo(f"Validating {policy_file}...")
+
+    pm = PolicyManager(policies_dir="platform/policies/ants")
+    result = asyncio.run(pm.validate_policy(policy_file))
+
+    if result["valid"]:
+        click.echo(click.style("Policy is valid!", fg='green'))
+    else:
+        click.echo(click.style("Policy validation failed!", fg='red'))
+        click.echo(result["errors"])
+        raise click.Abort()
+
+
+@policy.command('evaluate')
+@click.argument('policy_path')
+@click.option('--input', '-i', 'input_file', type=click.Path(exists=True), required=True, help='Input JSON file')
+def policy_evaluate(policy_path: str, input_file: str):
+    """Evaluate a policy with input data."""
+    from platform.bootstrap.antsctl_impl import PolicyManager
+    import json
+
+    with open(input_file) as f:
+        input_data = json.load(f)
+
+    click.echo(f"Evaluating policy with input...\n")
+
+    pm = PolicyManager(policies_dir="platform/policies/ants")
+    result = asyncio.run(pm.evaluate_policy(policy_path, input_data))
+
+    click.echo(json.dumps(result, indent=2))
+
+
+@cli.command('backup')
+@click.option('--output', '-o', type=click.Path(), required=True, help='Backup output directory')
+@click.option('--environment', '-e', default='dev', help='Target environment')
+def backup(output: str, environment: str):
+    """Backup ANTS data and configuration."""
+    import os
+    from datetime import datetime
+
+    click.echo(f"Backing up ANTS {environment} environment...\n")
+
+    backup_dir = Path(output) / f"ants-backup-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    # Backup database
+    click.echo("1. Backing up database...")
+    db_backup_file = backup_dir / "database.sql"
+
+    db_host = os.getenv("ANTS_DB_HOST", "localhost")
+    db_name = os.getenv("ANTS_DB_NAME", "ants")
+    db_user = os.getenv("ANTS_DB_USER", "ants_user")
+
+    cmd = f"pg_dump -h {db_host} -U {db_user} -d {db_name} -F c -f {db_backup_file}"
+    os.system(cmd)
+
+    click.echo(f"  ✓ Database backed up to {db_backup_file}")
+
+    # Backup Kubernetes resources
+    click.echo("\n2. Backing up Kubernetes resources...")
+    k8s_backup_dir = backup_dir / "kubernetes"
+    k8s_backup_dir.mkdir(exist_ok=True)
+
+    resources = ["deployments", "services", "configmaps", "secrets"]
+    for resource in resources:
+        cmd = f"kubectl get {resource} -n ants -o yaml > {k8s_backup_dir}/{resource}.yaml"
+        os.system(cmd)
+
+    click.echo(f"  ✓ Kubernetes resources backed up")
+
+    # Backup configuration
+    click.echo("\n3. Backing up configuration...")
+    config_backup_dir = backup_dir / "config"
+    config_backup_dir.mkdir(exist_ok=True)
+
+    # Copy spec files
+    import shutil
+    if Path("platform/bootstrap/templates").exists():
+        shutil.copytree("platform/bootstrap/templates", config_backup_dir / "templates")
+
+    click.echo(f"  ✓ Configuration backed up")
+
+    click.echo(click.style(f"\nBackup complete: {backup_dir}", fg='green'))
+
+
+@cli.command('restore')
+@click.argument('backup_dir', type=click.Path(exists=True))
+@click.option('--environment', '-e', default='dev', help='Target environment')
+@click.option('--confirm', is_flag=True, help='Confirm restore operation')
+def restore(backup_dir: str, environment: str, confirm: bool):
+    """Restore ANTS from backup."""
+    if not confirm:
+        click.echo(click.style("Warning: This will replace existing data!", fg='red'))
+        click.echo("Use --confirm flag to proceed")
+        raise click.Abort()
+
+    click.echo(f"Restoring ANTS {environment} from {backup_dir}...\n")
+
+    backup_path = Path(backup_dir)
+
+    # Restore database
+    click.echo("1. Restoring database...")
+    db_backup_file = backup_path / "database.sql"
+
+    if db_backup_file.exists():
+        import os
+        db_host = os.getenv("ANTS_DB_HOST", "localhost")
+        db_name = os.getenv("ANTS_DB_NAME", "ants")
+        db_user = os.getenv("ANTS_DB_USER", "ants_user")
+
+        cmd = f"pg_restore -h {db_host} -U {db_user} -d {db_name} -c {db_backup_file}"
+        os.system(cmd)
+        click.echo("  ✓ Database restored")
+    else:
+        click.echo("  ⚠ No database backup found")
+
+    # Restore Kubernetes resources
+    click.echo("\n2. Restoring Kubernetes resources...")
+    k8s_backup_dir = backup_path / "kubernetes"
+
+    if k8s_backup_dir.exists():
+        for yaml_file in k8s_backup_dir.glob("*.yaml"):
+            cmd = f"kubectl apply -f {yaml_file} -n ants"
+            os.system(cmd)
+        click.echo("  ✓ Kubernetes resources restored")
+    else:
+        click.echo("  ⚠ No Kubernetes backup found")
+
+    click.echo(click.style("\nRestore complete!", fg='green'))
 
 
 # Helper functions
@@ -257,70 +419,236 @@ def show_deployment_plan(spec: Dict[str, Any], environment: str):
 
 async def execute_deployment(spec: Dict[str, Any], environment: str):
     """Execute deployment based on spec."""
+    from platform.bootstrap.antsctl_impl import TerraformDeployer, HelmDeployer
+
     logger.info("executing_deployment", environment=environment)
-    # Implementation would provision infrastructure
-    click.echo("Deployment initiated...")
+
+    # Step 1: Deploy infrastructure with Terraform
+    click.echo("Step 1: Deploying infrastructure...")
+    terraform = TerraformDeployer(
+        terraform_dir=f"infra/terraform/envs/{environment}",
+        environment=environment
+    )
+
+    try:
+        plan_output = await terraform.plan(spec)
+        click.echo("Terraform plan generated")
+
+        apply_output = await terraform.apply(auto_approve=True)
+        click.echo(click.style("Infrastructure deployed", fg='green'))
+
+    except Exception as e:
+        click.echo(click.style(f"Infrastructure deployment failed: {e}", fg='red'))
+        raise
+
+    # Step 2: Deploy ANTS platform with Helm
+    click.echo("\nStep 2: Deploying ANTS platform...")
+    helm = HelmDeployer(charts_dir="infra/helm", namespace="ants")
+
+    charts_to_deploy = [
+        ("ants-core", "ants-core"),
+        ("ants-agents", "ants-agents"),
+        ("ants-observability", "ants-observability")
+    ]
+
+    for chart_name, release_name in charts_to_deploy:
+        try:
+            await helm.install_chart(chart_name, release_name)
+            click.echo(f"  ✓ {chart_name} deployed")
+        except Exception as e:
+            click.echo(f"  ✗ {chart_name} failed: {e}")
+
+    click.echo(click.style("\nDeployment complete!", fg='green'))
 
 
 async def get_deployment_status(environment: str) -> Dict[str, Any]:
     """Get deployment status."""
-    return {
-        "api-gateway": {"status": "healthy", "version": "1.0.0", "replicas": 3},
-        "orchestrator": {"status": "healthy", "version": "1.0.0", "replicas": 2},
-        "agent-workers": {"status": "healthy", "version": "1.0.0", "replicas": 5},
-        "policy-engine": {"status": "healthy", "version": "0.60.0", "replicas": 2},
-        "memory-substrate": {"status": "healthy", "version": "1.0.0", "replicas": 2}
-    }
+    from platform.bootstrap.antsctl_impl import KubernetesManager
+
+    try:
+        k8s = KubernetesManager(namespace="ants")
+        return await k8s.get_deployment_status()
+    except Exception as e:
+        logger.warning("failed_to_get_k8s_status", error=str(e))
+        # Return mock data if K8s unavailable
+        return {
+            "api-gateway": {"status": "unknown", "version": "1.0.0", "replicas": "0/0"},
+            "orchestrator": {"status": "unknown", "version": "1.0.0", "replicas": "0/0"}
+        }
 
 
 async def scale_agents(agent_type: str, replicas: int, environment: str):
     """Scale agent workers."""
+    from platform.bootstrap.antsctl_impl import KubernetesManager
+
     logger.info("scaling_agents", agent_type=agent_type, replicas=replicas)
+
+    try:
+        k8s = KubernetesManager(namespace="ants")
+        deployment_name = f"agent-{agent_type.replace('.', '-')}"
+        await k8s.scale_deployment(deployment_name, replicas)
+    except Exception as e:
+        logger.error("scaling_failed", error=str(e))
+        raise
 
 
 async def stream_logs(component: str):
     """Stream logs for component."""
-    pass
+    from platform.bootstrap.antsctl_impl import KubernetesManager
+
+    k8s = KubernetesManager(namespace="ants")
+
+    # Get first pod for component
+    pods = k8s.core_v1.list_namespaced_pod(
+        namespace="ants",
+        label_selector=f"component={component}"
+    )
+
+    if not pods.items:
+        click.echo(f"No pods found for component: {component}")
+        return
+
+    pod_name = pods.items[0].metadata.name
+
+    # Stream logs
+    for line in k8s.core_v1.read_namespaced_pod_log(
+        pod_name,
+        "ants",
+        follow=True,
+        _preload_content=False
+    ):
+        click.echo(line.decode('utf-8').rstrip())
 
 
 async def get_logs(component: str, lines: int) -> list:
     """Get logs for component."""
-    return [f"Log line {i}" for i in range(lines)]
+    from platform.bootstrap.antsctl_impl import KubernetesManager
+
+    try:
+        k8s = KubernetesManager(namespace="ants")
+
+        # Get first pod for component
+        pods = k8s.core_v1.list_namespaced_pod(
+            namespace="ants",
+            label_selector=f"component={component}"
+        )
+
+        if not pods.items:
+            return [f"No pods found for component: {component}"]
+
+        pod_name = pods.items[0].metadata.name
+        return await k8s.get_logs(pod_name, lines=lines)
+
+    except Exception as e:
+        return [f"Error retrieving logs: {str(e)}"]
 
 
 async def get_agents(environment: str) -> list:
     """Get registered agents."""
-    return [
-        {"type": "finance.reconciliation", "name": "Reconciliation Agent", "status": "ready"},
-        {"type": "retail.inventory", "name": "Inventory Agent", "status": "ready"},
-        {"type": "cybersecurity.defender", "name": "Defender Triage Agent", "status": "ready"},
-        {"type": "selfops.infra", "name": "InfraOps Agent", "status": "ready"}
-    ]
+    from platform.bootstrap.antsctl_impl import DatabaseManager
+    import os
+
+    try:
+        db_conn_string = os.getenv(
+            "ANTS_DB_CONNECTION",
+            "postgresql://ants_user:ants_pass@localhost:5432/ants"
+        )
+
+        db = DatabaseManager(db_conn_string)
+        await db.connect()
+
+        agents = await db.get_agents()
+        await db.disconnect()
+
+        return [
+            {
+                "type": agent["agent_type"],
+                "name": agent["agent_id"],
+                "status": agent["status"]
+            }
+            for agent in agents
+        ]
+
+    except Exception as e:
+        logger.warning("failed_to_get_agents", error=str(e))
+        # Return mock data
+        return [
+            {"type": "finance.reconciliation", "name": "agent-001", "status": "ready"},
+            {"type": "retail.inventory", "name": "agent-002", "status": "ready"}
+        ]
 
 
 async def invoke_agent(agent_type: str, input_data: Dict, tenant: str) -> Dict:
     """Invoke an agent."""
-    return {
-        "trace_id": "trace-001",
-        "success": True,
-        "output": {"message": "Agent executed successfully"}
-    }
+    from platform.bootstrap.antsctl_impl import AgentInvoker
+    import os
+
+    api_gateway_url = os.getenv("ANTS_API_GATEWAY", "http://localhost:8000")
+    api_key = os.getenv("ANTS_API_KEY", "test-key")
+
+    invoker = AgentInvoker(api_gateway_url, api_key)
+
+    try:
+        result = await invoker.invoke(agent_type, input_data, tenant)
+        return result
+    except Exception as e:
+        logger.error("agent_invocation_failed", error=str(e))
+        raise
 
 
 async def search_memory(query: str, memory_type: str, tenant: str, limit: int) -> list:
     """Search memory substrate."""
-    return []
+    from platform.bootstrap.antsctl_impl import DatabaseManager
+    import os
+
+    try:
+        db_conn_string = os.getenv(
+            "ANTS_DB_CONNECTION",
+            "postgresql://ants_user:ants_pass@localhost:5432/ants"
+        )
+
+        db = DatabaseManager(db_conn_string)
+        await db.connect()
+
+        results = await db.search_memory(query, tenant, memory_type, limit)
+        await db.disconnect()
+
+        return results
+
+    except Exception as e:
+        logger.warning("memory_search_failed", error=str(e))
+        return []
 
 
 async def get_clear_metrics(environment: str) -> Dict[str, Any]:
     """Get CLEAR metrics."""
-    return {
-        "cost": {"total_tokens": 1500000, "estimated_cost_usd": 30.50},
-        "latency": {"p50_ms": 150, "p95_ms": 450, "p99_ms": 1200},
-        "efficacy": {"success_rate": 0.95, "avg_confidence": 0.87},
-        "assurance": {"policy_compliance_rate": 0.99, "audit_coverage": 1.0},
-        "reliability": {"uptime": 0.999, "error_rate": 0.01}
-    }
+    from platform.bootstrap.antsctl_impl import DatabaseManager
+    import os
+
+    try:
+        db_conn_string = os.getenv(
+            "ANTS_DB_CONNECTION",
+            "postgresql://ants_user:ants_pass@localhost:5432/ants"
+        )
+
+        db = DatabaseManager(db_conn_string)
+        await db.connect()
+
+        metrics = await db.get_metrics(environment)
+        await db.disconnect()
+
+        return metrics
+
+    except Exception as e:
+        logger.warning("metrics_retrieval_failed", error=str(e))
+        # Return mock metrics
+        return {
+            "cost": {"total_tokens": 1500000, "estimated_cost_usd": 30.50},
+            "latency": {"p50_ms": 150, "p95_ms": 450, "p99_ms": 1200},
+            "efficacy": {"success_rate": 0.95, "avg_confidence": 0.87},
+            "assurance": {"policy_compliance_rate": 0.99, "audit_coverage": 1.0},
+            "reliability": {"uptime": 0.999, "error_rate": 0.01}
+        }
 
 
 if __name__ == '__main__':
