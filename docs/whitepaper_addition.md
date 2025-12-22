@@ -2931,7 +2931,579 @@ await orchestrator.start()
 
 ---
 
-## 15. Conclusion
+## 15. Azure Service Bus: Reliable Task Queuing
+
+### 15.1 Why Service Bus for Task Distribution
+
+While **Azure Event Hub** provides high-throughput pheromone messaging for swarm coordination, enterprises also need **guaranteed task delivery** with retry semantics, dead-lettering, and ordered processing.
+
+**Azure Service Bus** complements Event Hub by providing:
+
+| Requirement | Event Hub | Service Bus | Use Case |
+|------------|-----------|-------------|----------|
+| **Message Delivery** | At-least-once (streaming) | Guaranteed delivery with ACK | Critical tasks that must not be lost |
+| **Ordering** | Partition-level ordering | Session-based FIFO | Sequential workflows |
+| **Retry Logic** | Manual (consumer) | Built-in with exponential backoff | Transient failure handling |
+| **Dead Letters** | Not supported | Automatic DLQ for failed messages | Failed task investigation |
+| **Throughput** | 1M+ events/sec | 1K-100K messages/sec | High-volume vs reliable delivery |
+| **Message Size** | 1 MB max | 256 KB (Standard), 1 MB (Premium) | Payload considerations |
+| **TTL** | Hours to days | Up to 14 days (with message retention) | Long-term task queuing |
+
+**Architectural Decision:**
+
+```
+Event Hub (Pheromones)  +  Service Bus (Tasks)  +  Cosmos DB (State)
+       ↓                         ↓                         ↓
+Swarm coordination         Task distribution        Persistent state
+Emergent patterns          Guaranteed delivery      Multi-region consistency
+High-throughput            Retry semantics          Analytics & history
+```
+
+**Together they provide:**
+- **Event Hub**: "I found interesting work" (pheromone discovery)
+- **Service Bus**: "Here's your assigned task" (guaranteed delivery)
+- **Cosmos DB**: "Here's the current state" (persistent tracking)
+
+### 15.2 Service Bus Architecture for ANTS
+
+#### Queue Topology
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                Azure Service Bus Namespace                   │
+│                   (ants-production)                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌───────────────────────────────────────────────────┐       │
+│  │           ants-tasks (Main Queue)                 │       │
+│  │  - Priority-based FIFO                            │       │
+│  │  - Max delivery count: 3                          │       │
+│  │  - Lock duration: 5 minutes                       │       │
+│  │  - Message TTL: 14 days                           │       │
+│  │  - Dead-letter on max delivery                    │       │
+│  └───────────────────────────────────────────────────┘       │
+│                          │                                    │
+│                          ├── Session-based processing         │
+│                          │   (ordered workflows)              │
+│                          │                                    │
+│                          └── Dead Letter Queue                │
+│                              (failed tasks)                   │
+│                                                               │
+│  ┌───────────────────────────────────────────────────┐       │
+│  │      ants-integrations (Integration Queue)        │       │
+│  │  - For MetaAgentOrchestrator                      │       │
+│  │  - Long-running integration builds                │       │
+│  │  - Lock duration: 30 minutes                      │       │
+│  └───────────────────────────────────────────────────┘       │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+
+          ↓                               ↓
+    Agent Workers                  Meta-Agent Workers
+    (Process tasks)                (Build integrations)
+```
+
+#### Message Flow
+
+```
+1. Task Submission
+   ┌──────────────┐
+   │ API Gateway  │ ──────┐
+   └──────────────┘       │
+   ┌──────────────┐       │
+   │ Pheromone    │ ──────┼──→ Service Bus
+   │ Orchestrator │       │    (submit_task)
+   └──────────────┘       │
+   ┌──────────────┐       │
+   │ Agent Itself │ ──────┘
+   └──────────────┘
+
+2. Task Processing
+   Service Bus ──→ Agent Worker ──→ Execute Task
+       │                │
+       │                ├──→ Success: Complete message
+       │                ├──→ Failure: Abandon (retry)
+       │                └──→ Max retries: Dead-letter
+       │
+       └──→ Dead Letter Queue
+                  │
+                  └──→ Manual investigation or resubmit
+
+3. Integration with Cosmos DB
+   Task Created ──→ Service Bus message ──→ Agent claims
+                                    │
+                                    └──→ Cosmos DB: Task status update
+                                                    (CLAIMED → IN_PROGRESS → COMPLETED)
+```
+
+### 15.3 TaskQueueClient Implementation
+
+**Key Features:**
+
+```python
+class TaskQueueClient:
+    """
+    Manages reliable task queuing with Azure Service Bus.
+
+    Features:
+    - Priority-based FIFO queues
+    - Dead-letter handling
+    - Session-based ordered processing
+    - Scheduled delivery
+    - Automatic retry with exponential backoff
+    - Concurrent processing with semaphore
+    """
+
+    async def submit_task(
+        self,
+        task_type: str,
+        tenant_id: str,
+        required_capabilities: List[str],
+        payload: Dict[str, Any],
+        priority: int = 5,  # 1-10
+        scheduled_for: Optional[datetime] = None,
+        session_id: Optional[str] = None  # For ordered processing
+    ) -> str:
+        """Submit task with guaranteed delivery."""
+
+    async def start_processing(self):
+        """Start consuming tasks with concurrent workers."""
+
+    async def register_handler(
+        self,
+        task_type: str,
+        handler: Callable[[AgentTask], Awaitable[TaskResult]]
+    ):
+        """Register task type handler."""
+```
+
+**Priority Levels:**
+
+```python
+class TaskPriority(Enum):
+    CRITICAL = 10    # Security incidents, fraud alerts
+    HIGH = 7         # User-facing operations
+    NORMAL = 5       # Background processing
+    LOW = 3          # Reporting, analytics
+    BACKGROUND = 1   # Cleanup, maintenance
+```
+
+**Task Types:**
+
+```python
+class TaskType(Enum):
+    RECONCILIATION = "reconciliation"
+    FRAUD_DETECTION = "fraud_detection"
+    DATA_SYNC = "data_sync"
+    REPORT_GENERATION = "report_generation"
+    INTEGRATION_BUILD = "integration_build"  # Meta-agent
+    CODE_EXECUTION = "code_execution"        # CodeExecutionAgent
+    CUSTOM = "custom"
+```
+
+### 15.4 Integration with Pheromone Swarm
+
+Service Bus and Event Hub work together for comprehensive coordination:
+
+**Workflow Example: Finance Reconciliation**
+
+```
+Step 1: Agent detects work through TASK pheromone (Event Hub)
+   └─→ Pheromone: "High-priority reconciliation needed"
+
+Step 2: Agent claims task from Cosmos DB
+   └─→ Optimistic concurrency (etag-based)
+
+Step 3: Detailed task payload delivered via Service Bus
+   └─→ Guaranteed delivery with retry
+
+Step 4: Agent processes task
+   └─→ Updates Cosmos DB: IN_PROGRESS
+
+Step 5a: Success
+   ├─→ Deposit SUCCESS pheromone (Event Hub)
+   ├─→ Complete Service Bus message
+   └─→ Update Cosmos DB: COMPLETED
+
+Step 5b: Failure
+   ├─→ Deposit DANGER pheromone (Event Hub)
+   ├─→ Abandon Service Bus message (retry)
+   └─→ After 3 retries → Dead Letter Queue
+```
+
+**Why Both?**
+
+| Aspect | Event Hub Pheromones | Service Bus Tasks |
+|--------|---------------------|-------------------|
+| **Discovery** | ✅ Agents discover opportunities | ❌ No discovery mechanism |
+| **Load Balancing** | ✅ Pheromone strength guides distribution | ❌ FIFO only |
+| **Pattern Learning** | ✅ Success pheromones reinforce patterns | ❌ No learning |
+| **Guaranteed Delivery** | ❌ Fire-and-forget | ✅ ACK-based confirmation |
+| **Retry Logic** | ❌ Manual implementation | ✅ Built-in with backoff |
+| **Dead Lettering** | ❌ Not supported | ✅ Automatic DLQ |
+| **Ordered Processing** | ❌ Partition-level only | ✅ Session-based FIFO |
+
+**Complementary Strengths:**
+- **Pheromones** → "Smart discovery" (which work to do)
+- **Service Bus** → "Reliable execution" (how to do it)
+
+### 15.5 Dead Letter Queue Handling
+
+**Automatic Dead-Lettering:**
+
+```python
+# Task fails after 3 retries
+if message.delivery_count >= 3:
+    await receiver.dead_letter_message(
+        message,
+        reason="max_retries_exceeded",
+        error_description=str(exception)
+    )
+```
+
+**Dead Letter Investigation:**
+
+```python
+# Retrieve failed tasks
+dead_letters = await task_queue.get_dead_letter_messages(max_count=100)
+
+for task in dead_letters:
+    print(f"Failed: {task.task_id}")
+    print(f"Type: {task.task_type}")
+    print(f"Error: {task.metadata.get('error')}")
+
+    # Manual fix or resubmit
+    if can_fix(task):
+        await task_queue.resubmit_dead_letter(task.task_id)
+```
+
+**Common Dead Letter Causes:**
+1. Missing required capability (no handler registered)
+2. Transient API failures (exceeded retry limit)
+3. Malformed task payload
+4. Agent crash during processing
+5. Dependency unavailable (database, external API)
+
+### 15.6 Scheduled Task Delivery
+
+Service Bus supports **scheduled enqueue time** for delayed execution:
+
+```python
+# Schedule task for 24 hours from now
+scheduled_time = datetime.utcnow() + timedelta(hours=24)
+
+await task_queue.submit_task(
+    task_type=TaskType.REPORT_GENERATION.value,
+    tenant_id="acme_corp",
+    required_capabilities=["reporting"],
+    payload={"report_type": "monthly_summary"},
+    priority=TaskPriority.NORMAL.value,
+    scheduled_for=scheduled_time
+)
+```
+
+**Use Cases:**
+- Scheduled reports (daily, weekly, monthly)
+- Delayed retry after transient failure
+- Rate-limited API calls (spread over time)
+- Time-based workflows (e.g., send reminder in 3 days)
+
+### 15.7 Session-Based Ordered Processing
+
+For workflows requiring sequential execution:
+
+```python
+# All tasks with same session_id processed in order
+session_id = "customer_onboarding_12345"
+
+# Task 1: Create account
+await task_queue.submit_task(
+    task_type="create_account",
+    session_id=session_id,
+    payload={...}
+)
+
+# Task 2: Send welcome email (must happen after task 1)
+await task_queue.submit_task(
+    task_type="send_email",
+    session_id=session_id,
+    payload={...}
+)
+
+# Task 3: Provision resources (must happen after task 2)
+await task_queue.submit_task(
+    task_type="provision_resources",
+    session_id=session_id,
+    payload={...}
+)
+```
+
+**Service Bus guarantees:**
+- Tasks with same session_id processed sequentially
+- Order preserved within session
+- Different sessions processed concurrently
+
+### 15.8 Production Deployment (Terraform)
+
+**Service Bus Namespace and Queue:**
+
+```hcl
+# Service Bus Namespace
+resource "azurerm_servicebus_namespace" "ants" {
+  name                = "ants-production"
+  location            = azurerm_resource_group.ants.location
+  resource_group_name = azurerm_resource_group.ants.name
+  sku                 = "Premium"  # For large messages and VNet integration
+  capacity            = 1          # Premium capacity units
+
+  tags = {
+    environment = "production"
+    component   = "swarm-messaging"
+  }
+}
+
+# Main Task Queue
+resource "azurerm_servicebus_queue" "tasks" {
+  name         = "ants-tasks"
+  namespace_id = azurerm_servicebus_namespace.ants.id
+
+  # Message configuration
+  max_size_in_megabytes            = 5120  # 5 GB
+  default_message_ttl              = "P14D"  # 14 days
+  lock_duration                    = "PT5M"  # 5 minutes
+  max_delivery_count               = 3
+  enable_partitioning              = true  # Better scalability
+  enable_batched_operations        = true
+
+  # Dead letter configuration
+  dead_lettering_on_message_expiration = true
+
+  # Session support for ordered processing
+  requires_session = false  # Mixed mode (some sessions, some not)
+}
+
+# Integration Build Queue (for Meta-Agent)
+resource "azurerm_servicebus_queue" "integrations" {
+  name         = "ants-integrations"
+  namespace_id = azurerm_servicebus_namespace.ants.id
+
+  max_size_in_megabytes = 5120
+  default_message_ttl   = "P7D"   # 7 days
+  lock_duration         = "PT30M" # 30 minutes (long-running)
+  max_delivery_count    = 3
+  enable_partitioning   = true
+}
+
+# Managed Identity for agents
+resource "azurerm_user_assigned_identity" "ants_agents" {
+  name                = "ants-agent-identity"
+  location            = azurerm_resource_group.ants.location
+  resource_group_name = azurerm_resource_group.ants.name
+}
+
+# Grant agents access to queues
+resource "azurerm_role_assignment" "agents_servicebus_sender" {
+  scope                = azurerm_servicebus_namespace.ants.id
+  role_definition_name = "Azure Service Bus Data Sender"
+  principal_id         = azurerm_user_assigned_identity.ants_agents.principal_id
+}
+
+resource "azurerm_role_assignment" "agents_servicebus_receiver" {
+  scope                = azurerm_servicebus_namespace.ants.id
+  role_definition_name = "Azure Service Bus Data Receiver"
+  principal_id         = azurerm_user_assigned_identity.ants_agents.principal_id
+}
+```
+
+### 15.9 Cost Analysis
+
+**Azure Service Bus Pricing (US East, December 2025):**
+
+| Tier | Price | Included Operations | Additional Operations | Use Case |
+|------|-------|---------------------|----------------------|----------|
+| **Basic** | $0.05/million ops | Unlimited | $0.05/million | Development |
+| **Standard** | $10/month base | 12.5M ops/month | $0.80/million | Production (most cases) |
+| **Premium** | $677/month (1 unit) | Unlimited | Included | High-volume, VNet integration |
+
+**ANTS Typical Usage (Standard Tier):**
+- 1,000 agents
+- 10 tasks/agent/hour
+- 24/7 operation
+- = 240,000 tasks/day = 7.2M tasks/month
+
+**Monthly Cost:**
+- Base: $10/month
+- Operations: Included (< 12.5M)
+- **Total: ~$10/month**
+
+**Comparison to Event Hub:**
+- Event Hub (Standard): ~$11/month (1 TU)
+- Service Bus (Standard): ~$10/month
+- Cosmos DB: ~$25/month (400 RU/s)
+- **Total Swarm Infrastructure: ~$46/month**
+
+**Cost per Task:**
+- $10 / 7.2M tasks = **$0.0000014 per task**
+- Effectively free at enterprise scale
+
+### 15.10 Monitoring and Metrics
+
+**Azure Monitor Integration:**
+
+```python
+# Built-in metrics available
+metrics = {
+    "ActiveMessages": "Tasks waiting in queue",
+    "DeadLetterMessages": "Failed tasks count",
+    "ScheduledMessages": "Delayed tasks",
+    "IncomingMessages": "Task submission rate",
+    "OutgoingMessages": "Task completion rate",
+    "Size": "Queue storage usage",
+    "ServerErrors": "Service Bus errors",
+    "ThrottledRequests": "Rate limiting hits"
+}
+```
+
+**Alerting Rules:**
+
+```hcl
+# Alert on high dead-letter count
+resource "azurerm_monitor_metric_alert" "dead_letters" {
+  name                = "high-dead-letter-count"
+  resource_group_name = azurerm_resource_group.ants.name
+  scopes              = [azurerm_servicebus_queue.tasks.id]
+  description         = "Alert when dead letter queue exceeds threshold"
+
+  criteria {
+    metric_namespace = "Microsoft.ServiceBus/namespaces"
+    metric_name      = "DeadLetterMessages"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 100
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.ops_team.id
+  }
+}
+
+# Alert on queue depth (backlog)
+resource "azurerm_monitor_metric_alert" "queue_backlog" {
+  name                = "task-queue-backlog"
+  resource_group_name = azurerm_resource_group.ants.name
+  scopes              = [azurerm_servicebus_queue.tasks.id]
+  description         = "Alert when task backlog is high"
+
+  criteria {
+    metric_namespace = "Microsoft.ServiceBus/namespaces"
+    metric_name      = "ActiveMessages"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 10000
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.ops_team.id
+  }
+}
+```
+
+### 15.11 Benefits Over Traditional Message Queues
+
+| Feature | Traditional Queue (RabbitMQ, etc.) | Azure Service Bus |
+|---------|-----------------------------------|-------------------|
+| **Managed Service** | Self-hosted, manual scaling | Fully managed, auto-scaling |
+| **Durability** | Requires cluster setup | Built-in 99.9% SLA |
+| **Dead Letters** | Plugin or custom code | Native support |
+| **Sessions** | Manual implementation | Built-in ordered processing |
+| **Scheduled Delivery** | Custom scheduling | Native support |
+| **Geo-Replication** | Complex setup | Geo-disaster recovery (Premium) |
+| **Monitoring** | Custom dashboards | Azure Monitor integration |
+| **Security** | Manual certificate management | Managed identity + RBAC |
+| **Cost** | Infrastructure + maintenance | Pay-per-use, no infra |
+
+### 15.12 Complete Swarm Infrastructure Summary
+
+**Three-Layer Architecture:**
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                  ANTS Swarm Intelligence                  │
+├───────────────────────────────────────────────────────────┤
+│                                                           │
+│  Layer 1: Coordination (Azure Event Hub)                 │
+│  ─────────────────────────────────────────────            │
+│  • Pheromone messaging (1M+ events/sec)                  │
+│  • Swarm discovery and coordination                      │
+│  • Pattern emergence and reinforcement                   │
+│  • Load balancing signals                                │
+│                                                           │
+│  Layer 2: Task Delivery (Azure Service Bus)              │
+│  ──────────────────────────────────────────              │
+│  • Guaranteed task delivery                              │
+│  • Priority-based FIFO                                   │
+│  • Retry with exponential backoff                        │
+│  • Dead-letter queue for failures                        │
+│  • Session-based ordering                                │
+│  • Scheduled delivery                                    │
+│                                                           │
+│  Layer 3: State Persistence (Azure Cosmos DB)            │
+│  ────────────────────────────────────────────            │
+│  • Global distribution (99.999% SLA)                     │
+│  • Agent registry and health                             │
+│  • Task history and analytics                            │
+│  • Pheromone long-term storage                           │
+│  • Swarm metrics                                         │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+                         ↓
+              Emergent Swarm Intelligence
+           (Self-organizing, Self-healing)
+```
+
+**Monthly Cost (Production):**
+- Event Hub: $11/month
+- Service Bus: $10/month
+- Cosmos DB: $25/month (400 RU/s)
+- **Total: ~$46/month** for enterprise swarm infrastructure
+
+**Capabilities Enabled:**
+- ✅ Unlimited agent scaling
+- ✅ Global distribution
+- ✅ Guaranteed task delivery
+- ✅ Emergent coordination patterns
+- ✅ Self-healing (retry + DLQ)
+- ✅ Real-time and historical analytics
+- ✅ Multi-tenancy
+- ✅ 99.9%+ availability
+
+### 15.13 Build Plan Updates
+
+**Phase 10: Service Bus Task Queuing (Week 7)** ✅ COMPLETED
+- [✅] TaskQueueClient implementation (550+ lines)
+  - Azure Service Bus producer/consumer
+  - Priority-based message handling
+  - Dead-letter queue management
+  - Session-based ordered processing
+  - Scheduled delivery support
+  - Concurrent processing with semaphore
+- [✅] Integration with swarm components
+  - Pheromone coordination
+  - Cosmos DB state tracking
+- [✅] Example implementation (350+ lines)
+  - Multi-task type handlers
+  - Priority demonstration
+  - Scheduled tasks
+  - Dead-letter handling
+
+**Components Delivered:**
+- TaskQueueClient: 550 lines
+- Example: 350 lines
+- **Total**: 900 lines of reliable task queuing infrastructure
+
+---
+
+## 16. Conclusion
 
 The addition of comprehensive multi-agent orchestration and swarm intelligence patterns is **critical** for ANTS to fulfill its vision of enterprise-scale AI agent deployment. The **Meta-Agent Framework** represents a paradigm shift from:
 
@@ -2955,8 +3527,8 @@ These additions collectively enable:
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** December 22, 2025 (Major Update - Meta-Agent Framework)
+**Document Version:** 3.0
+**Last Updated:** December 22, 2025 (Major Update - Complete Swarm Infrastructure)
 **Status:** Architecture additions identified and implementation in progress
-**New Sections:** 13 (Meta-Agent Framework)
-**Lines Added:** 800+
+**New Sections:** 15 (Meta-Agent Framework + Swarm Infrastructure)
+**Lines Added:** 1,600+
