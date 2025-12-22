@@ -25,6 +25,9 @@ This is not incremental improvement. This is **IT infrastructure reimagined** to
 | Reactive to problems | Proactive pattern detection and adaptation |
 
 ---
+![unnamed (15)](https://github.com/user-attachments/assets/6ed144f1-083c-4066-a1ef-e66e4ed5212f)
+
+
 
 ## 🚀 What is ANTS?
 
@@ -119,6 +122,8 @@ Agent needs Stripe → Requests capability via pheromone
 - **Manufacturing**: Quality Control, Predictive Maintenance, Production Scheduling
 
 **Agent Repository:** Browse, search, deploy agents in one click.
+
+![unnfhd](https://github.com/user-attachments/assets/d6410e69-29ea-474d-935d-ec56b4ea72d5)
 
 ### 4. Intelligence-Infused Data Pipeline
 
