@@ -1,6 +1,7 @@
 """
 MCP Server for ERP Integration.
 Provides tools for ERP data access and operations.
+Supports SAP, Dynamics 365, Oracle, and generic SQL databases.
 """
 from typing import Any, Dict, List
 import asyncio
@@ -9,10 +10,15 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
+from mcp.servers.erp.erp_client import get_erp_client, ERPClient
+
 logger = structlog.get_logger()
 
 # Create MCP server
 server = Server("ants-erp-mcp")
+
+# Global ERP client instance
+_erp_client: ERPClient = None
 
 
 @server.list_tools()
@@ -176,36 +182,35 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
     return [TextContent(type="text", text=str(result))]
 
 
+async def _ensure_client():
+    """Ensure ERP client is connected."""
+    global _erp_client
+    if _erp_client is None:
+        _erp_client = get_erp_client()
+        await _erp_client.connect()
+        logger.info("erp_client_initialized", erp_type=_erp_client.erp_type.value)
+
+
 async def query_transactions(
     account_id: str,
     start_date: str,
     end_date: str,
     transaction_type: str = "all"
 ) -> Dict[str, Any]:
-    """Query transactions from ERP."""
-    # Placeholder implementation
-    return {
-        "account_id": account_id,
-        "transactions": [],
-        "total_count": 0,
-        "date_range": {
-            "start": start_date,
-            "end": end_date
-        }
-    }
+    """Query transactions from ERP using real API/database connection."""
+    await _ensure_client()
+    return await _erp_client.query_transactions(
+        account_id, start_date, end_date, transaction_type
+    )
 
 
 async def get_account_balance(
     account_id: str,
     as_of_date: str = None
 ) -> Dict[str, Any]:
-    """Get account balance."""
-    return {
-        "account_id": account_id,
-        "balance": 0.0,
-        "currency": "USD",
-        "as_of_date": as_of_date
-    }
+    """Get account balance from ERP using real API/database connection."""
+    await _ensure_client()
+    return await _erp_client.get_account_balance(account_id, as_of_date)
 
 
 async def create_journal_entry(
@@ -213,39 +218,27 @@ async def create_journal_entry(
     entries: List[Dict[str, Any]],
     posting_date: str = None
 ) -> Dict[str, Any]:
-    """Create journal entry."""
-    return {
-        "success": True,
-        "journal_id": "JE-001",
-        "description": description,
-        "entry_count": len(entries)
-    }
+    """Create journal entry in ERP using real API/database connection."""
+    await _ensure_client()
+    return await _erp_client.create_journal_entry(description, entries, posting_date)
 
 
 async def get_vendor_info(
     vendor_id: str,
     include_transactions: bool = False
 ) -> Dict[str, Any]:
-    """Get vendor information."""
-    return {
-        "vendor_id": vendor_id,
-        "name": "Sample Vendor",
-        "status": "active",
-        "transactions": [] if include_transactions else None
-    }
+    """Get vendor information from ERP using real API/database connection."""
+    await _ensure_client()
+    return await _erp_client.get_vendor_info(vendor_id, include_transactions)
 
 
 async def get_inventory_levels(
     product_ids: List[str],
     warehouse_id: str = None
 ) -> Dict[str, Any]:
-    """Get inventory levels."""
-    return {
-        "products": [
-            {"product_id": pid, "quantity": 0, "warehouse": warehouse_id}
-            for pid in product_ids
-        ]
-    }
+    """Get inventory levels from ERP using real API/database connection."""
+    await _ensure_client()
+    return await _erp_client.get_inventory_levels(product_ids, warehouse_id)
 
 
 async def main():
