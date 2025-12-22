@@ -12,6 +12,15 @@ import uuid
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from services.api_gateway.auth import (
+    get_auth_context,
+    get_optional_auth,
+    require_scope,
+    auth_service,
+    AuthContext
+)
+from services.api_gateway.ratelimit import rate_limiter
+
 
 logger = structlog.get_logger()
 
@@ -101,17 +110,33 @@ async def health_check():
 
 
 @app.post("/v1/agents/invoke", response_model=AgentResponse)
-async def invoke_agent(request: AgentRequest):
+async def invoke_agent(
+    request: AgentRequest,
+    http_request: Request,
+    auth: AuthContext = Depends(require_scope("agent:invoke"))
+):
     """
     Invoke an agent with the given input.
+    Requires authentication and agent:invoke scope.
     """
     trace_id = str(uuid.uuid4())
+
+    # Apply rate limiting
+    await rate_limiter.check_rate_limit(http_request, auth.tenant_id)
+
+    # Validate tenant_id matches auth context
+    if request.tenant_id != auth.tenant_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Tenant ID mismatch with authentication"
+        )
 
     logger.info(
         "agent_invocation_started",
         trace_id=trace_id,
         agent_type=request.agent_type,
-        tenant_id=request.tenant_id
+        tenant_id=request.tenant_id,
+        user_id=auth.user_id
     )
 
     try:
@@ -153,24 +178,69 @@ async def invoke_agent(request: AgentRequest):
         )
 
 
+@app.post("/v1/auth/token")
+async def create_token(
+    tenant_id: str = Field(..., description="Tenant ID"),
+    user_id: Optional[str] = Field(None, description="User ID"),
+    scopes: List[str] = Field(default_factory=lambda: ["agent:invoke", "memory:read"])
+):
+    """
+    Create a JWT token for authentication.
+    In production, this would verify credentials first.
+    """
+    token = auth_service.create_jwt_token(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        scopes=scopes
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": 86400,  # 24 hours
+        "scopes": scopes
+    }
+
+
 @app.get("/v1/agents", response_model=List[Dict[str, Any]])
-async def list_agents():
-    """List available agents."""
+async def list_agents(
+    auth: Optional[AuthContext] = Depends(get_optional_auth)
+):
+    """
+    List available agents.
+    Optional authentication for personalized results.
+    """
+    # In production, filter based on tenant permissions
     return [
         {
             "type": "finance.reconciliation",
             "name": "Reconciliation Agent",
-            "description": "Automates financial reconciliation"
+            "description": "Automates financial reconciliation",
+            "category": "finance"
         },
         {
             "type": "retail.inventory",
             "name": "Inventory Agent",
-            "description": "Manages inventory levels and replenishment"
+            "description": "Manages inventory levels and replenishment",
+            "category": "retail"
         },
         {
             "type": "cybersecurity.defender",
             "name": "Defender Triage Agent",
-            "description": "Triages security alerts"
+            "description": "Triages security alerts",
+            "category": "security"
+        },
+        {
+            "type": "hr.recruitment",
+            "name": "Recruitment Agent",
+            "description": "Resume screening and candidate matching",
+            "category": "hr"
+        },
+        {
+            "type": "crm.lead_scoring",
+            "name": "Lead Scoring Agent",
+            "description": "Qualifies and prioritizes leads",
+            "category": "crm"
         }
     ]
 
@@ -179,10 +249,22 @@ async def list_agents():
 async def search_memory(
     tenant_id: str,
     query: str,
+    http_request: Request,
     memory_type: str = "semantic",
-    limit: int = 10
+    limit: int = 10,
+    auth: AuthContext = Depends(require_scope("memory:read"))
 ):
-    """Search agent memory."""
+    """
+    Search agent memory.
+    Requires authentication and memory:read scope.
+    """
+    # Apply rate limiting
+    await rate_limiter.check_rate_limit(http_request, auth.tenant_id)
+
+    # Validate tenant_id matches auth
+    if tenant_id != auth.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant mismatch")
+
     # Placeholder
     return {
         "results": [],

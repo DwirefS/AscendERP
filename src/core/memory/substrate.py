@@ -252,13 +252,37 @@ class MemorySubstrate:
 
     async def _index_entry(self, entry: MemoryEntry):
         """Index entry in PostgreSQL."""
-        # Implementation uses SQLAlchemy
-        pass
+        if entry.memory_type == MemoryType.EPISODIC:
+            await self._db.insert_episodic(
+                entry_id=entry.id,
+                tenant_id=entry.tenant_id,
+                agent_id=entry.agent_id,
+                content=entry.content,
+                metadata=entry.metadata
+            )
+        elif entry.memory_type == MemoryType.PROCEDURAL:
+            await self._db.insert_procedural(
+                entry_id=entry.id,
+                tenant_id=entry.tenant_id,
+                agent_id=entry.agent_id,
+                pattern=entry.content,
+                success_rate=entry.metadata.get("success_rate", 0.0),
+                metadata=entry.metadata
+            )
 
     async def _index_entry_with_vector(self, entry: MemoryEntry):
         """Index entry with vector embedding in pgvector."""
-        # Implementation uses pgvector
-        pass
+        if not isinstance(entry.content, str):
+            entry.content = str(entry.content)
+
+        await self._db.insert_semantic(
+            entry_id=entry.id,
+            tenant_id=entry.tenant_id,
+            agent_id=entry.agent_id,
+            content=entry.content,
+            embedding=entry.embedding,
+            metadata=entry.metadata
+        )
 
     async def _query_entries(
         self,
@@ -266,8 +290,42 @@ class MemorySubstrate:
         limit: int
     ) -> List[MemoryEntry]:
         """Query entries from PostgreSQL."""
-        # Implementation uses SQLAlchemy
-        return []
+        memory_type = filters.get("memory_type")
+        tenant_id = filters.get("tenant_id")
+        agent_id = filters.get("agent_id")
+
+        if memory_type == MemoryType.EPISODIC.value:
+            rows = await self._db.query_episodic(
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+                limit=limit
+            )
+        elif memory_type == MemoryType.PROCEDURAL.value:
+            rows = await self._db.query_procedural(
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+                limit=limit
+            )
+        else:
+            rows = []
+
+        # Convert rows to MemoryEntry objects
+        entries = []
+        for row in rows:
+            entry = MemoryEntry(
+                id=row["id"],
+                memory_type=MemoryType(memory_type),
+                content=row.get("content") or row.get("pattern"),
+                metadata=row.get("metadata", {}),
+                tenant_id=row["tenant_id"],
+                agent_id=row["agent_id"],
+                created_at=row.get("created_at", datetime.utcnow())
+            )
+            if memory_type == MemoryType.PROCEDURAL.value:
+                entry.metadata["success_rate"] = row.get("success_rate", 0.0)
+            entries.append(entry)
+
+        return entries
 
     async def _vector_search(
         self,
@@ -277,9 +335,45 @@ class MemorySubstrate:
         threshold: float
     ) -> List[MemoryEntry]:
         """Vector similarity search using pgvector."""
-        # Implementation uses pgvector
-        return []
+        rows = await self._db.vector_search(
+            embedding=query_embedding,
+            tenant_id=tenant_id,
+            limit=limit,
+            threshold=threshold
+        )
+
+        # Convert rows to MemoryEntry objects
+        entries = []
+        for row in rows:
+            entry = MemoryEntry(
+                id=row["id"],
+                memory_type=MemoryType.SEMANTIC,
+                content=row["content"],
+                metadata=row.get("metadata", {}),
+                tenant_id=row["tenant_id"],
+                agent_id=row["agent_id"],
+                created_at=row.get("created_at", datetime.utcnow())
+            )
+            entry.metadata["similarity"] = row.get("similarity", 0.0)
+            entries.append(entry)
+
+        return entries
 
     async def _delete_entry(self, entry_id: str):
         """Delete entry from storage and index."""
-        pass
+        # Delete from PostgreSQL
+        await self._db.execute(
+            "DELETE FROM memory.episodic WHERE id = $1",
+            entry_id
+        )
+        await self._db.execute(
+            "DELETE FROM memory.semantic WHERE id = $1",
+            entry_id
+        )
+        await self._db.execute(
+            "DELETE FROM memory.procedural WHERE id = $1",
+            entry_id
+        )
+
+        # Note: ANF files are kept for audit purposes
+        logger.debug("memory_entry_deleted_from_index", entry_id=entry_id)
