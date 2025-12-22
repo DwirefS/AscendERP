@@ -4022,7 +4022,512 @@ resource "azurerm_role_assignment" "agents_openai" {
 
 ---
 
-## 17. Conclusion
+## 17. Dynamic Model Routing for Agent Types
+
+### 17.1 Why Specialized Model Routing
+
+Not all AI models are equally suited for all tasks. **Domain-specific optimization** significantly improves both performance and cost efficiency:
+
+| Task Type | Best Model | Why | Cost Difference |
+|-----------|-----------|-----|----------------|
+| **Code Generation** | Claude Opus/Sonnet | Superior code understanding, fewer hallucinations | - |
+| **Financial Analysis** | GPT-4 Turbo | Strong reasoning, numerical accuracy | - |
+| **Fast Responses** | Claude Haiku / GPT-3.5 | Sub-second latency | 5-20x cheaper |
+| **Function Calling** | FunctionGemma | Specialized for tool schemas | 100x cheaper |
+| **Long Context** | Gemini 1.5 Pro | 2M token context window | For large documents |
+| **Multimodal** | GPT-4 Vision / Gemini | Image + text understanding | Vision tasks only |
+
+**Without intelligent routing:**
+- Finance agents waste money on expensive models for simple tasks
+- Code agents get poor results from general-purpose models
+- Real-time chat suffers from slow, expensive models
+
+**With intelligent routing:**
+- Each agent uses optimal model for its task type
+- 5-20x cost reduction for routine tasks
+- Better quality from domain-matched models
+- Automatic fallbacks ensure reliability
+
+### 17.2 Model Router Architecture
+
+**Dynamic Routing Strategy:**
+
+```
+┌────────────────────────────────────────────────────────┐
+│                    Routing Request                     │
+│  - Agent type (finance, code, medical, etc.)          │
+│  - Task description                                    │
+│  - Required capabilities                              │
+│  - Cost/latency constraints                           │
+└────────────────────────────────────────────────────────┘
+                         ↓
+┌────────────────────────────────────────────────────────┐
+│                    Model Router                        │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  1. Check custom routers (domain-specific rules)      │
+│  2. Apply agent-type routing rules                    │
+│  3. Filter by capabilities                            │
+│  4. Filter by constraints (cost, latency, context)    │
+│  5. Score remaining models                            │
+│  6. Select best model                                 │
+│  7. Identify fallback options                         │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+                         ↓
+┌────────────────────────────────────────────────────────┐
+│                  Routing Decision                      │
+│  - Primary model: Claude Opus 4                       │
+│  - Reason: code.generation + high quality required    │
+│  - Est. cost: $0.000375                               │
+│  - Est. latency: 2500ms                               │
+│  - Fallbacks: [Claude Sonnet, GPT-4 Turbo]           │
+│  - Confidence: 0.95                                    │
+└────────────────────────────────────────────────────────┘
+```
+
+**Scoring Algorithm:**
+
+```python
+# Model score (0-100, higher is better)
+score = 0
+
+# 1. Capability match (40 points)
+if model has all required capabilities:
+    score += 40
+
+# 2. Cost efficiency (30 points)
+# Cheaper models score higher
+cost_score = 30 * (1 - min(cost, max_cost) / max_cost)
+score += cost_score
+
+# 3. Latency (20 points)
+# Fast models score higher if speed preferred
+latency_score = 20 * (1 - latency / max_latency)
+score += latency_score
+
+# 4. Success rate (10 points)
+# Historical performance
+score += success_rate * 10
+
+# 5. Load balancing (bonus/penalty)
+if model.load > 0.8:
+    score -= 10  # Avoid overloaded models
+elif model.load < 0.3:
+    score += 5   # Prefer underutilized models
+```
+
+### 17.3 Supported Models and Costs
+
+**Production Model Registry:**
+
+| Model | Provider | Context | Cost (Input) | Cost (Output) | Best For |
+|-------|----------|---------|--------------|---------------|----------|
+| **GPT-4 Turbo** | Azure OpenAI | 128K | $10/1M | $30/1M | Complex reasoning, finance |
+| **GPT-3.5 Turbo** | Azure OpenAI | 16K | $0.50/1M | $1.50/1M | Simple tasks, chat |
+| **Claude Opus 4** | Anthropic | 200K | $15/1M | $75/1M | Code generation, analysis |
+| **Claude Sonnet 4** | Anthropic | 200K | $3/1M | $15/1M | Balanced quality/cost |
+| **Claude Haiku 4** | Anthropic | 200K | $0.25/1M | $1.25/1M | Fast responses, low cost |
+| **Gemini 1.5 Pro** | Google | 2M | $3.50/1M | $10.50/1M | Ultra-long context |
+| **FunctionGemma 7B** | Google | 8K | $0.10/1M | $0.30/1M | Function calling |
+
+**Cost Comparison (1K input + 500 output tokens):**
+
+```
+Claude Haiku:    $0.000001  (cheapest)
+GPT-3.5 Turbo:   $0.002
+Claude Sonnet:   $0.011
+Gemini Pro:      $0.009
+GPT-4 Turbo:     $0.025
+Claude Opus:     $0.053  (highest quality)
+
+Cost range: 53x difference between cheapest and most expensive
+```
+
+**Routing Impact:**
+- Routing simple tasks to Haiku vs Opus: **53x cost savings**
+- Using GPT-3.5 for chat vs GPT-4: **12.5x cost savings**
+- Function calling via FunctionGemma vs GPT-4: **100x cost savings**
+
+### 17.4 Routing Rules by Agent Type
+
+**Pre-configured Routing Rules:**
+
+```python
+# Finance agents → GPT-4 Turbo (best numerical reasoning)
+router.add_routing_rule(
+    agent_type="finance.reconciliation",
+    preferred_models=["gpt-4-turbo-2024-04-09"]
+)
+
+# Code agents → Claude Opus/Sonnet (best code quality)
+router.add_routing_rule(
+    agent_type="code.generation",
+    preferred_models=["claude-opus-4", "claude-sonnet-4"]
+)
+
+# Integration agents → FunctionGemma (optimized for tools)
+router.add_routing_rule(
+    agent_type="integration.builder",
+    preferred_models=["functiongemma-7b", "claude-sonnet-4"]
+)
+
+# Chat agents → Fast, cheap models
+router.add_routing_rule(
+    agent_type="chat.assistant",
+    preferred_models=["claude-haiku-4", "gpt-35-turbo-0125"]
+)
+
+# Medical agents → GPT-4 Turbo (safety-critical)
+router.add_routing_rule(
+    agent_type="medical.diagnosis",
+    preferred_models=["gpt-4-turbo-2024-04-09"]
+)
+
+# Long document analysis → Gemini Pro (2M context)
+router.add_routing_rule(
+    agent_type="document.analysis",
+    preferred_models=["gemini-1.5-pro"]
+)
+```
+
+**Capability-Based Routing:**
+
+```python
+# Scenario: Agent needs function calling + code generation
+request = RoutingRequest(
+    required_capabilities=[
+        ModelCapability.FUNCTION_CALLING,
+        ModelCapability.CODE_GENERATION
+    ]
+)
+
+# Router filters:
+# ✓ Claude Opus (has both capabilities)
+# ✓ Claude Sonnet (has both capabilities)
+# ✓ FunctionGemma (has function calling, limited code gen)
+# ✗ Gemini Pro (no explicit function calling support)
+
+# Scores models, selects best match
+# → Likely: Claude Sonnet (balanced quality/cost)
+```
+
+### 17.5 Cost Optimization Strategies
+
+**Strategy 1: Tiered Routing by Task Complexity**
+
+```python
+# Simple task → Cheap model
+if task.complexity == "simple":
+    # Use Claude Haiku ($0.25/1M input)
+    # 20x cheaper than Claude Opus
+
+# Medium task → Balanced model
+elif task.complexity == "medium":
+    # Use Claude Sonnet ($3/1M input)
+    # 5x cheaper than Opus, 90% quality
+
+# Complex task → Best model
+else:
+    # Use Claude Opus ($15/1M input)
+    # Highest quality for critical tasks
+```
+
+**Strategy 2: Cost Constraints**
+
+```python
+# Enforce cost budget per request
+request = RoutingRequest(
+    max_cost_per_request=0.01  # $0.01 per request
+)
+
+# Router automatically selects cheaper models:
+# - Claude Haiku: $0.0006 ✓
+# - GPT-3.5 Turbo: $0.002 ✓
+# - Claude Sonnet: $0.011 ✗ (exceeds budget)
+# - GPT-4 Turbo: $0.025 ✗ (exceeds budget)
+```
+
+**Strategy 3: Batch Similar Tasks**
+
+```python
+# Batch 100 simple tasks
+# Option A: Claude Haiku
+#   Cost: 100 × $0.0006 = $0.06
+
+# Option B: GPT-4 Turbo
+#   Cost: 100 × $0.025 = $2.50
+
+# Savings: $2.44 (41x cheaper with Haiku)
+```
+
+**Strategy 4: Performance-Based Routing**
+
+```python
+# Track actual performance
+await router.record_result(
+    model_id="claude-haiku-4",
+    success=True,
+    actual_cost=0.0006,
+    actual_latency_ms=800
+)
+
+# Router learns:
+# - Haiku has 98% success rate for simple tasks
+# - Average latency: 800ms (acceptable)
+# → Continue routing simple tasks to Haiku
+```
+
+### 17.6 Custom Routing Logic
+
+**Domain-Specific Routers:**
+
+```python
+# Medical domain router (safety-critical)
+def medical_router(request: RoutingRequest) -> str:
+    if "medical" in request.agent_type:
+        # Always use GPT-4 Turbo for medical tasks
+        # Safety > Cost
+        return "gpt-4-turbo-2024-04-09"
+    return None
+
+router.add_custom_router(medical_router)
+
+# Legal domain router
+def legal_router(request: RoutingRequest) -> str:
+    if "legal" in request.agent_type:
+        # Use Claude Opus for legal analysis
+        # Best at nuanced reasoning
+        return "claude-opus-4"
+    return None
+
+router.add_custom_router(legal_router)
+
+# Time-sensitive router
+def realtime_router(request: RoutingRequest) -> str:
+    if request.max_latency_ms and request.max_latency_ms < 1000:
+        # Must respond in <1s
+        return "claude-haiku-4"  # 800ms average
+    return None
+
+router.add_custom_router(realtime_router)
+```
+
+**Business Logic Routers:**
+
+```python
+# Production hours router (cost optimization)
+def business_hours_router(request: RoutingRequest) -> str:
+    from datetime import datetime
+    hour = datetime.now().hour
+
+    if 9 <= hour <= 17:  # Business hours
+        # Use cheaper models (high volume)
+        if request.task_type == "chat":
+            return "claude-haiku-4"
+    else:  # Off hours
+        # Use premium models (lower volume, better quality)
+        if request.task_type == "chat":
+            return "claude-sonnet-4"
+
+    return None
+
+router.add_custom_router(business_hours_router)
+```
+
+### 17.7 Fallback and Reliability
+
+**Automatic Fallbacks:**
+
+```python
+# Primary model selected
+decision = await router.route(request)
+primary = decision.model  # Claude Opus
+
+# Fallbacks identified automatically
+fallbacks = decision.fallback_models
+# [Claude Sonnet, GPT-4 Turbo, Claude Haiku]
+
+# Execution with fallback:
+try:
+    result = await execute_with_model(primary)
+except ModelUnavailableError:
+    # Try first fallback
+    result = await execute_with_model(fallbacks[0])
+except Exception:
+    # Try second fallback
+    result = await execute_with_model(fallbacks[1])
+```
+
+**Load Balancing:**
+
+```python
+# Multiple deployments of same model
+models = [
+    "gpt-4-turbo-deployment-1",  # Load: 85%
+    "gpt-4-turbo-deployment-2",  # Load: 45%
+    "gpt-4-turbo-deployment-3",  # Load: 20%
+]
+
+# Router selects deployment-3 (lowest load)
+# Distributes traffic evenly across deployments
+```
+
+### 17.8 Production Deployment
+
+**Multi-Provider Configuration:**
+
+```python
+# Azure OpenAI models
+router.register_model(ModelConfig(
+    model_id="gpt-4-turbo-2024-04-09",
+    provider=ModelProvider.AZURE_OPENAI,
+    endpoint="https://ants-openai.openai.azure.com",
+    deployment_name="gpt-4-turbo",
+    api_version="2024-02-15-preview",
+    # ... capabilities, costs, etc.
+))
+
+# Anthropic Claude models
+router.register_model(ModelConfig(
+    model_id="claude-opus-4",
+    provider=ModelProvider.ANTHROPIC,
+    endpoint="https://api.anthropic.com/v1/messages",
+    # ... capabilities, costs, etc.
+))
+
+# Google Gemini models
+router.register_model(ModelConfig(
+    model_id="gemini-1.5-pro",
+    provider=ModelProvider.GOOGLE,
+    endpoint="https://generativelanguage.googleapis.com/v1beta",
+    # ... capabilities, costs, etc.
+))
+```
+
+**Environment-Specific Routing:**
+
+```python
+# Development: Use cheap models
+if environment == "dev":
+    default_model = "claude-haiku-4"
+
+# Staging: Use balanced models
+elif environment == "staging":
+    default_model = "claude-sonnet-4"
+
+# Production: Use optimal routing
+else:
+    # Full routing logic with all models
+    pass
+```
+
+### 17.9 Cost Impact Analysis
+
+**Real-World Scenario: 1,000 Agents, Mixed Workload**
+
+```
+Baseline (all agents use GPT-4 Turbo):
+- 1,000 agents × 100 requests/day = 100K requests/day
+- Average request: 2K input + 500 output tokens
+- Cost per request: (2000/1M × $10) + (500/1M × $30) = $0.035
+- Daily cost: 100K × $0.035 = $3,500
+- Monthly cost: $105,000
+
+With intelligent routing:
+- 60% simple tasks → Claude Haiku ($0.0006/request)
+- 30% medium tasks → Claude Sonnet ($0.011/request)
+- 10% complex tasks → GPT-4 Turbo ($0.035/request)
+
+- Daily cost:
+  - Simple: 60K × $0.0006 = $36
+  - Medium: 30K × $0.011 = $330
+  - Complex: 10K × $0.035 = $350
+  - Total: $716
+
+Monthly cost: $21,480
+Savings: $105,000 - $21,480 = $83,520/month (79% reduction!)
+Annual savings: $1,002,240
+```
+
+**Cost Reduction Strategies:**
+
+1. **Task Classification:**
+   - 60% of tasks are simple → 58x cheaper with Haiku
+   - 30% are medium complexity → 3x cheaper with Sonnet
+   - 10% truly need premium models
+
+2. **Provider Arbitrage:**
+   - Azure OpenAI vs Anthropic vs Google
+   - Same capability, different pricing
+   - Route to cheapest available
+
+3. **Caching + Routing:**
+   - Cache common responses (50% hit rate)
+   - Smart routing for cache misses
+   - Combined savings: 85-90%
+
+### 17.10 Benefits Summary
+
+**Intelligent Model Routing enables:**
+
+1. **Cost Optimization**
+   - 79% cost reduction for mixed workloads
+   - $1M+ annual savings for 1,000 agents
+   - Automatic selection of cheapest suitable model
+
+2. **Performance Optimization**
+   - Domain-matched models (finance → GPT-4, code → Claude)
+   - Latency-optimized routing (<1s for chat)
+   - Load balancing across deployments
+
+3. **Quality Assurance**
+   - Safety-critical tasks always use best models
+   - Automatic fallbacks ensure reliability
+   - Performance tracking adapts routing over time
+
+4. **Flexibility**
+   - Easy to add new models (Azure OpenAI, Anthropic, Google, custom)
+   - Custom routing logic for specialized domains
+   - A/B testing different models
+
+5. **Operational Efficiency**
+   - Centralized model management
+   - Real-time cost tracking
+   - Automatic capability matching
+
+### 17.11 Build Plan Updates
+
+**Phase 12: Dynamic Model Routing (Week 8)** ✅ COMPLETED
+- [✅] ModelRouter implementation (630+ lines)
+  - Multi-provider support (Azure OpenAI, Anthropic, Google)
+  - Capability-based routing
+  - Cost and latency optimization
+  - Custom routing logic
+  - Performance tracking and adaptation
+  - Automatic fallback selection
+  - Load balancing
+- [✅] Default model configurations
+  - GPT-4 Turbo, GPT-3.5 Turbo
+  - Claude Opus, Sonnet, Haiku
+  - Gemini Pro, FunctionGemma
+- [✅] Comprehensive examples (580+ lines)
+  - Basic routing by agent type
+  - Capability-based routing
+  - Cost optimization
+  - Latency optimization
+  - Custom routing logic
+  - Performance tracking
+  - Fallback demonstrations
+
+**Components Delivered:**
+- ModelRouter: 630 lines
+- Examples: 580 lines
+- **Total**: 1,210 lines of intelligent routing infrastructure
+
+---
+
+## 18. Conclusion
 
 The addition of comprehensive multi-agent orchestration and swarm intelligence patterns is **critical** for ANTS to fulfill its vision of enterprise-scale AI agent deployment. The **Meta-Agent Framework** represents a paradigm shift from:
 
@@ -4046,8 +4551,8 @@ These additions collectively enable:
 
 ---
 
-**Document Version:** 4.0
-**Last Updated:** December 22, 2025 (Major Update - Semantic Memory with Embeddings)
+**Document Version:** 5.0
+**Last Updated:** December 22, 2025 (Major Update - Dynamic Model Routing)
 **Status:** Architecture additions identified and implementation in progress
-**New Sections:** 16 (Meta-Agent Framework + Swarm Infrastructure + Semantic Memory)
-**Lines Added:** 2,100+
+**New Sections:** 17 (Meta-Agent Framework + Swarm Infrastructure + Semantic Memory + Model Routing)
+**Lines Added:** 2,600+
