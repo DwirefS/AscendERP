@@ -943,7 +943,523 @@ POST /v1/agents/deploy
 
 ---
 
-## 11. Conclusion
+## 11. Microsoft Agent Lightning Integration for Self-Improvement
+
+### 11.1 Overview
+
+Microsoft Agent Lightning (https://github.com/microsoft/agent-lightning) is a framework for enabling AI agents to learn and improve from experience through reinforcement learning and feedback loops. Integrating Agent Lightning into ANTS enables agents to become progressively more effective over time.
+
+### 11.2 Agent Lightning Core Capabilities
+
+**What Agent Lightning Provides:**
+- **Policy Gradient Learning:** Agents learn optimal strategies through trial and error
+- **Experience Replay:** Agents review and learn from past execution traces
+- **Multi-Armed Bandit Optimization:** Automatically select best tools/approaches
+- **Feedback Integration:** Learn from human corrections and approvals
+- **Performance Tracking:** Measure improvement metrics over time
+
+### 11.3 Integration Architecture
+
+```python
+from agent_lightning import LightningAgent, ExperienceBuffer, PolicyOptimizer
+
+class ANTSLightningIntegration:
+    """
+    Integrate Microsoft Agent Lightning for continuous agent improvement.
+    """
+
+    def __init__(self, agent_id: str):
+        self.agent_id = agent_id
+        self.experience_buffer = ExperienceBuffer(max_size=10000)
+        self.policy_optimizer = PolicyOptimizer(learning_rate=0.001)
+
+    async def record_episode(
+        self,
+        state: Dict[str, Any],
+        action: Dict[str, Any],
+        reward: float,
+        next_state: Dict[str, Any]
+    ):
+        """
+        Record an agent execution episode for learning.
+
+        Reward calculation:
+        - +1.0: Task completed successfully, human approved
+        - +0.5: Task completed, passed verification
+        - 0.0: Task completed but required human correction
+        - -0.5: Task failed, had to retry
+        - -1.0: Task failed, human intervened
+        """
+        episode = {
+            "agent_id": self.agent_id,
+            "state": state,
+            "action": action,
+            "reward": reward,
+            "next_state": next_state,
+            "timestamp": datetime.utcnow()
+        }
+
+        # Store in experience buffer
+        self.experience_buffer.add(episode)
+
+        # Store to ANF for persistent learning
+        await self._persist_to_anf(episode)
+
+    async def train_policy(self, batch_size: int = 32):
+        """
+        Train agent policy from experience buffer.
+        Uses policy gradient methods to improve decision-making.
+        """
+        if len(self.experience_buffer) < batch_size:
+            return  # Not enough experience yet
+
+        # Sample batch from experience
+        batch = self.experience_buffer.sample(batch_size)
+
+        # Optimize policy
+        policy_update = await self.policy_optimizer.optimize(batch)
+
+        # Update agent's decision policy
+        await self._update_agent_policy(policy_update)
+
+        logger.info(
+            "policy_trained",
+            agent_id=self.agent_id,
+            batch_size=batch_size,
+            improvement=policy_update.improvement_score
+        )
+
+    async def _persist_to_anf(self, episode: Dict[str, Any]):
+        """Persist learning episodes to ANF for durability."""
+        path = f"/mnt/anf/learning/{self.agent_id}/episodes/"
+        # Write episode to ANF
+```
+
+### 11.4 Self-Improvement Patterns
+
+#### A. Tool Selection Optimization
+
+```python
+class ToolSelectionLearner:
+    """
+    Learn which tools work best for specific tasks.
+    Uses multi-armed bandit algorithm.
+    """
+
+    def __init__(self, agent_type: str):
+        self.agent_type = agent_type
+        self.tool_scores = {}  # tool_name -> (success_count, total_count)
+
+    async def select_tool(self, context: Dict[str, Any]) -> str:
+        """
+        Select best tool using epsilon-greedy strategy.
+        90% exploit (use best tool), 10% explore (try alternatives)
+        """
+        epsilon = 0.1
+
+        if random.random() < epsilon:
+            # Explore: try random tool
+            return random.choice(available_tools)
+        else:
+            # Exploit: use tool with highest success rate
+            return max(
+                self.tool_scores.items(),
+                key=lambda x: x[1][0] / max(x[1][1], 1)
+            )[0]
+
+    async def record_result(self, tool_name: str, success: bool):
+        """Update tool performance statistics."""
+        if tool_name not in self.tool_scores:
+            self.tool_scores[tool_name] = (0, 0)
+
+        successes, attempts = self.tool_scores[tool_name]
+        self.tool_scores[tool_name] = (
+            successes + (1 if success else 0),
+            attempts + 1
+        )
+```
+
+#### B. Prompt Optimization
+
+```python
+class PromptOptimizer:
+    """
+    Learn optimal prompts for different task types.
+    Tracks which prompt variations yield best results.
+    """
+
+    async def optimize_prompt(
+        self,
+        base_prompt: str,
+        task_type: str,
+        historical_performance: List[float]
+    ) -> str:
+        """
+        Generate optimized prompt based on past performance.
+        Uses Agent Lightning's prompt evolution capabilities.
+        """
+        # Analyze what worked well
+        best_variants = self._get_top_performing_variants(task_type)
+
+        # Generate improved prompt
+        optimized = await self._evolve_prompt(base_prompt, best_variants)
+
+        return optimized
+```
+
+#### C. Workflow Optimization
+
+```python
+class WorkflowLearner:
+    """
+    Learn optimal execution sequences for complex tasks.
+    """
+
+    async def learn_optimal_sequence(
+        self,
+        task_type: str,
+        attempted_sequences: List[List[str]],
+        outcomes: List[float]
+    ):
+        """
+        Identify best sequence of steps for a task type.
+        Stores as procedural memory for future use.
+        """
+        # Find highest-performing sequence
+        best_idx = outcomes.index(max(outcomes))
+        best_sequence = attempted_sequences[best_idx]
+
+        # Store to procedural memory
+        await self.memory.store_procedural(
+            pattern={
+                "task_type": task_type,
+                "sequence": best_sequence,
+                "optimization_source": "agent_lightning"
+            },
+            success_rate=outcomes[best_idx],
+            agent_id=self.agent_id,
+            tenant_id=self.tenant_id
+        )
+```
+
+### 11.5 Human Feedback Integration
+
+```python
+class HumanFeedbackLoop:
+    """
+    Incorporate human feedback into agent learning.
+    """
+
+    async def process_human_correction(
+        self,
+        trace_id: str,
+        agent_action: Dict[str, Any],
+        human_correction: Dict[str, Any],
+        explanation: Optional[str]
+    ):
+        """
+        Learn from human corrections.
+        Negative reward for incorrect action, positive for correction.
+        """
+        # Record the incorrect action with negative reward
+        await self.lightning.record_episode(
+            state=agent_action["state"],
+            action=agent_action["action"],
+            reward=-0.5,  # Penalty for being corrected
+            next_state=human_correction["state"]
+        )
+
+        # Record the correct action with positive reward
+        await self.lightning.record_episode(
+            state=agent_action["state"],
+            action=human_correction["action"],
+            reward=1.0,  # Reward for correct approach
+            next_state=human_correction["state"]
+        )
+
+        # Store explanation for future reference
+        if explanation:
+            await self.memory.store_semantic(
+                content=f"Correction: {explanation}",
+                agent_id=self.agent_id,
+                tenant_id=self.tenant_id
+            )
+```
+
+### 11.6 Continuous Improvement Metrics
+
+**Track Agent Improvement Over Time:**
+
+```python
+class ImprovementMetrics:
+    """
+    Track how agents improve over time.
+    """
+
+    metrics = {
+        "task_success_rate_trend": [],  # Weekly success rate
+        "avg_tokens_per_task_trend": [], # Efficiency improvement
+        "human_intervention_rate_trend": [],  # Autonomy improvement
+        "policy_confidence_trend": [],  # Decision quality
+        "novel_solutions_discovered": 0  # Innovation metric
+    }
+
+    def calculate_improvement_score(self) -> float:
+        """
+        Overall improvement score (0.0 to 1.0).
+        Compares current performance to baseline (first week).
+        """
+        baseline_success_rate = self.metrics["task_success_rate_trend"][0]
+        current_success_rate = self.metrics["task_success_rate_trend"][-1]
+
+        return (current_success_rate - baseline_success_rate) / baseline_success_rate
+```
+
+---
+
+## 12. Azure NetApp Files Storage Architecture
+
+### 12.1 Strategic Storage Placement
+
+Azure NetApp Files (ANF) provides high-performance, enterprise-grade NFS storage optimized for AI/ML workloads. ANTS leverages ANF throughout the platform for mission-critical data storage.
+
+### 12.2 ANF Usage Across ANTS Components
+
+**Memory Substrate Storage:**
+
+```
+/mnt/anf/memory/
+├── episodic/           # Execution traces (Ultra tier - frequent access)
+│   ├── {tenant_id}/
+│   │   └── {agent_id}/
+│   │       └── {trace_id}.json
+├── semantic/           # Knowledge embeddings (Premium tier)
+│   ├── {tenant_id}/
+│   │   └── {collection}/
+│   │       └── {entry_id}.json
+├── procedural/         # Learned patterns (Premium tier)
+│   ├── {tenant_id}/
+│   │   └── {agent_type}/
+│   │       └── {pattern_id}.json
+└── models/             # Model weights/adapters (Standard tier)
+    └── {model_name}/
+        ├── base/
+        └── fine_tuned/
+```
+
+**Agent Lightning Learning Storage:**
+
+```
+/mnt/anf/learning/
+├── experience_buffers/  # RL experience replay (Ultra tier)
+│   └── {agent_id}/
+│       └── episodes/
+│           └── {episode_id}.json
+├── policy_checkpoints/  # Policy snapshots (Premium tier)
+│   └── {agent_id}/
+│       └── {version}/
+└── optimization_logs/   # Training metrics (Standard tier)
+    └── {agent_id}/
+        └── metrics.jsonl
+```
+
+**Audit & Compliance (Immutable Storage):**
+
+```
+/mnt/anf/audit/
+├── receipts/            # Immutable audit receipts (Premium tier)
+│   ├── {tenant_id}/
+│   │   └── {date}/
+│   │       └── {receipt_id}.json
+├── traces/              # Full execution traces (Standard tier)
+└── compliance_reports/  # Generated reports (Standard tier)
+```
+
+**Data Lakehouse Storage:**
+
+```
+/mnt/anf/lakehouse/
+├── bronze/              # Raw ingested data (Standard tier)
+│   ├── erp/
+│   ├── crm/
+│   └── iot/
+├── silver/              # Cleaned, validated data (Premium tier)
+│   ├── transactions/
+│   ├── customers/
+│   └── inventory/
+└── gold/                # Aggregated, business-ready (Premium tier)
+    ├── finance_kpis/
+    ├── sales_metrics/
+    └── operational_dashboards/
+```
+
+### 12.3 ANF Performance Tiers for ANTS
+
+**Tier Selection Strategy:**
+
+| Data Type | ANF Tier | Throughput | Latency | Justification |
+|-----------|----------|------------|---------|---------------|
+| **Episodic Memory (Hot)** | Ultra | Up to 4.5 GiB/s | <1ms | Frequent reads during agent retrieval phase |
+| **Semantic Memory (Embeddings)** | Premium | Up to 450 MiB/s | <2ms | Vector search requires fast random access |
+| **Procedural Memory (Patterns)** | Premium | Up to 450 MiB/s | <2ms | Pattern matching during reasoning phase |
+| **Model Checkpoints** | Standard | Up to 150 MiB/s | <5ms | Loaded once at agent startup |
+| **RL Experience Buffer** | Ultra | Up to 4.5 GiB/s | <1ms | High-frequency writes during learning |
+| **Policy Checkpoints** | Premium | Up to 450 MiB/s | <2ms | Periodic saves, fast restore needed |
+| **Audit Receipts** | Premium | Up to 450 MiB/s | <2ms | Compliance requires fast writes |
+| **Bronze Data Lake** | Standard | Up to 150 MiB/s | <5ms | Batch ingestion, infrequent access |
+| **Silver/Gold Data Lake** | Premium | Up to 450 MiB/s | <2ms | Agent queries for analytics |
+
+### 12.4 ANF Snapshots for Agent Checkpointing
+
+```python
+class ANFSnapshotManager:
+    """
+    Manage ANF snapshots for agent state checkpointing.
+    """
+
+    async def checkpoint_agent_state(self, agent_id: str) -> str:
+        """
+        Create ANF snapshot of agent's memory for instant recovery.
+        """
+        snapshot_name = f"agent-{agent_id}-{datetime.utcnow().isoformat()}"
+
+        # Create snapshot via Azure NetApp Files API
+        snapshot = await self.anf_client.create_snapshot(
+            resource_group=self.config.resource_group,
+            account_name=self.config.anf_account,
+            pool_name="memory-pool",
+            volume_name="episodic-memory",
+            snapshot_name=snapshot_name
+        )
+
+        logger.info(
+            "agent_checkpointed_to_anf",
+            agent_id=agent_id,
+            snapshot_id=snapshot.id
+        )
+
+        return snapshot.id
+
+    async def restore_agent_state(self, snapshot_id: str) -> str:
+        """
+        Restore agent state from ANF snapshot.
+        Instant recovery without data copy.
+        """
+        # Create new volume from snapshot
+        restored_volume = await self.anf_client.restore_from_snapshot(
+            snapshot_id=snapshot_id
+        )
+
+        return restored_volume.mount_path
+```
+
+### 12.5 ANF Cross-Region Replication for DR
+
+```terraform
+# Terraform configuration for ANF cross-region replication
+resource "azurerm_netapp_volume" "episodic_memory_primary" {
+  name                = "episodic-memory-primary"
+  location            = "East US"
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.ultra.name
+  service_level       = "Ultra"
+
+  data_protection {
+    replication {
+      endpoint_type             = "src"
+      remote_volume_location    = "West US 2"
+      remote_volume_resource_id = azurerm_netapp_volume.episodic_memory_replica.id
+      replication_frequency     = "10minutes"
+    }
+  }
+}
+
+resource "azurerm_netapp_volume" "episodic_memory_replica" {
+  name                = "episodic-memory-replica"
+  location            = "West US 2"
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants_dr.name
+  pool_name           = azurerm_netapp_pool.ultra_dr.name
+  service_level       = "Ultra"
+
+  data_protection {
+    replication {
+      endpoint_type             = "dst"
+      remote_volume_location    = "East US"
+      remote_volume_resource_id = azurerm_netapp_volume.episodic_memory_primary.id
+      replication_frequency     = "10minutes"
+    }
+  }
+}
+```
+
+### 12.6 Cost Optimization with ANF
+
+**Intelligent Tiering Strategy:**
+
+```python
+class ANFTieringPolicy:
+    """
+    Automatically tier data between ANF performance levels
+    based on access patterns.
+    """
+
+    async def evaluate_tiering(self, volume_path: str):
+        """
+        Move cold data from Ultra/Premium to Standard tier.
+        """
+        # Analyze access patterns
+        access_stats = await self._get_access_stats(volume_path)
+
+        # Tier old episodic memory to Standard
+        if access_stats.last_access > timedelta(days=30):
+            await self._move_to_standard_tier(volume_path)
+
+            logger.info(
+                "data_tiered_to_standard",
+                volume=volume_path,
+                cost_savings_pct=70  # Ultra to Standard saves ~70%
+            )
+```
+
+**Example Cost Impact:**
+
+```
+Scenario: 100 TB of memory substrate storage
+
+All Ultra Tier:
+100 TB × $0.000448/GB/hour × 730 hours = $32,704/month
+
+Intelligent Tiering:
+- 10 TB Ultra (hot episodic): $3,270/month
+- 30 TB Premium (semantic/procedural): $6,496/month
+- 60 TB Standard (cold data): $5,840/month
+Total: $15,606/month
+
+Savings: $17,098/month (52% reduction)
+```
+
+### 12.7 Integration with Build Plan
+
+**Updated Infrastructure Phases:**
+
+**Phase 5a: ANF Optimization**
+- [ ] Implement ANF snapshot-based agent checkpointing
+- [ ] Configure cross-region replication for disaster recovery
+- [ ] Set up automated tiering policies
+- [ ] Integrate ANF metrics into swarm observability
+
+**Phase 5b: Agent Lightning Integration**
+- [ ] Integrate Microsoft Agent Lightning framework
+- [ ] Implement experience replay buffer on ANF Ultra tier
+- [ ] Build policy optimization training loops
+- [ ] Create human feedback integration
+- [ ] Develop continuous improvement metrics dashboard
+
+---
+
+## 13. Conclusion
 
 The addition of comprehensive multi-agent orchestration and swarm intelligence patterns is **critical** for ANTS to fulfill its vision of enterprise-scale AI agent deployment. These additions:
 
