@@ -5,6 +5,7 @@
 **A Technical White Paper for CIOs, CTOs, and Enterprise Architects**
 
 **Author:** Dwiref Sharma
+**Contact:** [LinkedIn.com/in/DwirefS](https://www.linkedin.com/in/DwirefS)
 **Date:** December 2025
 **Version:** 1.0
 
