@@ -1131,7 +1131,7 @@ We welcome contributions from the community! This project is exploring the cutti
 
 ## 🗺️ Roadmap
 
-### Current Focus (Phase 6-12) ✅
+### Completed (Phase 1-15) ✅
 - [x] Meta-Agent Framework (IntegrationBuilderAgent, ToolDiscoveryAgent)
 - [x] Dynamic Tool Registry (sandboxed execution)
 - [x] Pheromone-based Swarm Coordination (Azure Event Hub)
@@ -1139,31 +1139,64 @@ We welcome contributions from the community! This project is exploring the cutti
 - [x] Intelligent Model Routing (multi-provider)
 - [x] Comprehensive Policy Engine (OPA/Rego)
 - [x] Production antsctl CLI
-
-### In Progress (Phase 13-15)
-- [ ] CodeExecutionAgent (Python/JS/SQL sandbox)
-- [ ] Microcontroller API MCP (physical world control)
-- [ ] Model weight management system
+- [x] CodeExecutionAgent (Python/JS/SQL sandbox)
+- [x] Microcontroller MCP (physical world control)
+- [x] ANF Model Weight Management (snapshots, clones, replication)
+- [x] Edge Deployment (Azure Arc + Stack HCI)
 
 ### Near Term (Q1 2026)
-- [ ] Microsoft Agent Lightning integration
-- [ ] NVIDIA NeMo Guardrails
-- [ ] Advanced observability (distributed tracing)
+- [ ] NVIDIA NeMo Guardrails integration
+  - Topical rails (keep conversations on-topic)
+  - Safety rails (prevent harmful outputs)
+  - Fact-checking rails (validate factual claims)
+- [ ] Advanced observability and monitoring
+  - Distributed tracing (OpenTelemetry end-to-end)
+  - Agent performance dashboards (Grafana)
+  - Anomaly detection for agent behavior
 - [ ] Multi-tenant isolation hardening
-- [ ] Performance optimization (100K+ agents)
+  - Namespace-level separation
+  - Per-tenant policy enforcement
+  - Tenant-specific resource quotas
+- [ ] Performance optimization for 100K+ agents
+  - Horizontal scaling improvements
+  - Agent sleep/wake optimization
+  - Pheromone evaporation strategies
 
 ### Medium Term (Q2-Q3 2026)
-- [ ] Multi-cloud support (AWS, GCP adapters)
+- [ ] Microsoft Agent Lightning integration
+  - Self-improvement feedback loops
+  - Automated agent optimization
+  - Cross-agent learning acceleration
+- [ ] Multi-cloud support
+  - AWS adapter (Bedrock, S3, DynamoDB)
+  - GCP adapter (Vertex AI, Cloud Storage)
+  - Unified abstraction layer
 - [ ] Advanced compliance automation
-- [ ] Agent marketplace (community-contributed agents)
-- [ ] Self-improvement feedback loops
+  - SOC 2 Type II continuous compliance
+  - ISO 27001 automated controls
+  - Industry-specific regulations (HIPAA, PCI-DSS)
+- [ ] Agent marketplace
+  - Community-contributed agents
+  - Agent versioning and certification
+  - One-click deployment from catalog
 
 ### Long Term (2026+)
-- [ ] Quantum-ready architecture
-- [ ] Edge agent deployment
 - [ ] Federated learning across agent swarms
+  - Privacy-preserving model updates
+  - Cross-organization collaboration
+  - Differential privacy guarantees
 - [ ] Autonomous security operations center (SOC)
-- [ ] Full enterprise autonomy (human-in-the-loop → human-on-the-loop)
+  - Zero-touch incident response
+  - Threat hunting automation
+  - Security orchestration at scale
+- [ ] Full enterprise autonomy
+  - Human-in-the-loop → Human-on-the-loop transition
+  - Strategic oversight, tactical automation
+  - Self-healing enterprise systems
+- [ ] Quantum-ready architecture
+  - Post-quantum cryptography
+  - Quantum algorithm integration
+  - Hybrid classical-quantum workflows
 
 ---
 
