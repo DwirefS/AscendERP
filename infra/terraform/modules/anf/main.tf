@@ -151,17 +151,183 @@ resource "azurerm_netapp_volume" "semantic" {
   tags = var.tags
 }
 
-# Volume - Audit Receipts (Standard)
+# Volume - Procedural Memory (Premium)
+resource "azurerm_netapp_volume" "procedural" {
+  name                = "vol-procedural"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.premium.name
+  volume_path         = "procedural"
+  service_level       = "Premium"
+  subnet_id           = var.anf_subnet_id
+  storage_quota_in_gb = 1024
+
+  protocols = ["NFSv4.1"]
+
+  export_policy_rule {
+    rule_index          = 1
+    allowed_clients     = ["0.0.0.0/0"]
+    protocols_enabled   = ["NFSv4.1"]
+    unix_read_write     = true
+    root_access_enabled = true
+  }
+
+  tags = var.tags
+}
+
+# Volume - Agent Lightning Experience Buffer (Ultra)
+resource "azurerm_netapp_volume" "learning_experience" {
+  name                = "vol-learning-exp"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.ultra.name
+  volume_path         = "learning/experience"
+  service_level       = "Ultra"
+  subnet_id           = var.anf_subnet_id
+  storage_quota_in_gb = 1024
+  throughput_in_mibps = 1024
+
+  protocols = ["NFSv4.1"]
+
+  export_policy_rule {
+    rule_index          = 1
+    allowed_clients     = ["0.0.0.0/0"]
+    protocols_enabled   = ["NFSv4.1"]
+    unix_read_write     = true
+    root_access_enabled = true
+  }
+
+  tags = merge(var.tags, {
+    component = "agent_lightning"
+    data_type = "experience_buffer"
+  })
+}
+
+# Volume - Agent Lightning Policy Checkpoints (Premium)
+resource "azurerm_netapp_volume" "learning_policy" {
+  name                = "vol-learning-policy"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.premium.name
+  volume_path         = "learning/policy"
+  service_level       = "Premium"
+  subnet_id           = var.anf_subnet_id
+  storage_quota_in_gb = 512
+
+  protocols = ["NFSv4.1"]
+
+  export_policy_rule {
+    rule_index          = 1
+    allowed_clients     = ["0.0.0.0/0"]
+    protocols_enabled   = ["NFSv4.1"]
+    unix_read_write     = true
+    root_access_enabled = true
+  }
+
+  tags = merge(var.tags, {
+    component = "agent_lightning"
+    data_type = "policy_checkpoints"
+  })
+}
+
+# Volume - Data Lakehouse Bronze (Standard)
+resource "azurerm_netapp_volume" "lakehouse_bronze" {
+  name                = "vol-lakehouse-bronze"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.standard.name
+  volume_path         = "lakehouse/bronze"
+  service_level       = "Standard"
+  subnet_id           = var.anf_subnet_id
+  storage_quota_in_gb = 10240  # 10 TB
+
+  protocols = ["NFSv4.1"]
+
+  export_policy_rule {
+    rule_index          = 1
+    allowed_clients     = ["0.0.0.0/0"]
+    protocols_enabled   = ["NFSv4.1"]
+    unix_read_write     = true
+    root_access_enabled = true
+  }
+
+  tags = merge(var.tags, {
+    component = "data_lakehouse"
+    tier      = "bronze"
+  })
+}
+
+# Volume - Data Lakehouse Silver (Premium)
+resource "azurerm_netapp_volume" "lakehouse_silver" {
+  name                = "vol-lakehouse-silver"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.premium.name
+  volume_path         = "lakehouse/silver"
+  service_level       = "Premium"
+  subnet_id           = var.anf_subnet_id
+  storage_quota_in_gb = 5120  # 5 TB
+
+  protocols = ["NFSv4.1"]
+
+  export_policy_rule {
+    rule_index          = 1
+    allowed_clients     = ["0.0.0.0/0"]
+    protocols_enabled   = ["NFSv4.1"]
+    unix_read_write     = true
+    root_access_enabled = true
+  }
+
+  tags = merge(var.tags, {
+    component = "data_lakehouse"
+    tier      = "silver"
+  })
+}
+
+# Volume - Data Lakehouse Gold (Premium)
+resource "azurerm_netapp_volume" "lakehouse_gold" {
+  name                = "vol-lakehouse-gold"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  account_name        = azurerm_netapp_account.ants.name
+  pool_name           = azurerm_netapp_pool.premium.name
+  volume_path         = "lakehouse/gold"
+  service_level       = "Premium"
+  subnet_id           = var.anf_subnet_id
+  storage_quota_in_gb = 2048  # 2 TB
+
+  protocols = ["NFSv4.1"]
+
+  export_policy_rule {
+    rule_index          = 1
+    allowed_clients     = ["0.0.0.0/0"]
+    protocols_enabled   = ["NFSv4.1"]
+    unix_read_write     = true
+    root_access_enabled = true
+  }
+
+  tags = merge(var.tags, {
+    component = "data_lakehouse"
+    tier      = "gold"
+  })
+}
+
+# Volume - Audit Receipts (Premium for fast writes)
 resource "azurerm_netapp_volume" "receipts" {
   name                = "vol-receipts"
   location            = var.location
   resource_group_name = var.resource_group_name
   account_name        = azurerm_netapp_account.ants.name
-  pool_name           = azurerm_netapp_pool.standard.name
+  pool_name           = azurerm_netapp_pool.premium.name  # Changed to Premium for compliance
   volume_path         = "receipts"
-  service_level       = "Standard"
+  service_level       = "Premium"
   subnet_id           = var.anf_subnet_id
-  storage_quota_in_gb = 8192
+  storage_quota_in_gb = 4096
 
   protocols = ["NFSv4.1"]
 
@@ -173,7 +339,10 @@ resource "azurerm_netapp_volume" "receipts" {
     root_access_enabled = false  # Read-only after write
   }
 
-  tags = var.tags
+  tags = merge(var.tags, {
+    component = "audit"
+    immutable = "true"
+  })
 }
 
 # Snapshot Policy
@@ -212,25 +381,92 @@ output "account_name" {
 
 output "volumes" {
   value = {
+    # Memory Substrate
     models = {
       id         = azurerm_netapp_volume.models.id
       mount_path = azurerm_netapp_volume.models.mount_ip_addresses[0]
       path       = azurerm_netapp_volume.models.volume_path
+      tier       = "ultra"
     }
     episodic = {
       id         = azurerm_netapp_volume.episodic.id
       mount_path = azurerm_netapp_volume.episodic.mount_ip_addresses[0]
       path       = azurerm_netapp_volume.episodic.volume_path
+      tier       = "premium"
     }
     semantic = {
       id         = azurerm_netapp_volume.semantic.id
       mount_path = azurerm_netapp_volume.semantic.mount_ip_addresses[0]
       path       = azurerm_netapp_volume.semantic.volume_path
+      tier       = "premium"
     }
+    procedural = {
+      id         = azurerm_netapp_volume.procedural.id
+      mount_path = azurerm_netapp_volume.procedural.mount_ip_addresses[0]
+      path       = azurerm_netapp_volume.procedural.volume_path
+      tier       = "premium"
+    }
+
+    # Agent Lightning
+    learning_experience = {
+      id         = azurerm_netapp_volume.learning_experience.id
+      mount_path = azurerm_netapp_volume.learning_experience.mount_ip_addresses[0]
+      path       = azurerm_netapp_volume.learning_experience.volume_path
+      tier       = "ultra"
+    }
+    learning_policy = {
+      id         = azurerm_netapp_volume.learning_policy.id
+      mount_path = azurerm_netapp_volume.learning_policy.mount_ip_addresses[0]
+      path       = azurerm_netapp_volume.learning_policy.volume_path
+      tier       = "premium"
+    }
+
+    # Data Lakehouse
+    lakehouse_bronze = {
+      id         = azurerm_netapp_volume.lakehouse_bronze.id
+      mount_path = azurerm_netapp_volume.lakehouse_bronze.mount_ip_addresses[0]
+      path       = azurerm_netapp_volume.lakehouse_bronze.volume_path
+      tier       = "standard"
+    }
+    lakehouse_silver = {
+      id         = azurerm_netapp_volume.lakehouse_silver.id
+      mount_path = azurerm_netapp_volume.lakehouse_silver.mount_ip_addresses[0]
+      path       = azurerm_netapp_volume.lakehouse_silver.volume_path
+      tier       = "premium"
+    }
+    lakehouse_gold = {
+      id         = azurerm_netapp_volume.lakehouse_gold.id
+      mount_path = azurerm_netapp_volume.lakehouse_gold.mount_ip_addresses[0]
+      path       = azurerm_netapp_volume.lakehouse_gold.volume_path
+      tier       = "premium"
+    }
+
+    # Audit
     receipts = {
       id         = azurerm_netapp_volume.receipts.id
       mount_path = azurerm_netapp_volume.receipts.mount_ip_addresses[0]
       path       = azurerm_netapp_volume.receipts.volume_path
+      tier       = "premium"
     }
   }
+}
+
+output "snapshot_policy_id" {
+  value = azurerm_netapp_snapshot_policy.default.id
+}
+
+output "mount_commands" {
+  value = {
+    models              = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.models.mount_ip_addresses[0]}:/${azurerm_netapp_volume.models.volume_path} /mnt/anf/models"
+    episodic            = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.episodic.mount_ip_addresses[0]}:/${azurerm_netapp_volume.episodic.volume_path} /mnt/anf/memory/episodic"
+    semantic            = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.semantic.mount_ip_addresses[0]}:/${azurerm_netapp_volume.semantic.volume_path} /mnt/anf/memory/semantic"
+    procedural          = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.procedural.mount_ip_addresses[0]}:/${azurerm_netapp_volume.procedural.volume_path} /mnt/anf/memory/procedural"
+    learning_experience = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.learning_experience.mount_ip_addresses[0]}:/${azurerm_netapp_volume.learning_experience.volume_path} /mnt/anf/learning/experience"
+    learning_policy     = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.learning_policy.mount_ip_addresses[0]}:/${azurerm_netapp_volume.learning_policy.volume_path} /mnt/anf/learning/policy"
+    lakehouse_bronze    = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.lakehouse_bronze.mount_ip_addresses[0]}:/${azurerm_netapp_volume.lakehouse_bronze.volume_path} /mnt/anf/lakehouse/bronze"
+    lakehouse_silver    = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.lakehouse_silver.mount_ip_addresses[0]}:/${azurerm_netapp_volume.lakehouse_silver.volume_path} /mnt/anf/lakehouse/silver"
+    lakehouse_gold      = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.lakehouse_gold.mount_ip_addresses[0]}:/${azurerm_netapp_volume.lakehouse_gold.volume_path} /mnt/anf/lakehouse/gold"
+    receipts            = "mount -t nfs -o rw,hard,rsize=1048576,wsize=1048576,vers=4.1 ${azurerm_netapp_volume.receipts.mount_ip_addresses[0]}:/${azurerm_netapp_volume.receipts.volume_path} /mnt/anf/audit/receipts"
+  }
+  description = "NFS mount commands for all volumes"
 }
