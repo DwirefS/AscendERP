@@ -124,6 +124,15 @@ credentials.json
 service-account.json
 *.credentials
 
+# Confidential prompts and seed files - PRIVATE
+.prompts_seed.md
+.prompts_*.md
+*_seed.md
+CONFIDENTIAL*
+*.confidential
+.vision/
+seed/
+
 # Environment files
 .env
 .env.*
