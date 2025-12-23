@@ -133,7 +133,7 @@
 - Differentiation matrix (ANTS vs Traditional ERP vs Point AI)
 - Coexistence strategies (Augmentation, Gradual Migration, Greenfield)
 - When to choose ANTS (fit indicators and considerations)
-- Complementary positioning with existing investments (SAP, Salesforce, ServiceNow, Workday, M365)
+- Complementary positioning with existing investments (ERP, CRM, service management, HRMS, M365)
 - Total cost of ownership considerations
 
 **Section 5.6 - Multi-Tenancy Architecture and Isolation Patterns (NEW)**
@@ -207,7 +207,7 @@
 - Capital One, RBC, Visa: Production agentic AI systems
 - 100-200x compute for multi-agent vs single-shot inference
 - 60% cycle time improvements in report generation
-- SAP, ServiceNow using Llama Nemotron for financial workflows
+- Major enterprise software vendors adopting Llama Nemotron for financial workflows
 
 **Retail:**
 - L'Oréal, LVMH, Nestlé: NVIDIA-accelerated demand forecasting

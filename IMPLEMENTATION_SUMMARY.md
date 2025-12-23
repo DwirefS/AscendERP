@@ -608,8 +608,8 @@ antsctl logs orchestrator --follow
    - Game-theoretic coordination
 
 3. **Expanded Integrations**:
-   - SAP, Oracle ERP connectors
-   - Salesforce, ServiceNow integrations
+   - Enterprise ERP system connectors
+   - CRM and service management integrations
    - GitHub, Azure DevOps for SelfOps
 
 4. **Observability**:
