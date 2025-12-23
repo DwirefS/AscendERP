@@ -1,0 +1,249 @@
+metadata:
+  template_id: finance-ap-reconciliation
+  name: Accounts Payable Reconciliation Agent
+  description: |
+    Automated AP reconciliation agent that matches invoices with payments,
+    identifies discrepancies, and generates reconciliation reports.
+
+    Features:
+    - Automated invoice matching (PO → Invoice → Payment)
+    - Discrepancy detection and categorization
+    - Aging analysis and payment recommendations
+    - Multi-currency support with forex reconciliation
+    - Audit trail generation
+    - Integration with ERP systems
+
+    Use Cases:
+    - Monthly close reconciliation
+    - Vendor payment verification
+    - Duplicate payment detection
+    - Aging report generation
+    - Audit documentation
+
+  author: ANTS Community
+  version: 1.0.0
+  category: finance
+  tags:
+    - finance
+    - accounting
+    - reconciliation
+    - accounts-payable
+    - audit
+  license: MIT
+  homepage: https://github.com/ants-community/templates
+  documentation: https://docs.ants.ai/templates/finance-ap-reconciliation
+  created_at: "2024-12-23T00:00:00Z"
+  updated_at: "2024-12-23T00:00:00Z"
+
+config:
+  agent_type: finance
+  specialization: accounts_payable_reconciliation
+  model: gpt-4
+  temperature: 0.3  # Low temperature for accuracy
+  max_tokens: 4000
+  system_prompt: |
+    You are an expert Accounts Payable Reconciliation Agent.
+
+    Your responsibilities:
+    1. Match invoices with purchase orders and payment records
+    2. Identify discrepancies (amount differences, duplicate payments, missing documents)
+    3. Categorize discrepancies by type and severity
+    4. Generate detailed reconciliation reports
+    5. Recommend corrective actions
+    6. Maintain comprehensive audit trail
+
+    Rules:
+    - Always verify three-way match: PO → Invoice → Payment
+    - Flag any discrepancy > $100 as high priority
+    - Consider payment terms and due dates
+    - Account for multi-currency transactions with proper forex rates
+    - Never modify data without explicit approval
+    - Document all findings with evidence
+
+    Output Format:
+    - Structured JSON with matched records and discrepancies
+    - Reconciliation summary with counts and totals
+    - Detailed findings with supporting documents
+    - Recommended actions prioritized by severity
+
+  user_prompt_template: |
+    Reconcile the following accounts payable data:
+
+    Time Period: {time_period}
+    Scope: {scope}
+
+    Purchase Orders:
+    {purchase_orders}
+
+    Invoices:
+    {invoices}
+
+    Payments:
+    {payments}
+
+    Please perform complete reconciliation and report findings.
+
+capabilities:
+  - capability_type: integration
+    name: erp_connector
+    version: "1.0.0"
+    required: true
+    description: ERP system connector for fetching PO, invoice, and payment data
+
+  - capability_type: tool
+    name: currency_converter
+    required: true
+    description: Multi-currency conversion with historical forex rates
+
+  - capability_type: tool
+    name: pdf_generator
+    required: false
+    description: Generate PDF reconciliation reports
+
+  - capability_type: mcp_server
+    name: document_storage
+    required: false
+    description: Store reconciliation reports and audit documentation
+
+policies:
+  - |
+    # Finance Agent Access Policy
+    package ants.finance
+
+    import future.keywords.if
+
+    # Only finance department users can execute
+    allow if {
+        input.user.department == "finance"
+        input.action == "execute"
+    }
+
+    # Read-only access for auditors
+    allow if {
+        input.user.role == "auditor"
+        input.action == "read"
+    }
+
+  - |
+    # Data Access Policy
+    package ants.finance.data
+
+    import future.keywords.if
+
+    # PII masking for non-authorized users
+    mask_pii if {
+        not input.user.role in ["finance_manager", "auditor"]
+    }
+
+memory_config:
+  episodic:
+    enabled: true
+    retention_days: 365  # Keep reconciliation history for 1 year
+  semantic:
+    enabled: true
+    description: Store reconciliation rules, vendor payment terms, common discrepancy patterns
+  procedural:
+    enabled: true
+    description: Store learned reconciliation workflows and automation patterns
+
+examples:
+  - input: |
+      Reconcile Q4 2024 accounts payable for vendor "Acme Corp".
+      Include all invoices and payments from October 1 to December 31, 2024.
+    expected_output: |
+      {
+        "summary": {
+          "vendor": "Acme Corp",
+          "period": "Q4 2024",
+          "total_pos": 156,
+          "total_invoices": 158,
+          "total_payments": 154,
+          "matched": 152,
+          "discrepancies": 6
+        },
+        "discrepancies": [
+          {
+            "type": "amount_mismatch",
+            "severity": "high",
+            "po_number": "PO-45678",
+            "invoice_number": "INV-98765",
+            "po_amount": 15000.00,
+            "invoice_amount": 15500.00,
+            "difference": 500.00,
+            "recommendation": "Verify with vendor - potential price change or additional charges"
+          }
+        ],
+        "recommendations": [
+          "Follow up on 6 discrepancies within 2 business days",
+          "Request clarification from vendor on amount mismatches",
+          "Process 152 matched payments totaling $3.2M"
+        ]
+      }
+
+  - input: |
+      Identify duplicate payments in November 2024.
+    expected_output: |
+      {
+        "duplicate_payments": [
+          {
+            "invoice_number": "INV-12345",
+            "payment_1": {"check_number": "CHK-9876", "amount": 5000.00, "date": "2024-11-15"},
+            "payment_2": {"check_number": "CHK-9912", "amount": 5000.00, "date": "2024-11-20"},
+            "total_overpayment": 5000.00,
+            "recommendation": "Request refund or credit memo from vendor"
+          }
+        ],
+        "total_duplicate_amount": 5000.00
+      }
+
+test_cases:
+  - name: test_three_way_match
+    description: Verify correct three-way matching (PO, Invoice, Payment)
+    input:
+      purchase_orders:
+        - po_number: PO-001
+          amount: 1000.00
+      invoices:
+        - invoice_number: INV-001
+          po_number: PO-001
+          amount: 1000.00
+      payments:
+        - payment_id: PAY-001
+          invoice_number: INV-001
+          amount: 1000.00
+    expected:
+      matched: 1
+      discrepancies: 0
+
+  - name: test_amount_mismatch_detection
+    description: Detect amount discrepancies between PO and invoice
+    input:
+      purchase_orders:
+        - po_number: PO-002
+          amount: 2000.00
+      invoices:
+        - invoice_number: INV-002
+          po_number: PO-002
+          amount: 2100.00
+    expected:
+      discrepancies:
+        - type: amount_mismatch
+          difference: 100.00
+
+  - name: test_duplicate_payment_detection
+    description: Identify duplicate payments for same invoice
+    input:
+      invoices:
+        - invoice_number: INV-003
+          amount: 500.00
+      payments:
+        - payment_id: PAY-003A
+          invoice_number: INV-003
+          amount: 500.00
+        - payment_id: PAY-003B
+          invoice_number: INV-003
+          amount: 500.00
+    expected:
+      discrepancies:
+        - type: duplicate_payment
+          total_overpayment: 500.00

@@ -1,0 +1,238 @@
+metadata:
+  template_id: hr-onboarding-assistant
+  name: Employee Onboarding Assistant
+  description: |
+    Intelligent HR onboarding agent that automates and guides new employee onboarding.
+
+    Features:
+    - Personalized onboarding workflows
+    - Document collection and verification
+    - System access provisioning coordination
+    - Training schedule management
+    - First-day preparation
+    - Progress tracking and reminders
+    - Integration with HRMS and identity systems
+
+    Use Cases:
+    - New hire onboarding automation
+    - Contractor onboarding
+    - Internal transfers and role changes
+    - Compliance documentation
+    - Equipment and access provisioning
+
+  author: ANTS Community
+  version: 1.0.0
+  category: hr
+  tags:
+    - hr
+    - onboarding
+    - employee-experience
+    - automation
+    - compliance
+  license: MIT
+  homepage: https://github.com/ants-community/templates
+  documentation: https://docs.ants.ai/templates/hr-onboarding-assistant
+  created_at: "2024-12-23T00:00:00Z"
+  updated_at: "2024-12-23T00:00:00Z"
+
+config:
+  agent_type: hr
+  specialization: employee_onboarding
+  model: gpt-4
+  temperature: 0.7  # Balanced for personalization
+  max_tokens: 3000
+  system_prompt: |
+    You are a friendly and efficient Employee Onboarding Assistant.
+
+    Your responsibilities:
+    1. Guide new employees through onboarding process
+    2. Collect and verify required documentation
+    3. Coordinate system access provisioning (email, systems, badges)
+    4. Schedule orientation and training sessions
+    5. Prepare first-day checklist and welcome materials
+    6. Track completion progress and send reminders
+    7. Answer common onboarding questions
+
+    Principles:
+    - Warm, welcoming, and professional tone
+    - Clear step-by-step guidance
+    - Proactive communication and reminders
+    - Respect for privacy and data security
+    - Inclusive and accessible
+    - Personalized to role and department
+
+    Compliance:
+    - Ensure all required forms collected (I-9, W-4, etc.)
+    - Verify identity documents
+    - Complete background check workflow
+    - Confirm benefits enrollment
+    - Document training completion
+
+  user_prompt_template: |
+    New Employee Onboarding:
+
+    Employee Information:
+    - Name: {employee_name}
+    - Role: {role}
+    - Department: {department}
+    - Start Date: {start_date}
+    - Manager: {manager_name}
+    - Location: {location}
+
+    Onboarding Stage: {stage}
+
+    Previous Steps Completed:
+    {completed_steps}
+
+    Please provide guidance for the next steps in the onboarding process.
+
+capabilities:
+  - capability_type: integration
+    name: hrms_connector
+    version: "1.0.0"
+    required: true
+    description: HRMS integration for employee data and workflow management
+
+  - capability_type: integration
+    name: identity_provider
+    required: true
+    description: Azure AD / Okta integration for account provisioning
+
+  - capability_type: tool
+    name: document_verification
+    required: true
+    description: I-9 and identity document verification
+
+  - capability_type: tool
+    name: email_sender
+    required: true
+    description: Send welcome emails and reminders
+
+  - capability_type: mcp_server
+    name: calendar_integration
+    required: false
+    description: Schedule orientation and training sessions
+
+policies:
+  - |
+    # HR Agent Access Policy
+    package ants.hr
+
+    import future.keywords.if
+
+    # HR team can execute
+    allow if {
+        input.user.department == "hr"
+        input.action == "execute"
+    }
+
+    # Hiring managers can view their reports
+    allow if {
+        input.user.role == "manager"
+        input.action == "read"
+        input.context.manager_id == input.user.id
+    }
+
+  - |
+    # PII Protection Policy
+    package ants.hr.pii
+
+    import future.keywords.if
+
+    # Mask SSN and sensitive data
+    mask_sensitive_data if {
+        not input.user.role in ["hr_admin", "payroll"]
+    }
+
+    # Log all PII access
+    audit_pii_access if {
+        input.resource contains "employee_data"
+    }
+
+memory_config:
+  episodic:
+    enabled: true
+    retention_days: 90  # Keep onboarding history for 90 days
+  semantic:
+    enabled: true
+    description: Store onboarding policies, checklists, common questions/answers
+  procedural:
+    enabled: true
+    description: Store department-specific workflows, access provisioning procedures
+
+examples:
+  - input: |
+      Guide onboarding for Sarah Johnson, Software Engineer,
+      starting December 26, 2024 in the Engineering department.
+    expected_output: |
+      Welcome to the team, Sarah! Here's your personalized onboarding plan:
+
+      **Week 1: Getting Started**
+      ✓ Pre-boarding (Complete before start date):
+        - Submit I-9 documentation
+        - Complete background check
+        - Enroll in benefits (health, 401k, etc.)
+        - Review employee handbook
+
+      📅 Day 1 (December 26):
+        - 9:00 AM: Welcome meeting with manager (John Smith)
+        - 10:00 AM: IT setup (laptop, email: sarah.johnson@company.com)
+        - 11:00 AM: Office tour and team introductions
+        - 2:00 PM: HR orientation (benefits, policies, culture)
+        - 4:00 PM: Engineering team welcome
+
+      🔐 System Access (Provisioned by Day 1):
+        - Email and Microsoft 365
+        - GitHub Enterprise
+        - Jira and Confluence
+        - VPN and development tools
+
+      📚 Week 1 Training:
+        - Security and compliance training (2 hours)
+        - Engineering onboarding program (3 days)
+        - Code review process workshop
+
+      I'll send reminders and check in with you throughout the process.
+      Questions? Just ask!
+
+test_cases:
+  - name: test_onboarding_checklist_generation
+    description: Generate personalized onboarding checklist
+    input:
+      employee_name: John Doe
+      role: Product Manager
+      department: Product
+      start_date: "2025-01-15"
+    expected:
+      checklist_items:
+        - "Complete I-9 verification"
+        - "Enroll in benefits"
+        - "Provision email account"
+        - "Schedule product team orientation"
+        - "Assign onboarding buddy"
+
+  - name: test_document_verification_workflow
+    description: Track document collection status
+    input:
+      stage: document_collection
+      completed_steps:
+        - "I-9 form submitted"
+        - "W-4 submitted"
+    expected:
+      next_steps:
+        - "Verify I-9 documents"
+        - "Complete background check"
+
+  - name: test_access_provisioning_coordination
+    description: Coordinate system access requests
+    input:
+      role: Data Analyst
+      department: Analytics
+    expected:
+      access_requests:
+        - system: Azure AD
+          groups: ["Analytics Team", "Data Platform Users"]
+        - system: Tableau
+          license: Creator
+        - system: Snowflake
+          role: ANALYST

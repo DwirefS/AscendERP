@@ -1,0 +1,236 @@
+metadata:
+  template_id: cybersecurity-incident-response
+  name: Cybersecurity Incident Response Agent
+  description: |
+    Automated security incident triage, analysis, and response coordination agent.
+
+    Features:
+    - Real-time threat detection and triage
+    - Automated incident severity classification
+    - Evidence collection and preservation
+    - Integration with Microsoft Defender and Sentinel
+    - Threat intelligence enrichment
+    - Response playbook execution
+    - Stakeholder notification and escalation
+
+    Use Cases:
+    - Security alert triage (reduce false positives)
+    - Malware infection response
+    - Phishing campaign detection and response
+    - Data breach investigation
+    - Compliance violation detection
+    - Insider threat detection
+
+  author: ANTS Community
+  version: 1.0.0
+  category: cybersecurity
+  tags:
+    - security
+    - incident-response
+    - threat-detection
+    - soc
+    - defender
+    - sentinel
+  license: MIT
+  homepage: https://github.com/ants-community/templates
+  documentation: https://docs.ants.ai/templates/cybersecurity-incident-response
+  created_at: "2024-12-23T00:00:00Z"
+  updated_at: "2024-12-23T00:00:00Z"
+
+config:
+  agent_type: cybersecurity
+  specialization: incident_response_triage
+  model: gpt-4
+  temperature: 0.2  # Very low for security accuracy
+  max_tokens: 4000
+  system_prompt: |
+    You are an expert Cybersecurity Incident Response Agent.
+
+    Your responsibilities:
+    1. Triage security alerts and incidents
+    2. Classify incident severity (Critical, High, Medium, Low)
+    3. Collect and preserve evidence
+    4. Enrich alerts with threat intelligence
+    5. Execute response playbooks (contain, remediate, recover)
+    6. Escalate to human analysts when needed
+    7. Generate incident reports
+
+    Severity Classification:
+    - **Critical**: Active breach, data exfiltration, ransomware, widespread impact
+    - **High**: Malware on critical systems, privilege escalation, targeted attack
+    - **Medium**: Suspicious activity, policy violations, isolated incidents
+    - **Low**: Failed login attempts, informational alerts
+
+    Response Principles:
+    - Accuracy over speed (verify before acting)
+    - Preserve evidence (forensic integrity)
+    - Contain threats (limit scope and impact)
+    - Document everything (audit trail)
+    - Escalate when uncertain
+    - Never delete evidence
+
+    MITRE ATT&CK Framework:
+    - Map tactics and techniques
+    - Identify kill chain stage
+    - Apply appropriate countermeasures
+
+  user_prompt_template: |
+    Security Incident Triage:
+
+    Alert Information:
+    - Alert ID: {alert_id}
+    - Source: {source}
+    - Timestamp: {timestamp}
+    - Severity (raw): {raw_severity}
+
+    Alert Details:
+    {alert_details}
+
+    Affected Assets:
+    {affected_assets}
+
+    Context:
+    {context}
+
+    Please analyze this incident, classify severity, and recommend response actions.
+
+capabilities:
+  - capability_type: mcp_server
+    name: microsoft_defender_mcp
+    version: "1.0.0"
+    required: true
+    description: Microsoft Defender for Endpoint integration
+
+  - capability_type: mcp_server
+    name: sentinel_mcp
+    required: true
+    description: Microsoft Sentinel SIEM integration
+
+  - capability_type: tool
+    name: threat_intelligence
+    required: true
+    description: Threat intel enrichment (VirusTotal, AlienVault OTX, etc.)
+
+  - capability_type: tool
+    name: isolation_tool
+    required: true
+    description: Network isolation for infected devices
+
+  - capability_type: tool
+    name: email_sender
+    required: true
+    description: Notify SOC team and stakeholders
+
+policies:
+  - |
+    # Security Agent Access Policy
+    package ants.security
+
+    import future.keywords.if
+
+    # SOC analysts can execute
+    allow if {
+        input.user.role in ["soc_analyst", "security_engineer", "ciso"]
+        input.action == "execute"
+    }
+
+    # Automated execution allowed for specific playbooks
+    allow if {
+        input.context.playbook in ["contain_malware", "block_ip"]
+        input.context.automated == true
+        input.context.severity != "critical"  # Critical requires human approval
+    }
+
+  - |
+    # Evidence Preservation Policy
+    package ants.security.evidence
+
+    import future.keywords.if
+
+    # Never delete evidence
+    deny if {
+        input.action == "delete"
+        input.resource contains "evidence"
+    }
+
+    # All evidence access must be audited
+    audit_required if {
+        input.resource contains "evidence"
+    }
+
+memory_config:
+  episodic:
+    enabled: true
+    retention_days: 730  # Keep incident history for 2 years
+  semantic:
+    enabled: true
+    description: Store threat indicators, attack patterns, response playbooks
+  procedural:
+    enabled: true
+    description: Store learned response workflows, forensic procedures
+
+examples:
+  - input: |
+      Triage Defender alert: Multiple failed login attempts detected
+      for user john.smith@company.com from IP 203.0.113.42 (Russia).
+      128 failed attempts in last 5 minutes.
+    expected_output: |
+      **Incident Analysis:**
+
+      Severity: HIGH
+      Category: Credential Access (MITRE ATT&CK: T1110 - Brute Force)
+      Confidence: High
+
+      **Evidence:**
+      - 128 failed login attempts in 5 minutes (threshold: 10/hour)
+      - Source IP: 203.0.113.42 (Russia, known VPN provider)
+      - Target user: john.smith@company.com (Finance Manager, privileged account)
+      - Authentication method: NTLM
+      - No successful logins from this IP
+
+      **Threat Intelligence:**
+      - IP 203.0.113.42: Flagged on 3 threat feeds (brute force, credential stuffing)
+      - Recent activity: 47 similar attacks in last 24 hours
+
+      **Recommended Actions:**
+      1. **IMMEDIATE** - Block IP 203.0.113.42 at firewall (HIGH)
+      2. Force password reset for john.smith@company.com (HIGH)
+      3. Enable MFA if not already active (HIGH)
+      4. Notify user of suspicious activity (MEDIUM)
+      5. Monitor for successful logins from unusual locations (MEDIUM)
+      6. Check for lateral movement if any login succeeded (CRITICAL if applicable)
+
+      **Escalation:** Notify SOC Lead (high-privilege account targeted)
+
+test_cases:
+  - name: test_malware_detection_triage
+    description: Classify malware detection alert
+    input:
+      alert_id: ALT-98765
+      source: Microsoft Defender
+      alert_details: "Ransomware behavior detected on LAPTOP-042"
+      affected_assets:
+        - hostname: LAPTOP-042
+          user: jane.doe@company.com
+    expected:
+      severity: CRITICAL
+      category: "Malware / Ransomware"
+      immediate_actions:
+        - "Isolate LAPTOP-042 from network"
+        - "Suspend user account"
+        - "Notify CISO"
+
+  - name: test_phishing_email_triage
+    description: Analyze phishing campaign
+    input:
+      alert_details: "Suspicious email with malicious link clicked by 12 users"
+      threat_intel:
+        - "URL flagged as phishing on VirusTotal"
+        - "Domain registered 2 days ago"
+    expected:
+      severity: HIGH
+      immediate_actions:
+        - "Block malicious domain at email gateway"
+        - "Quarantine emails with same sender"
+        - "Force password reset for affected users"
+        - "Send security awareness reminder"
