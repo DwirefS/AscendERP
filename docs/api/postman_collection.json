@@ -1,0 +1,344 @@
+{
+  "info": {
+    "name": "ANTS Agent Management API",
+    "description": "Complete collection for ANTS (AI-Agent Native Tactical System) API testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.ants.ai/v1",
+      "type": "string"
+    },
+    {
+      "key": "bearer_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "agent_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "execution_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearer_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "item": [
+        {
+          "name": "List Agents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents?page=1&page_size=20",
+              "host": ["{{base_url}}"],
+              "path": ["agents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('agent_id', response.agent_id);",
+                  "    console.log('Created agent:', response.agent_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Finance Reconciliation Agent\",\n  \"type\": \"finance\",\n  \"specialization\": \"accounts_payable_reconciliation\",\n  \"config\": {\n    \"model\": \"gpt-4\",\n    \"temperature\": 0.7,\n    \"max_tokens\": 2000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/agents",
+              "host": ["{{base_url}}"],
+              "path": ["agents"]
+            }
+          }
+        },
+        {
+          "name": "Get Agent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents/{{agent_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "{{agent_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Agent",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"model\": \"gpt-4-turbo\",\n    \"temperature\": 0.5\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/agents/{{agent_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "{{agent_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Agent",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents/{{agent_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "{{agent_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Execution",
+      "item": [
+        {
+          "name": "Execute Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('execution_id', response.execution_id);",
+                  "    console.log('Started execution:', response.execution_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_description\": \"Reconcile accounts payable for Q4 2024 and identify any discrepancies\",\n  \"priority\": \"normal\",\n  \"context\": {\n    \"department\": \"finance\",\n    \"quarter\": \"Q4_2024\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/agents/{{agent_id}}/execute",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "{{agent_id}}", "execute"]
+            }
+          }
+        },
+        {
+          "name": "Get Execution Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/executions/{{execution_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["executions", "{{execution_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory",
+      "item": [
+        {
+          "name": "Query Memory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents/{{agent_id}}/memory?query=reconciliation process&memory_type=procedural",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "{{agent_id}}", "memory"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "reconciliation process"
+                },
+                {
+                  "key": "memory_type",
+                  "value": "procedural"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Store Memory",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memory_type\": \"episodic\",\n  \"content\": \"Successfully reconciled Q4 2024 accounts payable with 99.8% accuracy\",\n  \"metadata\": {\n    \"quarter\": \"Q4_2024\",\n    \"accuracy\": 0.998,\n    \"discrepancies_found\": 3,\n    \"total_transactions\": 15847\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/agents/{{agent_id}}/memory",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "{{agent_id}}", "memory"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Policies",
+      "item": [
+        {
+          "name": "List Policies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/policies",
+              "host": ["{{base_url}}"],
+              "path": ["policies"]
+            }
+          }
+        },
+        {
+          "name": "Create Policy",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Finance Agent Access Policy\",\n  \"description\": \"Restrict finance agents to finance department users\",\n  \"rego_code\": \"package ants.authz\\n\\nimport future.keywords.if\\n\\nallow if {\\n    input.user.department == \\\"finance\\\"\\n    input.resource == \\\"agent:finance\\\"\\n    input.action == \\\"execute\\\"\\n}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/policies",
+              "host": ["{{base_url}}"],
+              "path": ["policies"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Monitoring",
+      "item": [
+        {
+          "name": "Get CLEAR Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/metrics?agent_id={{agent_id}}&start_time=2024-12-22T00:00:00Z&end_time=2024-12-23T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["metrics"],
+              "query": [
+                {
+                  "key": "agent_id",
+                  "value": "{{agent_id}}"
+                },
+                {
+                  "key": "metric_type",
+                  "value": "latency",
+                  "disabled": true
+                },
+                {
+                  "key": "start_time",
+                  "value": "2024-12-22T00:00:00Z"
+                },
+                {
+                  "key": "end_time",
+                  "value": "2024-12-23T00:00:00Z"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

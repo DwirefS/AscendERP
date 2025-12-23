@@ -1,0 +1,893 @@
+openapi: 3.0.3
+info:
+  title: ANTS Agent Management API
+  description: |
+    **ANTS (AI-Agent Native Tactical System) Agent Management API**
+
+    RESTful API for managing AI agents, executing tasks, and monitoring performance.
+
+    ## Features
+    - Agent lifecycle management (CRUD operations)
+    - Task execution and monitoring
+    - Memory substrate operations
+    - Policy-based authorization
+    - Real-time metrics and observability
+
+    ## Authentication
+    All endpoints require authentication using Azure AD Bearer tokens.
+
+    ```
+    Authorization: Bearer <jwt_token>
+    ```
+
+    ## Rate Limiting
+    API requests are subject to rate limiting:
+    - User tier: 1,000 requests/minute
+    - Tenant tier: 10,000 requests/minute
+
+    Rate limit headers are included in responses:
+    - `X-RateLimit-Limit`: Request limit
+    - `X-RateLimit-Remaining`: Remaining requests
+    - `X-RateLimit-Reset`: Reset timestamp (ISO 8601)
+
+    ## Errors
+    API errors follow RFC 7807 Problem Details format:
+
+    ```json
+    {
+      "type": "https://api.ants.ai/errors/validation-error",
+      "title": "Validation Error",
+      "status": 400,
+      "detail": "Agent name must be alphanumeric",
+      "instance": "/agents/create"
+    }
+    ```
+
+  version: 1.0.0
+  contact:
+    name: ANTS API Support
+    url: https://github.com/your-org/ants
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.ants.ai/v1
+    description: Production API
+  - url: https://api-staging.ants.ai/v1
+    description: Staging API
+  - url: http://localhost:8000/v1
+    description: Local development
+
+tags:
+  - name: agents
+    description: Agent lifecycle management
+  - name: execution
+    description: Task execution
+  - name: memory
+    description: Memory substrate operations
+  - name: policies
+    description: Policy management
+  - name: monitoring
+    description: Metrics and observability
+  - name: health
+    description: Health checks
+
+paths:
+  # Health Check
+  /health:
+    get:
+      tags: [health]
+      summary: Health check
+      description: Check API health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  # Agent Management
+  /agents:
+    get:
+      tags: [agents]
+      summary: List agents
+      description: Get list of all agents (paginated)
+      operationId: listAgents
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [active, inactive, error]
+        - name: tenant_id
+          in: query
+          description: Filter by tenant
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    post:
+      tags: [agents]
+      summary: Create agent
+      description: Create a new AI agent
+      operationId: createAgent
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentRequest'
+      responses:
+        '201':
+          description: Agent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /agents/{agent_id}:
+    get:
+      tags: [agents]
+      summary: Get agent
+      description: Get agent by ID
+      operationId: getAgent
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [agents]
+      summary: Update agent
+      description: Update agent configuration
+      operationId: updateAgent
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentRequest'
+      responses:
+        '200':
+          description: Agent updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [agents]
+      summary: Delete agent
+      description: Delete an agent (soft delete)
+      operationId: deleteAgent
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      responses:
+        '204':
+          description: Agent deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Task Execution
+  /agents/{agent_id}/execute:
+    post:
+      tags: [execution]
+      summary: Execute task
+      description: Execute a task with an agent
+      operationId: executeTask
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteTaskRequest'
+      responses:
+        '202':
+          description: Task accepted for execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskExecution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /executions/{execution_id}:
+    get:
+      tags: [execution]
+      summary: Get execution status
+      description: Get task execution status and results
+      operationId: getExecution
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: execution_id
+          in: path
+          required: true
+          description: Execution ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Execution status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskExecution'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # Memory Operations
+  /agents/{agent_id}/memory:
+    get:
+      tags: [memory]
+      summary: Query memory
+      description: Query agent's memory substrate
+      operationId: queryMemory
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+        - name: memory_type
+          in: query
+          description: Type of memory
+          schema:
+            type: string
+            enum: [episodic, semantic, procedural]
+        - name: query
+          in: query
+          description: Search query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Memory results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryQueryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [memory]
+      summary: Store memory
+      description: Store new memory in agent's substrate
+      operationId: storeMemory
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreMemoryRequest'
+      responses:
+        '201':
+          description: Memory stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Policy Management
+  /policies:
+    get:
+      tags: [policies]
+      summary: List policies
+      description: Get list of OPA policies
+      operationId: listPolicies
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [policies]
+      summary: Create policy
+      description: Create a new OPA policy
+      operationId: createPolicy
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePolicyRequest'
+      responses:
+        '201':
+          description: Policy created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # Monitoring
+  /metrics:
+    get:
+      tags: [monitoring]
+      summary: Get metrics
+      description: Get CLEAR metrics (Correctness, Latency, Efficiency, Availability, Resilience)
+      operationId: getMetrics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: query
+          description: Filter by agent
+          schema:
+            type: string
+        - name: metric_type
+          in: query
+          description: Filter by metric type
+          schema:
+            type: string
+            enum: [correctness, latency, efficiency, availability, resilience]
+        - name: start_time
+          in: query
+          description: Start time (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          description: End time (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Metrics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure AD JWT token
+
+  parameters:
+    AgentIdParam:
+      name: agent_id
+      in: path
+      required: true
+      description: Agent ID
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    PageSizeParam:
+      name: page_size
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    # Health Status
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+            redis:
+              type: string
+              enum: [ok, error]
+            opa:
+              type: string
+              enum: [ok, error]
+
+    # Agent
+    Agent:
+      type: object
+      required:
+        - agent_id
+        - name
+        - type
+        - status
+      properties:
+        agent_id:
+          type: string
+          description: Unique agent identifier
+          example: "finance-reconciliation-001"
+        name:
+          type: string
+          description: Human-readable agent name
+          example: "Finance Reconciliation Agent"
+        type:
+          type: string
+          description: Agent type
+          enum: [finance, hr, operations, cybersecurity, governance, selfops]
+        specialization:
+          type: string
+          description: Specific specialization
+          example: "accounts_payable_reconciliation"
+        status:
+          type: string
+          enum: [active, inactive, error]
+          description: Agent status
+        tenant_id:
+          type: string
+          description: Tenant identifier
+        config:
+          type: object
+          description: Agent configuration
+          properties:
+            model:
+              type: string
+              example: "gpt-4"
+            temperature:
+              type: number
+              minimum: 0
+              maximum: 2
+            max_tokens:
+              type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateAgentRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        type:
+          type: string
+          enum: [finance, hr, operations, cybersecurity, governance, selfops]
+        specialization:
+          type: string
+        tenant_id:
+          type: string
+        config:
+          type: object
+
+    UpdateAgentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        status:
+          type: string
+          enum: [active, inactive]
+        config:
+          type: object
+
+    AgentListResponse:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agent'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # Task Execution
+    ExecuteTaskRequest:
+      type: object
+      required:
+        - task_description
+      properties:
+        task_description:
+          type: string
+          description: Natural language task description
+          maxLength: 10000
+          example: "Reconcile accounts payable for Q4 2024"
+        context:
+          type: object
+          description: Additional context for task execution
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+          default: normal
+
+    TaskExecution:
+      type: object
+      properties:
+        execution_id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+        task_description:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        result:
+          type: object
+          description: Task execution result (when completed)
+        error:
+          type: string
+          description: Error message (if failed)
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          properties:
+            duration_seconds:
+              type: number
+            tokens_used:
+              type: integer
+            cost_usd:
+              type: number
+
+    # Memory
+    Memory:
+      type: object
+      properties:
+        memory_id:
+          type: string
+          format: uuid
+        memory_type:
+          type: string
+          enum: [episodic, semantic, procedural]
+        content:
+          type: string
+        embedding:
+          type: array
+          items:
+            type: number
+        metadata:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    StoreMemoryRequest:
+      type: object
+      required:
+        - memory_type
+        - content
+      properties:
+        memory_type:
+          type: string
+          enum: [episodic, semantic, procedural]
+        content:
+          type: string
+        metadata:
+          type: object
+
+    MemoryQueryResponse:
+      type: object
+      properties:
+        memories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Memory'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # Policy
+    Policy:
+      type: object
+      properties:
+        policy_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        rego_code:
+          type: string
+          description: OPA Rego policy code
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreatePolicyRequest:
+      type: object
+      required:
+        - name
+        - rego_code
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        rego_code:
+          type: string
+
+    PolicyListResponse:
+      type: object
+      properties:
+        policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+
+    # Metrics
+    MetricsResponse:
+      type: object
+      properties:
+        metrics:
+          type: object
+          properties:
+            correctness:
+              type: number
+              description: Task correctness rate (0-1)
+            latency_p50:
+              type: number
+              description: Median latency (seconds)
+            latency_p95:
+              type: number
+              description: 95th percentile latency (seconds)
+            latency_p99:
+              type: number
+              description: 99th percentile latency (seconds)
+            efficiency:
+              type: number
+              description: Cost per successful task (USD)
+            availability:
+              type: number
+              description: Uptime percentage (0-1)
+            resilience:
+              type: number
+              description: Recovery time (seconds)
+
+    # Common
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+
+    # Errors (RFC 7807)
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Problem type URI
+        title:
+          type: string
+          description: Short, human-readable summary
+        status:
+          type: integer
+          description: HTTP status code
+        detail:
+          type: string
+          description: Detailed explanation
+        instance:
+          type: string
+          format: uri
+          description: URI of the specific occurrence
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.ants.ai/errors/validation-error"
+            title: "Validation Error"
+            status: 400
+            detail: "Agent name must be alphanumeric"
+            instance: "/agents/create"
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.ants.ai/errors/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            detail: "Invalid or expired JWT token"
+            instance: "/agents"
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.ants.ai/errors/forbidden"
+            title: "Forbidden"
+            status: 403
+            detail: "User does not have permission to execute this agent"
+            instance: "/agents/finance-001/execute"
+
+    NotFound:
+      description: Not found - resource doesn't exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.ants.ai/errors/not-found"
+            title: "Not Found"
+            status: 404
+            detail: "Agent with ID 'finance-999' not found"
+            instance: "/agents/finance-999"
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          description: Request limit
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          description: Remaining requests
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          description: Reset time (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        Retry-After:
+          description: Seconds until retry
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.ants.ai/errors/rate-limit"
+            title: "Rate Limit Exceeded"
+            status: 429
+            detail: "User rate limit of 1000 requests/minute exceeded"
+            instance: "/agents/execute"
