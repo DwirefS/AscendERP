@@ -132,6 +132,7 @@ CONFIDENTIAL*
 *.confidential
 .vision/
 seed/
+work-log/
 
 # Environment files
 .env
