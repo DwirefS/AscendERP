@@ -1,0 +1,216 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" style="background: #0f172a;">
+  <defs>
+    <linearGradient id="gradMeta" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradCouncil" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f43f5e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradAgent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="radialGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Swarm Intelligence Architecture</text>
+  <text x="600" y="65" font-family="Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">Collective Decision-Making &amp; Coordination</text>
+
+  <!-- Background glow for swarm effect -->
+  <circle cx="600" cy="450" r="400" fill="url(#radialGlow)"/>
+
+  <!-- Meta-Agent Layer (Top) -->
+  <rect x="450" y="100" width="300" height="100" rx="12" fill="url(#gradMeta)" opacity="0.9" filter="url(#glow)"/>
+  <text x="600" y="130" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">META-AGENT</text>
+  <text x="600" y="152" font-family="Arial, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="middle">Orchestrates swarm behavior</text>
+  <text x="600" y="170" font-family="Arial, sans-serif" font-size="11" fill="#cbd5e1" text-anchor="middle">• Task decomposition</text>
+  <text x="600" y="185" font-family="Arial, sans-serif" font-size="11" fill="#cbd5e1" text-anchor="middle">• Agent selection &amp; routing</text>
+
+  <!-- Council Layer -->
+  <g id="councils">
+    <!-- Council 1: Proposal -->
+    <rect x="80" y="280" width="200" height="120" rx="10" fill="url(#gradCouncil)" opacity="0.8" filter="url(#glow)"/>
+    <text x="180" y="305" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PROPOSAL</text>
+    <text x="180" y="325" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">Agents propose solutions</text>
+    <circle cx="140" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="140" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">A1</text>
+    <circle cx="180" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="180" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">A2</text>
+    <circle cx="220" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="220" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">A3</text>
+    <text x="180" y="385" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Generate options</text>
+
+    <!-- Council 2: Critique -->
+    <rect x="320" y="280" width="200" height="120" rx="10" fill="url(#gradCouncil)" opacity="0.8" filter="url(#glow)"/>
+    <text x="420" y="305" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">CRITIQUE</text>
+    <text x="420" y="325" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">Evaluate proposals</text>
+    <circle cx="380" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="380" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">C1</text>
+    <circle cx="420" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="420" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">C2</text>
+    <circle cx="460" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="460" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">C3</text>
+    <text x="420" y="385" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Find weaknesses</text>
+
+    <!-- Council 3: Resolve -->
+    <rect x="560" y="280" width="200" height="120" rx="10" fill="url(#gradCouncil)" opacity="0.8" filter="url(#glow)"/>
+    <text x="660" y="305" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">RESOLVE</text>
+    <text x="660" y="325" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">Synthesize consensus</text>
+    <circle cx="620" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="620" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">R1</text>
+    <circle cx="660" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="660" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">R2</text>
+    <circle cx="700" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="700" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">R3</text>
+    <text x="660" y="385" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Build consensus</text>
+
+    <!-- Council 4: Amplify -->
+    <rect x="800" y="280" width="200" height="120" rx="10" fill="url(#gradCouncil)" opacity="0.8" filter="url(#glow)"/>
+    <text x="900" y="305" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">AMPLIFY</text>
+    <text x="900" y="325" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">Reinforce decision</text>
+    <circle cx="860" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="860" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">M1</text>
+    <circle cx="900" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="900" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">M2</text>
+    <circle cx="940" cy="355" r="15" fill="#1e293b" stroke="#ec4899" stroke-width="2"/>
+    <text x="940" y="361" font-family="Arial, sans-serif" font-size="10" fill="#e2e8f0" text-anchor="middle">M3</text>
+    <text x="900" y="385" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Validate &amp; commit</text>
+  </g>
+
+  <!-- Execution Swarm Layer (Bottom) -->
+  <text x="600" y="460" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#10b981" text-anchor="middle">EXECUTION SWARM</text>
+  <text x="600" y="480" font-family="Arial, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Specialized agents execute tasks in parallel</text>
+
+  <!-- Specialized Agent Groups -->
+  <!-- Finance Agents -->
+  <g id="finance-swarm">
+    <rect x="80" y="500" width="220" height="140" rx="8" fill="#1e293b" opacity="0.7" stroke="#10b981" stroke-width="2"/>
+    <text x="190" y="525" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#10b981" text-anchor="middle">Finance Swarm</text>
+
+    <circle cx="120" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="120" y="566" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" text-anchor="middle">AP</text>
+
+    <circle cx="190" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="190" y="566" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" text-anchor="middle">AR</text>
+
+    <circle cx="260" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="260" y="566" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" text-anchor="middle">GL</text>
+
+    <circle cx="155" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="155" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">REP</text>
+
+    <circle cx="225" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="225" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">REC</text>
+  </g>
+
+  <!-- HR Agents -->
+  <g id="hr-swarm">
+    <rect x="330" y="500" width="220" height="140" rx="8" fill="#1e293b" opacity="0.7" stroke="#10b981" stroke-width="2"/>
+    <text x="440" y="525" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#10b981" text-anchor="middle">HR Swarm</text>
+
+    <circle cx="370" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="370" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">REC</text>
+
+    <circle cx="440" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="440" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">ONB</text>
+
+    <circle cx="510" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="510" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">BEN</text>
+
+    <circle cx="405" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="405" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">PAY</text>
+
+    <circle cx="475" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="475" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">OFF</text>
+  </g>
+
+  <!-- Security Agents -->
+  <g id="security-swarm">
+    <rect x="580" y="500" width="220" height="140" rx="8" fill="#1e293b" opacity="0.7" stroke="#10b981" stroke-width="2"/>
+    <text x="690" y="525" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#10b981" text-anchor="middle">Security Swarm</text>
+
+    <circle cx="620" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="620" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">TRI</text>
+
+    <circle cx="690" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="690" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">THR</text>
+
+    <circle cx="760" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="760" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">HNT</text>
+
+    <circle cx="655" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="655" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">VUL</text>
+
+    <circle cx="725" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="725" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">RES</text>
+  </g>
+
+  <!-- SelfOps Agents -->
+  <g id="selfops-swarm">
+    <rect x="830" y="500" width="220" height="140" rx="8" fill="#1e293b" opacity="0.7" stroke="#10b981" stroke-width="2"/>
+    <text x="940" y="525" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#10b981" text-anchor="middle">SelfOps Swarm</text>
+
+    <circle cx="870" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="870" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">INF</text>
+
+    <circle cx="940" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="940" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">DAT</text>
+
+    <circle cx="1010" cy="560" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="1010" y="566" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">AGT</text>
+
+    <circle cx="905" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="905" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">SEC</text>
+
+    <circle cx="975" cy="610" r="20" fill="url(#gradAgent)" opacity="0.9"/>
+    <text x="975" y="616" font-family="Arial, sans-serif" font-size="9" fill="#ffffff" text-anchor="middle">OPS</text>
+  </g>
+
+  <!-- Communication mesh between agents (subtle lines) -->
+  <line x1="180" y1="200" x2="180" y2="280" stroke="#6366f1" stroke-width="3" opacity="0.6"/>
+  <line x1="600" y1="200" x2="420" y2="280" stroke="#6366f1" stroke-width="3" opacity="0.6"/>
+  <line x1="600" y1="200" x2="660" y2="280" stroke="#6366f1" stroke-width="3" opacity="0.6"/>
+  <line x1="600" y1="200" x2="900" y2="280" stroke="#6366f1" stroke-width="3" opacity="0.6"/>
+
+  <line x1="280" y1="340" x2="320" y2="340" stroke="#ec4899" stroke-width="2" opacity="0.5"/>
+  <line x1="520" y1="340" x2="560" y2="340" stroke="#ec4899" stroke-width="2" opacity="0.5"/>
+  <line x1="760" y1="340" x2="800" y2="340" stroke="#ec4899" stroke-width="2" opacity="0.5"/>
+
+  <line x1="180" y1="400" x2="190" y2="500" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <line x1="420" y1="400" x2="440" y2="500" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <line x1="660" y1="400" x2="690" y2="500" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <line x1="900" y1="400" x2="940" y2="500" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+
+  <!-- Shared Memory/State -->
+  <rect x="420" y="700" width="360" height="80" rx="10" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="600" y="725" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#8b5cf6" text-anchor="middle">SHARED MEMORY SUBSTRATE</text>
+  <text x="600" y="745" font-family="Arial, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">• Collective knowledge pool</text>
+  <text x="600" y="762" font-family="Arial, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">• Cross-agent learning</text>
+
+  <!-- Memory connections -->
+  <line x1="190" y1="640" x2="450" y2="700" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="440" y1="640" x2="550" y2="700" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="690" y1="640" x2="650" y2="700" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="940" y1="640" x2="750" y2="700" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3,3" opacity="0.5"/>
+
+  <!-- Legend -->
+  <rect x="50" y="820" width="1100" height="60" rx="8" fill="#1e293b" opacity="0.9" stroke="#64748b" stroke-width="1"/>
+  <text x="600" y="845" font-family="Arial, sans-serif" font-size="12" fill="#e2e8f0" text-anchor="middle" font-weight="bold">Swarm Coordination Principles</text>
+  <text x="150" y="865" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">🧠 Collective Intelligence</text>
+  <text x="350" y="865" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">🗳️ Democratic Decision-Making</text>
+  <text x="600" y="865" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">⚡ Parallel Execution</text>
+  <text x="850" y="865" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">🔄 Shared Learning</text>
+</svg>

@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" style="background: #0f172a;">
+  <defs>
+    <linearGradient id="azureGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0078d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#50e6ff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="awsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff9900;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffcc00;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="nvidiaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#76b900;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a0d911;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="netappGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066cc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00a1ff;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Deployment Architecture</text>
+  <text x="700" y="65" font-family="Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">Multi-Cloud Production Infrastructure</text>
+
+  <!-- Azure Cloud (Left) -->
+  <rect x="50" y="100" width="600" height="820" rx="15" fill="url(#azureGrad)" opacity="0.1" stroke="#0078d4" stroke-width="3"/>
+  <text x="350" y="135" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#0078d4" text-anchor="middle">MICROSOFT AZURE</text>
+
+  <!-- Azure AKS Cluster -->
+  <rect x="80" y="160" width="540" height="280" rx="10" fill="#1e293b" opacity="0.8" stroke="#0078d4" stroke-width="2"/>
+  <text x="350" y="185" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#50e6ff" text-anchor="middle">AKS Cluster (West US 2)</text>
+
+  <!-- Control Plane -->
+  <rect x="100" y="200" width="240" height="70" rx="8" fill="#0078d4" opacity="0.3" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="220" y="225" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Control Plane (Managed)</text>
+  <text x="220" y="242" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• API Server</text>
+  <text x="220" y="257" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• etcd • Scheduler</text>
+
+  <!-- Node Pools -->
+  <rect x="100" y="290" width="500" height="130" rx="8" fill="#1e293b" stroke="#0078d4" stroke-width="2"/>
+  <text x="350" y="310" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#50e6ff" text-anchor="middle">Node Pools</text>
+
+  <!-- System Pool -->
+  <rect x="120" y="325" width="140" height="80" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="190" y="345" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">System Pool</text>
+  <text x="190" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">3x D4s_v5</text>
+  <text x="190" y="377" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Core services</text>
+  <text x="190" y="392" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Ingress, DNS</text>
+
+  <!-- Agent Pool -->
+  <rect x="280" y="325" width="140" height="80" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="350" y="345" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Agent Pool</text>
+  <text x="350" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">5-20x D8s_v5</text>
+  <text x="350" y="377" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Auto-scale</text>
+  <text x="350" y="392" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Agent workloads</text>
+
+  <!-- GPU Pool -->
+  <rect x="440" y="325" width="140" height="80" rx="6" fill="#334155" stroke="#76b900" stroke-width="2"/>
+  <text x="510" y="345" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0d911" text-anchor="middle">GPU Pool</text>
+  <text x="510" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">2-10x NC24ads</text>
+  <text x="510" y="377" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A100 GPUs</text>
+  <text x="510" y="392" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">NIM inference</text>
+
+  <!-- Azure Services -->
+  <rect x="80" y="460" width="540" height="200" rx="10" fill="#1e293b" opacity="0.8" stroke="#0078d4" stroke-width="2"/>
+  <text x="350" y="485" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#50e6ff" text-anchor="middle">Azure Services</text>
+
+  <!-- Row 1 -->
+  <rect x="100" y="500" width="140" height="70" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="170" y="520" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">PostgreSQL</text>
+  <text x="170" y="537" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Flexible Server</text>
+  <text x="170" y="552" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">HA + pgvector</text>
+
+  <rect x="260" y="500" width="140" height="70" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="330" y="520" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Key Vault</text>
+  <text x="330" y="537" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Secrets</text>
+  <text x="330" y="552" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Certificates</text>
+
+  <rect x="420" y="500" width="140" height="70" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="490" y="520" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Redis Cache</text>
+  <text x="490" y="537" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Premium tier</text>
+  <text x="490" y="552" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Clustering</text>
+
+  <!-- Row 2 -->
+  <rect x="100" y="580" width="140" height="70" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="170" y="600" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Monitor</text>
+  <text x="170" y="617" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Metrics + Logs</text>
+  <text x="170" y="632" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">App Insights</text>
+
+  <rect x="260" y="580" width="140" height="70" rx="6" fill="#334155" stroke="#0078d4" stroke-width="1.5"/>
+  <text x="330" y="600" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">AD / Entra ID</text>
+  <text x="330" y="617" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">OAuth/OIDC</text>
+  <text x="330" y="632" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">RBAC</text>
+
+  <rect x="420" y="580" width="140" height="70" rx="6" fill="#334155" stroke="#0066cc" stroke-width="2"/>
+  <text x="490" y="600" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#00a1ff" text-anchor="middle">Azure NetApp</text>
+  <text x="490" y="615" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#00a1ff" text-anchor="middle">Files (ANF)</text>
+  <text x="490" y="632" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Ultra/Premium</text>
+
+  <!-- Azure AI Foundry -->
+  <rect x="80" y="680" width="260" height="100" rx="10" fill="#334155" stroke="#0078d4" stroke-width="2"/>
+  <text x="210" y="705" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#50e6ff" text-anchor="middle">Azure AI Foundry</text>
+  <text x="210" y="725" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• Prompt Flow</text>
+  <text x="210" y="742" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• Model catalog</text>
+  <text x="210" y="759" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• RAG orchestration</text>
+
+  <!-- Databricks -->
+  <rect x="360" y="680" width="260" height="100" rx="10" fill="#334155" stroke="#ff3621" stroke-width="2"/>
+  <text x="490" y="705" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ff3621" text-anchor="middle">Databricks</text>
+  <text x="490" y="725" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• Delta Lake</text>
+  <text x="490" y="742" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• Spark ETL pipelines</text>
+  <text x="490" y="759" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• Feature store</text>
+
+  <!-- Fabric -->
+  <rect x="80" y="800" width="540" height="100" rx="10" fill="#334155" stroke="#0078d4" stroke-width="2"/>
+  <text x="350" y="825" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#50e6ff" text-anchor="middle">Microsoft Fabric</text>
+  <text x="220" y="850" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• OneLake (unified data)</text>
+  <text x="220" y="867" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Real-Time Intelligence</text>
+  <text x="220" y="884" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Synapse Data Warehouse</text>
+  <text x="500" y="850" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Power BI</text>
+  <text x="500" y="867" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Data Activator</text>
+
+  <!-- AWS Cloud (Right) -->
+  <rect x="750" y="100" width="600" height="480" rx="15" fill="url(#awsGrad)" opacity="0.1" stroke="#ff9900" stroke-width="3"/>
+  <text x="1050" y="135" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ff9900" text-anchor="middle">AWS (OPTIONAL)</text>
+
+  <!-- EKS Cluster -->
+  <rect x="780" y="160" width="540" height="280" rx="10" fill="#1e293b" opacity="0.8" stroke="#ff9900" stroke-width="2"/>
+  <text x="1050" y="185" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffcc00" text-anchor="middle">EKS Cluster (us-west-2)</text>
+
+  <!-- Control Plane -->
+  <rect x="800" y="200" width="240" height="70" rx="8" fill="#ff9900" opacity="0.3" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="920" y="225" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Control Plane (Managed)</text>
+  <text x="920" y="242" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• API Server</text>
+  <text x="920" y="257" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">• etcd • Scheduler</text>
+
+  <!-- Node Groups -->
+  <rect x="800" y="290" width="500" height="130" rx="8" fill="#1e293b" stroke="#ff9900" stroke-width="2"/>
+  <text x="1050" y="310" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffcc00" text-anchor="middle">Node Groups</text>
+
+  <!-- System -->
+  <rect x="820" y="325" width="140" height="80" rx="6" fill="#334155" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="890" y="345" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">System</text>
+  <text x="890" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">3x m5.xlarge</text>
+  <text x="890" y="377" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Core services</text>
+
+  <!-- Agent -->
+  <rect x="980" y="325" width="140" height="80" rx="6" fill="#334155" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="1050" y="345" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Agent</text>
+  <text x="1050" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">5-20x m5.2xlarge</text>
+  <text x="1050" y="377" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Auto-scale</text>
+
+  <!-- GPU -->
+  <rect x="1140" y="325" width="140" height="80" rx="6" fill="#334155" stroke="#76b900" stroke-width="2"/>
+  <text x="1210" y="345" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a0d911" text-anchor="middle">GPU</text>
+  <text x="1210" y="362" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">2-10x p4d.24xl</text>
+  <text x="1210" y="377" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">A100 GPUs</text>
+
+  <!-- AWS Services -->
+  <rect x="780" y="460" width="540" height="100" rx="10" fill="#1e293b" opacity="0.8" stroke="#ff9900" stroke-width="2"/>
+  <text x="1050" y="485" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#ffcc00" text-anchor="middle">AWS Services</text>
+
+  <rect x="800" y="500" width="130" height="50" rx="6" fill="#334155" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="865" y="520" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#e2e8f0" text-anchor="middle">RDS (PostgreSQL)</text>
+  <text x="865" y="537" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Multi-AZ</text>
+
+  <rect x="950" y="500" width="130" height="50" rx="6" fill="#334155" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="1015" y="520" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Secrets Manager</text>
+  <text x="1015" y="537" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">KMS encryption</text>
+
+  <rect x="1100" y="500" width="130" height="50" rx="6" fill="#334155" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="1165" y="520" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#e2e8f0" text-anchor="middle">ElastiCache</text>
+  <text x="1165" y="537" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Redis cluster</text>
+
+  <!-- NVIDIA NIM (Cross-cloud) -->
+  <rect x="750" y="600" width="600" height="140" rx="15" fill="url(#nvidiaGrad)" opacity="0.15" stroke="#76b900" stroke-width="3"/>
+  <text x="1050" y="635" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#76b900" text-anchor="middle">NVIDIA NIM</text>
+  <text x="1050" y="655" font-family="Arial, sans-serif" font-size="13" fill="#a0d911" text-anchor="middle">GPU-Accelerated AI Inference</text>
+
+  <rect x="780" y="670" width="240" height="55" rx="8" fill="#1e293b" stroke="#76b900" stroke-width="2"/>
+  <text x="900" y="693" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">NIM Microservices</text>
+  <text x="900" y="710" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Llama-3, Mistral, GPT-J</text>
+
+  <rect x="1040" y="670" width="280" height="55" rx="8" fill="#1e293b" stroke="#76b900" stroke-width="2"/>
+  <text x="1180" y="693" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">NeMo Guardrails</text>
+  <text x="1180" y="710" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Safety, PII masking, content filtering</text>
+
+  <!-- NetApp Storage (Cross-cloud) -->
+  <rect x="750" y="760" width="600" height="140" rx="15" fill="url(#netappGrad)" opacity="0.15" stroke="#0066cc" stroke-width="3"/>
+  <text x="1050" y="795" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#0066cc" text-anchor="middle">NetApp Storage</text>
+  <text x="1050" y="815" font-family="Arial, sans-serif" font-size="13" fill="#00a1ff" text-anchor="middle">High-Performance NFS</text>
+
+  <rect x="780" y="830" width="240" height="55" rx="8" fill="#1e293b" stroke="#0066cc" stroke-width="2"/>
+  <text x="900" y="853" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Azure NetApp Files</text>
+  <text x="900" y="870" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Models, datasets, checkpoints</text>
+
+  <rect x="1040" y="830" width="280" height="55" rx="8" fill="#1e293b" stroke="#0066cc" stroke-width="2"/>
+  <text x="1180" y="853" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">FSx for NetApp ONTAP</text>
+  <text x="1180" y="870" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Cross-region replication, snapshots</text>
+
+  <!-- Connections -->
+  <line x1="650" y1="300" x2="750" y2="300" stroke="#6366f1" stroke-width="3" stroke-dasharray="10,5" opacity="0.6"/>
+  <text x="700" y="290" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Multi-cloud sync</text>
+
+  <!-- Legend -->
+  <rect x="50" y="940" width="1300" height="50" rx="8" fill="#1e293b" opacity="0.9" stroke="#64748b" stroke-width="1"/>
+  <text x="700" y="962" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle" font-weight="bold">Production Deployment: Azure primary, AWS optional DR/multi-region • Terraform-managed • Auto-scaling • HA/BCDR</text>
+  <text x="200" y="978" font-family="Arial, sans-serif" font-size="10" fill="#0078d4">Azure: Primary</text>
+  <text x="400" y="978" font-family="Arial, sans-serif" font-size="10" fill="#ff9900">AWS: DR/Multi-cloud</text>
+  <text x="650" y="978" font-family="Arial, sans-serif" font-size="10" fill="#76b900">NVIDIA: GPU/AI</text>
+  <text x="900" y="978" font-family="Arial, sans-serif" font-size="10" fill="#0066cc">NetApp: Storage</text>
+</svg>

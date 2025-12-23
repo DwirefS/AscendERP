@@ -525,7 +525,10 @@
     <!-- Navigation -->
     <nav id="nav">
         <div class="nav-container">
-            <div class="logo">🐜 ANTS</div>
+            <div class="logo" style="display: flex; align-items: center; gap: 0.5rem;">
+                <img src="images/ants-logo.svg" alt="ANTS Logo" style="height: 40px; width: auto;">
+                <span>ANTS</span>
+            </div>
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#philosophy">Philosophy</a></li>
@@ -587,7 +590,7 @@
 
             <div class="features-grid">
                 <div class="feature-card glass">
-                    <span class="feature-icon">🧠</span>
+                    <span class="feature-icon" style="color: var(--primary);">◈</span>
                     <h3>Decision-Making Councils</h3>
                     <p>
                         5-phase deliberation protocol where specialized AI agents debate,
@@ -600,7 +603,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🎯</span>
+                    <span class="feature-icon" style="color: var(--accent);">◉</span>
                     <h3>Mixture of Experts (MoE)</h3>
                     <p>
                         Intelligent routing system that selects the optimal expert agent
@@ -613,7 +616,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🔬</span>
+                    <span class="feature-icon" style="color: var(--success);">◆</span>
                     <h3>Meta-Agent Framework</h3>
                     <p>
                         Self-extending AI that generates integration code on-the-fly.
@@ -626,7 +629,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🐜</span>
+                    <span class="feature-icon" style="color: var(--warning);">⬢</span>
                     <h3>Swarm Intelligence</h3>
                     <p>
                         Ant colony patterns at enterprise scale. Agents communicate via
@@ -639,7 +642,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🧬</span>
+                    <span class="feature-icon" style="color: var(--accent);">◬</span>
                     <h3>Stem Cell Agents</h3>
                     <p>
                         Polymorphic agents that differentiate on demand. Deploy a minimal
@@ -652,7 +655,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🧠</span>
+                    <span class="feature-icon" style="color: var(--primary);">◈</span>
                     <h3>Multi-Tier Memory</h3>
                     <p>
                         Episodic (experiences), Semantic (facts), Procedural (skills),
@@ -665,7 +668,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🛡️</span>
+                    <span class="feature-icon" style="color: var(--success);">◉</span>
                     <h3>Enterprise Security</h3>
                     <p>
                         Defense in depth: prompt injection detection, rate limiting,
@@ -678,7 +681,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🏪</span>
+                    <span class="feature-icon" style="color: var(--accent);">◆</span>
                     <h3>Agent Marketplace</h3>
                     <p>
                         Community-driven template library. One-click deployment of
@@ -691,7 +694,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">☁️</span>
+                    <span class="feature-icon" style="color: var(--primary);">◎</span>
                     <h3>Multi-Cloud DNA</h3>
                     <p>
                         Agent code is cloud-agnostic. Same agents run on Azure, AWS, GCP,
@@ -703,7 +706,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">🤖</span>
+                    <span class="feature-icon" style="color: var(--warning);">⬡</span>
                     <h3>SelfOps Agents</h3>
                     <p>
                         Platform manages itself: InfraOps (provisions resources), DataOps
@@ -716,7 +719,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">📊</span>
+                    <span class="feature-icon" style="color: var(--success);">◆</span>
                     <h3>Unified Analytics</h3>
                     <p>
                         Azure Fabric + Databricks + OneLake integration. Zero-copy
@@ -729,7 +732,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <span class="feature-icon">⚡</span>
+                    <span class="feature-icon" style="color: var(--accent);">◉</span>
                     <h3>GPU-Accelerated Inference</h3>
                     <p>
                         NVIDIA NIM integration for 2.6x throughput improvement.
@@ -826,8 +829,75 @@
         </div>
     </section>
 
-    <!-- Architecture Section -->
-    <section id="architecture" class="section">
+    <!-- Architecture Diagrams Section -->
+    <section id="diagrams" class="section">
+        <div class="container">
+            <h2 class="section-title">Architecture & Design</h2>
+            <p class="section-subtitle">
+                Visual blueprints of the ANTS platform
+            </p>
+
+            <div style="margin-top: 3rem;">
+                <!-- System Architecture -->
+                <div style="margin-bottom: 4rem;">
+                    <h3 style="color: var(--primary); font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">System Architecture</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        Four-layer architecture from presentation to infrastructure
+                    </p>
+                    <div class="glass" style="padding: 2rem; border-radius: 15px;">
+                        <img src="diagrams/system-architecture.svg" alt="ANTS System Architecture" style="width: 100%; height: auto; border-radius: 10px;">
+                    </div>
+                </div>
+
+                <!-- Agent Lifecycle -->
+                <div style="margin-bottom: 4rem;">
+                    <h3 style="color: var(--accent); font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">Agent Lifecycle</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        6-phase autonomous execution loop: Perceive → Retrieve → Reason → Execute → Verify → Learn
+                    </p>
+                    <div class="glass" style="padding: 2rem; border-radius: 15px;">
+                        <img src="diagrams/agent-lifecycle.svg" alt="Agent Lifecycle" style="width: 100%; height: auto; border-radius: 10px;">
+                    </div>
+                </div>
+
+                <!-- Swarm Coordination -->
+                <div style="margin-bottom: 4rem;">
+                    <h3 style="color: var(--success); font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">Swarm Intelligence</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        Collective decision-making through meta-agents, councils, and specialized execution swarms
+                    </p>
+                    <div class="glass" style="padding: 2rem; border-radius: 15px;">
+                        <img src="diagrams/swarm-coordination.svg" alt="Swarm Coordination" style="width: 100%; height: auto; border-radius: 10px;">
+                    </div>
+                </div>
+
+                <!-- Deployment Architecture -->
+                <div style="margin-bottom: 4rem;">
+                    <h3 style="color: var(--primary); font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">Deployment Architecture</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        Multi-cloud production infrastructure on Azure (primary) and AWS (optional DR)
+                    </p>
+                    <div class="glass" style="padding: 2rem; border-radius: 15px;">
+                        <img src="diagrams/deployment-architecture.svg" alt="Deployment Architecture" style="width: 100%; height: auto; border-radius: 10px;">
+                    </div>
+                </div>
+
+                <!-- Data Flow -->
+                <div style="margin-bottom: 4rem;">
+                    <h3 style="color: var(--warning); font-size: 1.8rem; margin-bottom: 1rem; text-align: center;">Data Flow Pipeline</h3>
+                    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                        End-to-end data journey from ingestion through lakehouse layers to AI inference
+                    </p>
+                    <div class="glass" style="padding: 2rem; border-radius: 15px;">
+                        <img src="diagrams/data-flow.svg" alt="Data Flow Architecture" style="width: 100%; height: auto; border-radius: 10px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Stack Section -->
+    <section id="architecture" class="section" style="background: var(--dark-light);">
         <div class="container">
             <h2 class="section-title">Technology Stack</h2>
             <p class="section-subtitle">
@@ -836,7 +906,7 @@
 
             <div class="features-grid">
                 <div class="feature-card glass">
-                    <h3>☁️ Azure Cloud Services</h3>
+                    <h3 style="color: #0078d4;">Azure Cloud Services</h3>
                     <p><strong>AI & ML:</strong> Azure OpenAI, AI Foundry (1,800+ models), Agent Service</p>
                     <p><strong>Data:</strong> Fabric, OneLake, Databricks, Event Hubs, Cosmos DB</p>
                     <p><strong>Compute:</strong> AKS (Kubernetes), GPU nodes, Azure Arc</p>
@@ -844,7 +914,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <h3>🚀 NVIDIA AI Platform</h3>
+                    <h3 style="color: #76b900;">NVIDIA AI Platform</h3>
                     <p><strong>Inference:</strong> NIM microservices (2.6x faster)</p>
                     <p><strong>Models:</strong> Llama, Nemotron, Mistral, Stable Diffusion</p>
                     <p><strong>RAG:</strong> NeMo Retriever, Guardrails</p>
@@ -852,7 +922,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <h3>💾 Azure NetApp Files</h3>
+                    <h3 style="color: #0066cc;">Azure NetApp Files</h3>
                     <p><strong>Performance:</strong> Sub-millisecond latency, 4.5 GB/s throughput</p>
                     <p><strong>Features:</strong> Snapshots, cross-region replication, cool tier</p>
                     <p><strong>Integration:</strong> Object REST API (S3-compatible), OneLake shortcuts</p>
@@ -860,7 +930,7 @@
                 </div>
 
                 <div class="feature-card glass">
-                    <h3>🧰 Development Stack</h3>
+                    <h3 style="color: var(--primary);">Development Stack</h3>
                     <p><strong>Languages:</strong> Python 3.11+, Rego (policies)</p>
                     <p><strong>Frameworks:</strong> LangChain, LangGraph, FastAPI</p>
                     <p><strong>Infrastructure:</strong> Terraform, Helm, Docker</p>

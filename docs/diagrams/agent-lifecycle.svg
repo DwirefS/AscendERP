@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" style="background: #0f172a;">
+  <defs>
+    <linearGradient id="gradPerceive" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradRetrieve" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradReason" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f43f5e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradExecute" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f43f5e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradVerify" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradLearn" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#e2e8f0" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Agent Lifecycle</text>
+  <text x="400" y="65" font-family="Arial, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">6-Phase Autonomous Loop</text>
+
+  <!-- Center core -->
+  <circle cx="400" cy="400" r="80" fill="#1e293b" stroke="#6366f1" stroke-width="3" filter="url(#glow)"/>
+  <text x="400" y="390" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#e2e8f0" text-anchor="middle">BaseAgent</text>
+  <text x="400" y="410" font-family="Arial, sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Autonomous</text>
+  <text x="400" y="427" font-family="Arial, sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Execution</text>
+
+  <!-- Phase 1: PERCEIVE (top) -->
+  <g transform="translate(400, 140)">
+    <rect x="-90" y="-50" width="180" height="100" rx="12" fill="url(#gradPerceive)" opacity="0.9" filter="url(#glow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">1. PERCEIVE</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle">Input Analysis</text>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Parse task</text>
+    <text x="0" y="32" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Extract entities</text>
+  </g>
+
+  <!-- Phase 2: RETRIEVE (top right) -->
+  <g transform="translate(610, 230)">
+    <rect x="-90" y="-50" width="180" height="100" rx="12" fill="url(#gradRetrieve)" opacity="0.9" filter="url(#glow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">2. RETRIEVE</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle">Context Gathering</text>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• RAG search</text>
+    <text x="0" y="32" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Memory lookup</text>
+  </g>
+
+  <!-- Phase 3: REASON (bottom right) -->
+  <g transform="translate(610, 570)">
+    <rect x="-90" y="-50" width="180" height="100" rx="12" fill="url(#gradReason)" opacity="0.9" filter="url(#glow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">3. REASON</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle">Decision Making</text>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Council vote</text>
+    <text x="0" y="32" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Plan actions</text>
+  </g>
+
+  <!-- Phase 4: EXECUTE (bottom) -->
+  <g transform="translate(400, 660)">
+    <rect x="-90" y="-50" width="180" height="100" rx="12" fill="url(#gradExecute)" opacity="0.9" filter="url(#glow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">4. EXECUTE</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle">Action</text>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Tool calls</text>
+    <text x="0" y="32" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• API requests</text>
+  </g>
+
+  <!-- Phase 5: VERIFY (bottom left) -->
+  <g transform="translate(190, 570)">
+    <rect x="-90" y="-50" width="180" height="100" rx="12" fill="url(#gradVerify)" opacity="0.9" filter="url(#glow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">5. VERIFY</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle">Quality Check</text>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Policy check</text>
+    <text x="0" y="32" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Validate output</text>
+  </g>
+
+  <!-- Phase 6: LEARN (top left) -->
+  <g transform="translate(190, 230)">
+    <rect x="-90" y="-50" width="180" height="100" rx="12" fill="url(#gradLearn)" opacity="0.9" filter="url(#glow)"/>
+    <text x="0" y="-20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">6. LEARN</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="11" fill="#e2e8f0" text-anchor="middle">Adaptation</text>
+    <text x="0" y="18" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Update memory</text>
+    <text x="0" y="32" font-family="Arial, sans-serif" font-size="10" fill="#cbd5e1" text-anchor="middle">• Store patterns</text>
+  </g>
+
+  <!-- Circular arrows connecting phases -->
+  <!-- 1 to 2 -->
+  <path d="M 460 165 Q 520 180, 530 230" fill="none" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+  <!-- 2 to 3 -->
+  <path d="M 640 320 Q 650 380, 640 480" fill="none" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+  <!-- 3 to 4 -->
+  <path d="M 530 595 Q 480 620, 460 635" fill="none" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+  <!-- 4 to 5 -->
+  <path d="M 340 635 Q 280 620, 270 595" fill="none" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+  <!-- 5 to 6 -->
+  <path d="M 160 480 Q 150 380, 160 320" fill="none" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+  <!-- 6 to 1 -->
+  <path d="M 270 205 Q 320 180, 340 165" fill="none" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+  <!-- Curved connection lines to center -->
+  <path d="M 400 240 L 400 320" stroke="#6366f1" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <path d="M 520 280 L 450 350" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <path d="M 520 520 L 450 450" stroke="#ec4899" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <path d="M 400 560 L 400 480" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <path d="M 280 520 L 350 450" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+  <path d="M 280 280 L 350 350" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5" opacity="0.4"/>
+
+  <!-- Legend -->
+  <rect x="20" y="720" width="760" height="60" rx="8" fill="#1e293b" opacity="0.8" stroke="#64748b" stroke-width="1"/>
+  <text x="400" y="745" font-family="Arial, sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">Continuous autonomous loop with built-in quality gates and learning</text>
+  <text x="400" y="765" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Each phase validates with PolicyEngine before proceeding • Memory updated after every execution</text>
+</svg>

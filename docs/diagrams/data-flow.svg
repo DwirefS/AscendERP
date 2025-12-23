@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" style="background: #0f172a;">
+  <defs>
+    <linearGradient id="gradIngestion" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradStorage" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradProcessing" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradAI" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradOutput" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#e2e8f0" />
+    </marker>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Data Flow Architecture</text>
+  <text x="600" y="65" font-family="Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">End-to-End Data Pipeline</text>
+
+  <!-- Stage 1: Data Sources (Left) -->
+  <text x="100" y="120" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#6366f1" text-anchor="middle">DATA SOURCES</text>
+
+  <rect x="30" y="140" width="140" height="60" rx="8" fill="url(#gradIngestion)" opacity="0.8" filter="url(#glow)"/>
+  <text x="100" y="163" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">ERP Systems</text>
+  <text x="100" y="180" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">SAP, Oracle, D365</text>
+
+  <rect x="30" y="220" width="140" height="60" rx="8" fill="url(#gradIngestion)" opacity="0.8" filter="url(#glow)"/>
+  <text x="100" y="243" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">CRM / Ticketing</text>
+  <text x="100" y="260" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Salesforce, Jira</text>
+
+  <rect x="30" y="300" width="140" height="60" rx="8" fill="url(#gradIngestion)" opacity="0.8" filter="url(#glow)"/>
+  <text x="100" y="323" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Documents</text>
+  <text x="100" y="340" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">PDF, DOCX, emails</text>
+
+  <rect x="30" y="380" width="140" height="60" rx="8" fill="url(#gradIngestion)" opacity="0.8" filter="url(#glow)"/>
+  <text x="100" y="403" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">IoT / Events</text>
+  <text x="100" y="420" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Sensors, logs</text>
+
+  <rect x="30" y="460" width="140" height="60" rx="8" fill="url(#gradIngestion)" opacity="0.8" filter="url(#glow)"/>
+  <text x="100" y="483" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Security</text>
+  <text x="100" y="500" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Defender, alerts</text>
+
+  <!-- Stage 2: Ingestion Layer -->
+  <rect x="230" y="140" width="160" height="400" rx="12" fill="#1e293b" opacity="0.8" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="310" y="165" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#8b5cf6" text-anchor="middle">INGESTION</text>
+
+  <rect x="250" y="185" width="120" height="60" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="310" y="205" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Event Hubs</text>
+  <text x="310" y="220" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Real-time</text>
+  <text x="310" y="235" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">streaming</text>
+
+  <rect x="250" y="260" width="120" height="60" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="310" y="280" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">IoT Hub</text>
+  <text x="310" y="295" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Device</text>
+  <text x="310" y="310" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">telemetry</text>
+
+  <rect x="250" y="335" width="120" height="60" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="310" y="355" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Connectors</text>
+  <text x="310" y="370" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">REST APIs</text>
+  <text x="310" y="385" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Webhooks</text>
+
+  <rect x="250" y="410" width="120" height="60" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="310" y="430" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Document AI</text>
+  <text x="310" y="445" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">OCR, NLP</text>
+  <text x="310" y="460" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">extraction</text>
+
+  <!-- Arrows from sources to ingestion -->
+  <line x1="170" y1="170" x2="230" y2="215" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="170" y1="250" x2="230" y2="290" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="170" y1="330" x2="230" y2="365" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="170" y1="410" x2="230" y2="440" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="170" y1="490" x2="230" y2="460" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+
+  <!-- Stage 3: Bronze/Silver/Gold Layers -->
+  <rect x="450" y="140" width="300" height="400" rx="12" fill="#1e293b" opacity="0.8" stroke="#ec4899" stroke-width="2"/>
+  <text x="600" y="165" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#ec4899" text-anchor="middle">LAKEHOUSE</text>
+
+  <!-- Bronze -->
+  <rect x="470" y="185" width="260" height="80" rx="8" fill="url(#gradStorage)" opacity="0.3" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="600" y="210" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#8b5cf6" text-anchor="middle">BRONZE (Raw)</text>
+  <text x="600" y="228" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Delta Lake • Parquet • Immutable</text>
+  <text x="600" y="245" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Schema-on-read • Time-travel</text>
+
+  <!-- Silver -->
+  <rect x="470" y="280" width="260" height="80" rx="8" fill="url(#gradStorage)" opacity="0.3" stroke="#ec4899" stroke-width="2"/>
+  <text x="600" y="305" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#ec4899" text-anchor="middle">SILVER (Curated)</text>
+  <text x="600" y="323" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Cleaned • Validated • Deduplicated</text>
+  <text x="600" y="340" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Conformed schema • Quality checks</text>
+
+  <!-- Gold -->
+  <rect x="470" y="375" width="260" height="80" rx="8" fill="url(#gradStorage)" opacity="0.3" stroke="#f59e0b" stroke-width="2"/>
+  <text x="600" y="400" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#f59e0b" text-anchor="middle">GOLD (Aggregated)</text>
+  <text x="600" y="418" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Business logic applied • Aggregations</text>
+  <text x="600" y="435" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">Feature engineering • Ready for AI</text>
+
+  <text x="600" y="475" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">Databricks • OneLake • Synapse</text>
+
+  <!-- Arrows ingestion to lakehouse -->
+  <line x1="390" y1="225" x2="450" y2="225" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrow)" opacity="0.7"/>
+  <line x1="390" y1="320" x2="450" y2="320" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrow)" opacity="0.7"/>
+  <line x1="390" y1="415" x2="450" y2="415" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrow)" opacity="0.7"/>
+
+  <!-- Internal lakehouse arrows -->
+  <line x1="600" y1="265" x2="600" y2="280" stroke="#ec4899" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="600" y1="360" x2="600" y2="375" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+
+  <!-- Stage 4: AI/ML Processing -->
+  <rect x="810" y="140" width="180" height="400" rx="12" fill="#1e293b" opacity="0.8" stroke="#10b981" stroke-width="2"/>
+  <text x="900" y="165" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#10b981" text-anchor="middle">AI/ML</text>
+
+  <rect x="830" y="185" width="140" height="70" rx="8" fill="url(#gradAI)" opacity="0.8" filter="url(#glow)"/>
+  <text x="900" y="210" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Embeddings</text>
+  <text x="900" y="227" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">text-embedding-3</text>
+  <text x="900" y="242" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">pgvector</text>
+
+  <rect x="830" y="270" width="140" height="70" rx="8" fill="url(#gradAI)" opacity="0.8" filter="url(#glow)"/>
+  <text x="900" y="295" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">RAG Pipeline</text>
+  <text x="900" y="312" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Semantic search</text>
+  <text x="900" y="327" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Context retrieval</text>
+
+  <rect x="830" y="355" width="140" height="70" rx="8" fill="url(#gradAI)" opacity="0.8" filter="url(#glow)"/>
+  <text x="900" y="380" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">NIM Inference</text>
+  <text x="900" y="397" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">GPU-accelerated</text>
+  <text x="900" y="412" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">LLM calls</text>
+
+  <rect x="830" y="440" width="140" height="70" rx="8" fill="url(#gradAI)" opacity="0.8" filter="url(#glow)"/>
+  <text x="900" y="465" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Guardrails</text>
+  <text x="900" y="482" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Safety checks</text>
+  <text x="900" y="497" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">PII masking</text>
+
+  <!-- Arrows lakehouse to AI -->
+  <line x1="750" y1="220" x2="810" y2="220" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrow)" opacity="0.7"/>
+  <line x1="750" y1="305" x2="810" y2="305" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrow)" opacity="0.7"/>
+  <line x1="750" y1="390" x2="810" y2="390" stroke="#e2e8f0" stroke-width="3" marker-end="url(#arrow)" opacity="0.7"/>
+
+  <!-- Stage 5: Output/Consumption -->
+  <rect x="1050" y="140" width="120" height="400" rx="12" fill="#1e293b" opacity="0.8" stroke="#3b82f6" stroke-width="2"/>
+  <text x="1110" y="165" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#3b82f6" text-anchor="middle">OUTPUT</text>
+
+  <rect x="1060" y="185" width="100" height="60" rx="6" fill="url(#gradOutput)" opacity="0.8"/>
+  <text x="1110" y="208" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">Agents</text>
+  <text x="1110" y="225" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Actions</text>
+
+  <rect x="1060" y="260" width="100" height="60" rx="6" fill="url(#gradOutput)" opacity="0.8"/>
+  <text x="1110" y="283" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">API</text>
+  <text x="1110" y="300" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">REST/GQL</text>
+
+  <rect x="1060" y="335" width="100" height="60" rx="6" fill="url(#gradOutput)" opacity="0.8"/>
+  <text x="1110" y="358" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">UI</text>
+  <text x="1110" y="375" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Dashboard</text>
+
+  <rect x="1060" y="410" width="100" height="60" rx="6" fill="url(#gradOutput)" opacity="0.8"/>
+  <text x="1110" y="433" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">Reports</text>
+  <text x="1110" y="450" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Analytics</text>
+
+  <rect x="1060" y="485" width="100" height="60" rx="6" fill="url(#gradOutput)" opacity="0.8"/>
+  <text x="1110" y="508" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">Webhooks</text>
+  <text x="1110" y="525" font-family="Arial, sans-serif" font-size="9" fill="#e2e8f0" text-anchor="middle">Events</text>
+
+  <!-- Arrows AI to output -->
+  <line x1="990" y1="215" x2="1050" y2="215" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="990" y1="290" x2="1050" y2="290" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="990" y1="365" x2="1050" y2="365" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="990" y1="440" x2="1050" y2="440" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+  <line x1="990" y1="515" x2="1050" y2="515" stroke="#e2e8f0" stroke-width="2" marker-end="url(#arrow)" opacity="0.6"/>
+
+  <!-- Bottom: Observability Layer -->
+  <rect x="230" y="580" width="940" height="120" rx="12" fill="#1e293b" opacity="0.8" stroke="#64748b" stroke-width="2"/>
+  <text x="700" y="610" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#64748b" text-anchor="middle">OBSERVABILITY &amp; GOVERNANCE</text>
+
+  <rect x="260" y="630" width="180" height="60" rx="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+  <text x="350" y="650" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">OpenTelemetry</text>
+  <text x="350" y="667" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Distributed tracing</text>
+
+  <rect x="460" y="630" width="180" height="60" rx="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+  <text x="550" y="650" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Prometheus/Grafana</text>
+  <text x="550" y="667" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Metrics &amp; alerts</text>
+
+  <rect x="660" y="630" width="180" height="60" rx="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+  <text x="750" y="650" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Policy Engine (OPA)</text>
+  <text x="750" y="667" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Governance &amp; auth</text>
+
+  <rect x="860" y="630" width="180" height="60" rx="8" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+  <text x="950" y="650" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Audit Logs</text>
+  <text x="950" y="667" font-family="Arial, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Compliance tracking</text>
+
+  <!-- Observability connections -->
+  <line x1="310" y1="540" x2="310" y2="580" stroke="#64748b" stroke-width="2" stroke-dasharray="5,5" opacity="0.5"/>
+  <line x1="600" y1="540" x2="550" y2="580" stroke="#64748b" stroke-width="2" stroke-dasharray="5,5" opacity="0.5"/>
+  <line x1="900" y1="540" x2="750" y2="580" stroke="#64748b" stroke-width="2" stroke-dasharray="5,5" opacity="0.5"/>
+  <line x1="1110" y1="545" x2="950" y2="580" stroke="#64748b" stroke-width="2" stroke-dasharray="5,5" opacity="0.5"/>
+
+  <!-- Legend -->
+  <rect x="50" y="740" width="1100" height="140" rx="10" fill="#1e293b" opacity="0.9" stroke="#64748b" stroke-width="1"/>
+  <text x="600" y="770" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#e2e8f0" text-anchor="middle">Data Flow Principles</text>
+
+  <text x="150" y="795" font-family="Arial, sans-serif" font-size="11" fill="#6366f1" font-weight="bold">Ingestion:</text>
+  <text x="150" y="812" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Real-time &amp; batch</text>
+  <text x="150" y="827" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Multi-source connectors</text>
+  <text x="150" y="842" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Schema validation</text>
+
+  <text x="400" y="795" font-family="Arial, sans-serif" font-size="11" fill="#ec4899" font-weight="bold">Lakehouse:</text>
+  <text x="400" y="812" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Bronze → Silver → Gold</text>
+  <text x="400" y="827" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Quality gates</text>
+  <text x="400" y="842" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Time-travel &amp; lineage</text>
+
+  <text x="650" y="795" font-family="Arial, sans-serif" font-size="11" fill="#10b981" font-weight="bold">AI/ML:</text>
+  <text x="650" y="812" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Vector embeddings</text>
+  <text x="650" y="827" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• RAG retrieval</text>
+  <text x="650" y="842" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Safety guardrails</text>
+
+  <text x="900" y="795" font-family="Arial, sans-serif" font-size="11" fill="#3b82f6" font-weight="bold">Consumption:</text>
+  <text x="900" y="812" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Multi-channel delivery</text>
+  <text x="900" y="827" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Real-time updates</text>
+  <text x="900" y="842" font-family="Arial, sans-serif" font-size="10" fill="#94a3b8">• Secure APIs</text>
+
+  <text x="600" y="865" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle" font-style="italic">Every stage monitored with OpenTelemetry • Policy-enforced at each boundary • Audit trail for compliance</text>
+</svg>
