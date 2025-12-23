@@ -160,13 +160,7 @@ Bodybuilder Bulk Phase     →  ANTS Development Phase
 - Premature optimization kills creativity
 - Bulk now, lean later
 
-**Reactions we've gotten**:
-- 😮 "WTF shocked" - The scope is overwhelming
-- 😐 "Blank stare" - Don't get it yet (that's okay)
-- 🤯 "Mind blown" - See the vision
-- 🤔 "Interesting..." - Need time to process
-
-**That's the point**: This is frontier exploration, not incremental improvement.
+**This is frontier exploration, not incremental improvement.**
 
 ---
 
