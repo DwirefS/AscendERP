@@ -1,0 +1,101 @@
+# Pod Security Policy for ANTS Agents
+#
+# Enforces security best practices:
+# - No privileged containers
+# - No host networking
+# - Read-only root filesystem
+# - Drop all capabilities
+# - Run as non-root user
+# - No privilege escalation
+
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ants-agent-psp
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName:  'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+spec:
+  # Privileged
+  privileged: false  # No privileged containers
+
+  # Host namespaces
+  hostNetwork: false  # No host networking
+  hostIPC: false      # No host IPC
+  hostPID: false      # No host PID
+
+  # Host paths
+  allowedHostPaths: []  # No host path volumes
+
+  # Volumes
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+    - 'azureFile'
+    - 'azureDisk'
+    # Do NOT allow: hostPath, local
+
+  # Filesystem
+  readOnlyRootFilesystem: true  # Force read-only root filesystem
+
+  # Run as user
+  runAsUser:
+    rule: 'MustRunAsNonRoot'  # Must run as non-root
+
+  # Supplemental groups
+  supplementalGroups:
+    rule: 'RunAsAny'
+
+  # FSGroup
+  fsGroup:
+    rule: 'RunAsAny'
+
+  # Capabilities
+  allowedCapabilities: []  # No capabilities allowed
+  defaultAddCapabilities: []
+  requiredDropCapabilities:
+    - ALL  # Drop all capabilities
+
+  # Privilege escalation
+  allowPrivilegeEscalation: false  # No privilege escalation
+
+  # SELinux
+  seLinux:
+    rule: 'RunAsAny'
+
+---
+# ClusterRole for using the PSP
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ants-agent-psp-user
+rules:
+  - apiGroups: ['policy']
+    resources: ['podsecuritypolicies']
+    verbs: ['use']
+    resourceNames:
+      - ants-agent-psp
+
+---
+# ClusterRoleBinding to apply PSP to agent service accounts
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ants-agent-psp-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ants-agent-psp-user
+subjects:
+  - kind: ServiceAccount
+    name: ants-agent
+    namespace: ants-agents
+  - kind: ServiceAccount
+    name: default
+    namespace: ants-agents

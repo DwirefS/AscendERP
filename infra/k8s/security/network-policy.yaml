@@ -1,0 +1,186 @@
+# Network Policies for ANTS
+#
+# Implements zero-trust networking:
+# - Deny all traffic by default
+# - Explicit allow rules for required communication
+# - Namespace isolation
+
+---
+# Default deny all ingress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: ants-agents
+spec:
+  podSelector: {}  # Apply to all pods
+  policyTypes:
+    - Ingress
+
+---
+# Default deny all egress traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: ants-agents
+spec:
+  podSelector: {}  # Apply to all pods
+  policyTypes:
+    - Egress
+
+---
+# Allow API gateway to receive external traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-ingress
+  namespace: ants-agents
+spec:
+  podSelector:
+    matchLabels:
+      app: api-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}  # Allow from any namespace
+      ports:
+        - protocol: TCP
+          port: 8000
+
+---
+# Allow agents to communicate with API gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-to-gateway
+  namespace: ants-agents
+spec:
+  podSelector:
+    matchLabels:
+      component: agent
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8000
+
+---
+# Allow agents to access PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-to-postgres
+  namespace: ants-agents
+spec:
+  podSelector:
+    matchLabels:
+      component: agent
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# Allow agents to access Redis
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-agents-to-redis
+  namespace: ants-agents
+spec:
+  podSelector:
+    matchLabels:
+      component: agent
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+
+---
+# Allow agents to access DNS (required for name resolution)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: ants-agents
+spec:
+  podSelector: {}  # All pods
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+        - podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# Allow agents to access Azure services (Key Vault, Storage, etc.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-azure-services-egress
+  namespace: ants-agents
+spec:
+  podSelector:
+    matchLabels:
+      component: agent
+  policyTypes:
+    - Egress
+  egress:
+    # Allow HTTPS egress to Azure services
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0  # Azure service endpoints
+      ports:
+        - protocol: TCP
+          port: 443  # HTTPS
+
+---
+# Allow Prometheus to scrape metrics
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: ants-agents
+spec:
+  podSelector:
+    matchLabels:
+      metrics: enabled
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090  # Metrics port
