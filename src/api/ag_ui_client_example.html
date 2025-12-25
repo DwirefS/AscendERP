@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANTS AG-UI Client Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stream-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .stream-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stream-header h2 {
+            font-size: 1.25rem;
+            color: #374151;
+        }
+
+        .status {
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status.idle {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .status.streaming {
+            background: #6366f1;
+            color: white;
+        }
+
+        .status.complete {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .messages {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .message {
+            background: white;
+            border-left: 4px solid #6366f1;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .message.thinking { border-left-color: #8b5cf6; }
+        .message.tool_use { border-left-color: #f59e0b; }
+        .message.tool_result { border-left-color: #10b981; }
+        .message.response { border-left-color: #3b82f6; }
+        .message.error { border-left-color: #ef4444; }
+        .message.approval_request { border-left-color: #ec4899; }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .message-type {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        .message-content {
+            color: #374151;
+            line-height: 1.5;
+        }
+
+        .approval-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .approval-actions button {
+            flex: 1;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .approval-actions .approve {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .approval-actions .reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 ANTS AG-UI Streaming Client</h1>
+            <p>Real-time agent execution with Server-Sent Events</p>
+        </div>
+
+        <div class="content">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="agent-id">Agent ID</label>
+                    <input type="text" id="agent-id" value="finance-agent-1" placeholder="Enter agent ID">
+                </div>
+
+                <div class="input-group">
+                    <label for="input-data">Input Data (JSON)</label>
+                    <textarea id="input-data" placeholder='{"action": "reconcile_invoices", "date": "2024-01"}'>{"action": "reconcile_invoices", "date": "2024-01", "requires_approval": false}</textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="tenant-id">Tenant ID</label>
+                    <input type="text" id="tenant-id" value="tenant-123" placeholder="Enter tenant ID">
+                </div>
+
+                <button id="execute-btn" onclick="executeAgent()">Execute Agent</button>
+            </div>
+
+            <div class="stream-section">
+                <div class="stream-header">
+                    <h2>Agent Stream</h2>
+                    <span class="status idle" id="status">Idle</span>
+                </div>
+
+                <div class="messages" id="messages">
+                    <div style="text-align: center; color: #9ca3af; padding: 2rem;">
+                        Click "Execute Agent" to start streaming
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let currentSessionId = null;
+
+        async function executeAgent() {
+            const agentId = document.getElementById('agent-id').value;
+            const inputDataText = document.getElementById('input-data').value;
+            const tenantId = document.getElementById('tenant-id').value;
+
+            // Parse input data
+            let inputData;
+            try {
+                inputData = JSON.parse(inputDataText);
+            } catch (e) {
+                alert('Invalid JSON in input data');
+                return;
+            }
+
+            // Clear previous messages
+            document.getElementById('messages').innerHTML = '';
+            setStatus('streaming');
+
+            // Disable execute button
+            const btn = document.getElementById('execute-btn');
+            btn.disabled = true;
+            btn.textContent = 'Executing...';
+
+            try {
+                // Call execute endpoint
+                const response = await fetch('http://localhost:8080/agent/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        agent_id: agentId,
+                        input_data: inputData,
+                        tenant_id: tenantId,
+                        user_id: 'user-456'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                currentSessionId = data.session_id;
+
+                addMessage('info', `Session started: ${currentSessionId}`);
+
+                // Connect to SSE stream
+                connectToStream(currentSessionId);
+
+            } catch (error) {
+                addMessage('error', `Failed to execute agent: ${error.message}`);
+                setStatus('error');
+                btn.disabled = false;
+                btn.textContent = 'Execute Agent';
+            }
+        }
+
+        function connectToStream(sessionId) {
+            // Close previous connection
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            // Create EventSource for SSE
+            eventSource = new EventSource(`http://localhost:8080/agent/stream/${sessionId}`);
+
+            eventSource.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('EventSource error:', error);
+                eventSource.close();
+                setStatus('error');
+                addMessage('error', 'Stream connection lost');
+
+                const btn = document.getElementById('execute-btn');
+                btn.disabled = false;
+                btn.textContent = 'Execute Agent';
+            };
+        }
+
+        function handleMessage(message) {
+            const type = message.message_type;
+            const content = message.content;
+
+            switch (type) {
+                case 'thinking':
+                    addMessage('thinking', content.thought);
+                    break;
+
+                case 'tool_use':
+                    addMessage('tool_use', `Using tool: <code>${content.tool}</code><br>Input: ${JSON.stringify(content.input)}`);
+                    break;
+
+                case 'tool_result':
+                    const status = content.success ? '✓' : '✗';
+                    addMessage('tool_result', `${status} Tool result from <code>${content.tool}</code>: ${JSON.stringify(content.result)}`);
+                    break;
+
+                case 'response':
+                    addMessage('response', `<strong>Final Response:</strong><br>${content.response}`);
+                    setStatus('complete');
+                    eventSource.close();
+
+                    const btn = document.getElementById('execute-btn');
+                    btn.disabled = false;
+                    btn.textContent = 'Execute Agent';
+                    break;
+
+                case 'error':
+                    addMessage('error', `<strong>Error:</strong> ${content.error}`);
+                    setStatus('error');
+                    eventSource.close();
+
+                    const errBtn = document.getElementById('execute-btn');
+                    errBtn.disabled = false;
+                    errBtn.textContent = 'Execute Agent';
+                    break;
+
+                case 'approval_request':
+                    addApprovalMessage(content);
+                    break;
+
+                default:
+                    console.log('Unknown message type:', type, content);
+            }
+        }
+
+        function addMessage(type, content) {
+            const messagesDiv = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type">${type}</span>
+                    <span class="message-timestamp">${timestamp}</span>
+                </div>
+                <div class="message-content">${content}</div>
+            `;
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addApprovalMessage(content) {
+            const messagesDiv = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message approval_request';
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type">approval required</span>
+                    <span class="message-timestamp">${timestamp}</span>
+                </div>
+                <div class="message-content">
+                    <strong>Action:</strong> ${content.action}<br>
+                    <strong>Description:</strong> ${content.description}<br>
+                    <strong>Risk Level:</strong> <span style="color: #ef4444;">${content.risk_level}</span>
+                    <div class="approval-actions">
+                        <button class="approve" onclick="respondToApproval('${content.request_id}', true)">✓ Approve</button>
+                        <button class="reject" onclick="respondToApproval('${content.request_id}', false)">✗ Reject</button>
+                    </div>
+                </div>
+            `;
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function respondToApproval(requestId, approved) {
+            try {
+                const response = await fetch(`http://localhost:8080/agent/approve/${requestId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        approved: approved,
+                        feedback: approved ? 'Approved by user' : 'Rejected by user'
+                    })
+                });
+
+                if (response.ok) {
+                    addMessage('info', `Approval ${approved ? 'granted' : 'rejected'}`);
+                }
+            } catch (error) {
+                addMessage('error', `Failed to send approval: ${error.message}`);
+            }
+        }
+
+        function setStatus(status) {
+            const statusSpan = document.getElementById('status');
+            statusSpan.className = `status ${status}`;
+            statusSpan.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+    </script>
+</body>
+</html>

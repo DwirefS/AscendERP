@@ -1,0 +1,42 @@
+# ANTS Observability and Development Tools
+# Based on Microsoft Agent Framework patterns
+# Reference: https://github.com/microsoft/agent-framework
+
+# OpenTelemetry Core
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-instrumentation>=0.41b0
+
+# OpenTelemetry Exporters
+opentelemetry-exporter-otlp-proto-grpc>=1.20.0  # For Aspire Dashboard, Jaeger, etc.
+opentelemetry-exporter-otlp-proto-http>=1.20.0
+
+# Azure Monitor Integration
+azure-monitor-opentelemetry>=1.2.0  # Azure Application Insights
+
+# Automatic Instrumentation
+opentelemetry-instrumentation-system-metrics>=0.41b0
+opentelemetry-instrumentation-logging>=0.41b0
+opentelemetry-instrumentation-httpx>=0.41b0
+opentelemetry-instrumentation-requests>=0.41b0
+opentelemetry-instrumentation-psycopg>=0.41b0  # PostgreSQL
+opentelemetry-instrumentation-asyncpg>=0.41b0  # Async PostgreSQL
+
+# DevUI Server (Visual Debugging)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+sse-starlette>=1.8.0  # Server-Sent Events for AG-UI protocol
+
+# Structured Logging
+structlog>=23.2.0
+python-json-logger>=2.0.7
+
+# Azure SDK (for identity and monitoring)
+azure-identity>=1.15.0
+azure-core>=1.29.0
+
+# Testing and Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0  # For testing FastAPI endpoints
