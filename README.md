@@ -4,6 +4,40 @@
 
 > *Reimagining Enterprise IT as a Living Digital Organism*
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Azure](https://img.shields.io/badge/Azure-AI%20Foundry-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/en-us/products/ai-studio)
+[![NVIDIA](https://img.shields.io/badge/NVIDIA-NIM-76B900?logo=nvidia)](https://www.nvidia.com/en-us/ai-data-science/products/nim/)
+[![NetApp](https://img.shields.io/badge/NetApp-ANF-0067C5)](https://azure.microsoft.com/en-us/products/netapp)
+[![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Enabled-blueviolet?logo=opentelemetry)](https://opentelemetry.io/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+##  📊 **Implementation Status: 75% Complete (Production-Ready Core)**
+
+**All 4 Priority Steps Complete ✅** | **7/7 Core Features ✅** | **Infrastructure Ready ✅**
+
+👉 **[See What's Actually Implemented →](docs/IMPLEMENTED.md)**
+
+### Quick Start (5 Minutes)
+```bash
+# Install dependencies
+pip install -r requirements-observability.txt requirements-azure-ai.txt
+
+# Run complete demo
+python examples/complete_ants_demo.py
+
+# Start DevUI (Visual Debugging)
+export ANTS_DEVUI_ENABLED=true
+python -m src.devtools.devui_server
+# Open http://localhost:8090
+```
+
+📖 **Key Resources:**
+- [Architecture Diagrams](docs/architecture-diagrams.md) - 10 Professional Mermaid Diagrams
+- [Complete Demo](examples/complete_ants_demo.py) - All 9 Features in Action
+- [Observability Guide](docs/observability-devui-guide.md) - DevUI + OpenTelemetry Setup
+- [What's Implemented](docs/IMPLEMENTED.md) - Detailed Status Breakdown
+
 ---
 
 ## 🌟 Vision Statement
