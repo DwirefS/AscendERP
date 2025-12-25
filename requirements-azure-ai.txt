@@ -1,0 +1,25 @@
+# Azure AI Foundry Integration
+# Reference: https://learn.microsoft.com/en-us/azure/ai-studio/
+
+# Azure AI Projects SDK
+azure-ai-projects>=1.0.0
+azure-ai-inference>=1.0.0
+
+# Azure Identity (authentication)
+azure-identity>=1.15.0
+
+# Azure SDK Core
+azure-core>=1.29.0
+
+# Optional: Azure AI Search (for RAG)
+azure-search-documents>=11.4.0
+
+# Optional: Azure Storage (for document handling)
+azure-storage-blob>=12.19.0
+
+# Optional: Microsoft Semantic Kernel (orchestration)
+semantic-kernel>=0.9.0
+
+# Async HTTP client
+httpx>=0.25.0
+aiohttp>=3.9.0
