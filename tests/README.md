@@ -21,6 +21,12 @@ tests/
 - Fast execution (<1s per test)
 - Run continuously during development
 
+**Key Unit Test Modules:**
+- `test_selfops_agents.py`: DataOps, AgentOps, SecOps agents
+- `test_semantic_kernel.py`: Microsoft Semantic Kernel integration
+- `test_azure_ai_foundry_connectors.py`: Enterprise data source connectors
+- `test_entra_agent_ids.py`: Agent authentication and authorization
+
 ### Integration Tests
 - Multi-component testing
 - Real database connections (test DB)

@@ -1,0 +1,327 @@
+name: ANTS CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  release:
+    types: [published]
+
+env:
+  PYTHON_VERSION: '3.10'
+  AZURE_REGISTRY: ants.azurecr.io
+  AKS_CLUSTER: ants-production
+  RESOURCE_GROUP: ants-production-rg
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: ants_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+          pip install -r requirements-observability.txt
+          pip install -r requirements-azure-ai.txt
+
+      - name: Run linting
+        run: |
+          pip install ruff black mypy
+          ruff check src/ tests/
+          black --check src/ tests/
+          mypy src/ --ignore-missing-imports
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=term
+        env:
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/ants_test
+
+      - name: Run integration tests
+        if: github.event_name != 'pull_request'
+        run: |
+          pytest tests/integration/ -v --cov=src --cov-append --cov-report=xml
+        env:
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/ants_test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+      - name: Run OPA policy tests
+        run: |
+          # Install OPA
+          curl -L -o opa https://openpolicyagent.org/downloads/v0.60.0/opa_linux_amd64_static
+          chmod 755 ./opa
+          # Test policies
+          ./opa test platform/policies/ tests/policy/
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Bandit security linter
+        run: |
+          pip install bandit
+          bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            trivy-results.sarif
+            bandit-report.json
+
+  build-images:
+    name: Build Docker Images
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'release'
+
+    strategy:
+      matrix:
+        service:
+          - api-gateway
+          - agent-orchestrator
+          - retrieval-service
+          - devui-server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.AZURE_REGISTRY }}
+          username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.AZURE_REGISTRY }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-images
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.ants.platform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ants-staging-rg
+          cluster-name: ants-staging
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install ants-core ./infra/helm/ants-core \
+            --namespace ants-staging \
+            --create-namespace \
+            --set image.tag=${{ github.sha }} \
+            --set environment=staging \
+            --set replicaCount=2 \
+            --values ./infra/helm/values-staging.yaml
+
+      - name: Deploy observability stack
+        run: |
+          helm upgrade --install ants-observability ./infra/helm/ants-observability \
+            --namespace ants-staging \
+            --set environment=staging
+
+      - name: Run smoke tests
+        run: |
+          kubectl wait --for=condition=ready pod -l app=ants-api-gateway -n ants-staging --timeout=300s
+          pytest tests/e2e/smoke/ --staging
+
+  deploy-production:
+    name: Deploy to Production
+    needs: build-images
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    environment:
+      name: production
+      url: https://ants.platform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_PROD }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER }}
+
+      - name: Create backup
+        run: |
+          # Backup current deployment
+          helm get values ants-core -n ants-production > backup-values.yaml
+          kubectl get all -n ants-production -o yaml > backup-resources.yaml
+
+      - name: Deploy with Helm (Blue-Green)
+        run: |
+          # Deploy to green environment
+          helm upgrade --install ants-core-green ./infra/helm/ants-core \
+            --namespace ants-production \
+            --set image.tag=${{ github.event.release.tag_name }} \
+            --set environment=production \
+            --set replicaCount=5 \
+            --set slot=green \
+            --values ./infra/helm/values-production.yaml \
+            --wait --timeout=10m
+
+      - name: Run health checks
+        run: |
+          # Wait for green deployment to be ready
+          kubectl wait --for=condition=ready pod -l app=ants-api-gateway,slot=green -n ants-production --timeout=600s
+
+          # Run health checks
+          pytest tests/e2e/health/ --production --slot=green
+
+      - name: Switch traffic (Blue to Green)
+        run: |
+          # Update service to point to green
+          kubectl patch service ants-api-gateway -n ants-production \
+            -p '{"spec":{"selector":{"slot":"green"}}}'
+
+          # Wait for traffic to stabilize
+          sleep 30
+
+      - name: Final verification
+        run: |
+          # Run full E2E tests
+          pytest tests/e2e/ --production --timeout=1800
+
+      - name: Cleanup blue deployment
+        if: success()
+        run: |
+          # Remove old blue deployment
+          helm uninstall ants-core-blue -n ants-production || true
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          # Rollback to blue
+          kubectl patch service ants-api-gateway -n ants-production \
+            -p '{"spec":{"selector":{"slot":"blue"}}}'
+
+          # Remove failed green deployment
+          helm uninstall ants-core-green -n ants-production
+
+          echo "Deployment failed and rolled back to previous version"
+          exit 1
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-artifacts
+          path: |
+            backup-values.yaml
+            backup-resources.yaml
+
+  notify:
+    name: Notify Deployment Status
+    needs: [deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Send Teams notification
+        uses: aliencube/microsoft-teams-actions@v0.8.0
+        with:
+          webhook_uri: ${{ secrets.TEAMS_WEBHOOK }}
+          title: ANTS Deployment ${{ job.status }}
+          summary: |
+            Environment: ${{ github.event_name == 'release' && 'Production' || 'Staging' }}
+            Version: ${{ github.event.release.tag_name || github.sha }}
+            Status: ${{ job.status }}
+          theme_color: ${{ job.status == 'success' && '00FF00' || 'FF0000' }}
