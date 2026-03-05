@@ -1,0 +1,186 @@
+{
+  "portfolio_id": "CONS-2024-003",
+  "portfolio_name": "Conservative Capital Preservation Portfolio",
+  "description": "Capital preservation focused portfolio emphasizing fixed income and cash with minimal equity exposure",
+  "total_aum": 100000000,
+  "currency": "USD",
+  "inception_date": "2015-03-20",
+  "benchmark": "Bloomberg Aggregate Bond Index",
+  "risk_profile": "conservative",
+  "rebalance_frequency": "semi-annually",
+  "allocations": {
+    "fixed_income": {
+      "percentage": 70.0,
+      "value": 70000000,
+      "holdings": [
+        {
+          "position_id": "BOND-001",
+          "name": "US Treasury Securities Portfolio",
+          "description": "Mix of 2Y, 5Y, 10Y and 30Y UST",
+          "par_value": 42000000,
+          "current_price": 98.85,
+          "market_value": 41517000,
+          "duration": 7.5,
+          "ytm": 0.0465,
+          "rating": "AAA",
+          "sector": "Government",
+          "weighted_maturity": "7.5 years"
+        },
+        {
+          "position_id": "BOND-002",
+          "name": "Investment Grade Corporate Bonds",
+          "isin": "AGGREGATE",
+          "par_value": 18000000,
+          "current_price": 101.25,
+          "market_value": 18225000,
+          "duration": 5.2,
+          "ytm": 0.052,
+          "rating": "A-",
+          "sector": "Corporate",
+          "weighted_maturity": "5.2 years"
+        },
+        {
+          "position_id": "BOND-003",
+          "name": "Municipal Bonds (Tax-Exempt)",
+          "par_value": 8000000,
+          "current_price": 100.50,
+          "market_value": 8040000,
+          "duration": 4.8,
+          "ytm": 0.038,
+          "rating": "AA",
+          "sector": "Municipal",
+          "tax_equivalent_yield": 0.058,
+          "weighted_maturity": "4.8 years"
+        },
+        {
+          "position_id": "BOND-004",
+          "name": "Floating Rate Notes",
+          "par_value": 2000000,
+          "current_price": 100.10,
+          "market_value": 2002000,
+          "duration": 0.3,
+          "ytm": 0.058,
+          "rating": "AA+",
+          "sector": "Government",
+          "coupon_reset": "Quarterly",
+          "weighted_maturity": "0.3 years"
+        }
+      ]
+    },
+    "equities": {
+      "percentage": 20.0,
+      "value": 20000000,
+      "holdings": [
+        {
+          "ticker": "JNJ",
+          "quantity": 75000,
+          "current_price": 157.85,
+          "market_value": 11838750,
+          "percentage_of_portfolio": 11.8,
+          "purchase_date": "2018-02-15",
+          "average_cost": 118.45,
+          "gain_loss_pct": 33.3,
+          "sector": "Healthcare",
+          "dividend_yield": 0.028
+        },
+        {
+          "ticker": "PG",
+          "quantity": 45000,
+          "current_price": 168.25,
+          "market_value": 7571250,
+          "percentage_of_portfolio": 7.6,
+          "purchase_date": "2017-06-20",
+          "average_cost": 95.30,
+          "gain_loss_pct": 76.5,
+          "sector": "Consumer",
+          "dividend_yield": 0.025
+        },
+        {
+          "ticker": "NEE",
+          "quantity": 28000,
+          "current_price": 81.50,
+          "market_value": 2282000,
+          "percentage_of_portfolio": 2.3,
+          "purchase_date": "2019-10-01",
+          "average_cost": 68.75,
+          "gain_loss_pct": 18.5,
+          "sector": "Utilities",
+          "dividend_yield": 0.033
+        }
+      ]
+    },
+    "money_market": {
+      "percentage": 10.0,
+      "value": 10000000,
+      "holdings": [
+        {
+          "position_id": "MM-001",
+          "name": "Money Market Fund",
+          "ticker": "SPAXX",
+          "nav": 1.00,
+          "quantity": 5500000,
+          "market_value": 5500000,
+          "yield": 0.052,
+          "expense_ratio": 0.0005
+        },
+        {
+          "position_id": "MM-002",
+          "name": "Cash and Bank Deposits",
+          "description": "Sweep account at primary custodian",
+          "market_value": 4500000,
+          "yield": 0.045,
+          "counterparty": "JPMorgan Chase"
+        }
+      ]
+    }
+  },
+  "performance_metrics": {
+    "ytd_return": 0.025,
+    "one_year_return": 0.038,
+    "three_year_annualized_return": 0.032,
+    "five_year_annualized_return": 0.028,
+    "seven_year_annualized_return": 0.031,
+    "since_inception_annualized_return": 0.042,
+    "sharpe_ratio": 0.58,
+    "max_drawdown": -0.028,
+    "volatility": 0.06,
+    "calmar_ratio": 1.5
+  },
+  "risk_metrics": {
+    "var_95_daily": -12500,
+    "cvar_95_daily": -16000,
+    "beta": 0.15,
+    "correlation_to_benchmark": 0.97,
+    "duration": 6.2,
+    "credit_quality": "AA",
+    "avg_rating": "AA-"
+  },
+  "income_metrics": {
+    "annual_dividend_income": 562500,
+    "annual_interest_income": 3187500,
+    "total_annual_income": 3750000,
+    "portfolio_yield": 3.75,
+    "distribution_frequency": "quarterly"
+  },
+  "duration_breakdown": {
+    "0_1_year": 0.08,
+    "1_3_years": 0.12,
+    "3_5_years": 0.18,
+    "5_10_years": 0.35,
+    "10plus_years": 0.27
+  },
+  "credit_quality_breakdown": {
+    "aaa": 0.42,
+    "aa": 0.28,
+    "a": 0.22,
+    "bbb": 0.08
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "manager": "Margaret Sullivan",
+    "custodian": "State Street Global Advisors",
+    "strategy": "Designed for pension plans and endowments prioritizing stable income and capital preservation",
+    "status": "active",
+    "regulatory_compliance": "ERISA compliant"
+  }
+}

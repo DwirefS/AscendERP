@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ants-cm-config
+  namespace: ants-capital-markets
+  labels:
+    app: ants
+    flavor: capital-markets
+    project: ants-capital-markets
+data:
+  # Environment settings
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "lab"
+  FLAVOR: "capital-markets"
+  API_PORT: "8000"
+  WORKERS: "4"
+
+  # Agents configuration
+  agents_config.yaml: |
+    agents:
+      market_analyst:
+        enabled: true
+        model: gpt-4-turbo
+        capabilities:
+          - market_analysis
+          - sentiment_analysis
+          - technical_analysis
+        rate_limit: 100
+
+      risk_manager:
+        enabled: true
+        model: gpt-4-turbo
+        capabilities:
+          - portfolio_risk_assessment
+          - scenario_analysis
+          - recommendation
+        rate_limit: 50
+
+      execution_manager:
+        enabled: true
+        model: gpt-4-turbo
+        capabilities:
+          - trade_execution
+          - order_optimization
+          - compliance_check
+        rate_limit: 200
+
+  # Councils configuration
+  councils_config.yaml: |
+    councils:
+      investment_committee:
+        members:
+          - market_analyst
+          - risk_manager
+        decision_threshold: 0.75
+        timeout_seconds: 30
+
+      execution_committee:
+        members:
+          - risk_manager
+          - execution_manager
+        decision_threshold: 0.80
+        timeout_seconds: 20
+
+  # Models configuration
+  models_config.yaml: |
+    models:
+      gpt-4-turbo:
+        provider: openai
+        temperature: 0.7
+        max_tokens: 2000
+        timeout_seconds: 60
+
+      gpt-3.5-turbo:
+        provider: openai
+        temperature: 0.5
+        max_tokens: 1000
+        timeout_seconds: 30

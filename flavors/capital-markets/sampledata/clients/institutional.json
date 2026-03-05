@@ -1,0 +1,116 @@
+{
+  "client_id": "INST-2024-001",
+  "client_name": "Retirement Security Pension Fund",
+  "client_type": "institutional",
+  "client_category": "pension_fund",
+  "country": "United States",
+  "region": "North America",
+  "aum": 500000000,
+  "currency": "USD",
+  "risk_profile": "conservative",
+  "risk_tolerance": "low",
+  "established_date": "1985-06-15",
+  "account_opened": "2018-03-20",
+  "contact_person": {
+    "name": "Robert J. Thompson",
+    "title": "Chief Investment Officer",
+    "email": "rthompson@retirementfund.org",
+    "phone": "+1-212-555-0147",
+    "timezone": "US/Eastern"
+  },
+  "fund_details": {
+    "fund_type": "Defined Benefit Pension Plan",
+    "beneficiaries": 28500,
+    "funded_ratio": 0.92,
+    "discount_rate": 0.065,
+    "policy_benchmark": "Custom Liability-Matching Portfolio",
+    "liability_profile": "Mature pension plan with declining membership",
+    "years_to_maturity": 35
+  },
+  "mandate": {
+    "objective": "Fund pension obligations while managing downside risk",
+    "constraints": [
+      "Minimum funded ratio of 90%",
+      "Maximum equity allocation 35%",
+      "No emerging market exposure",
+      "No derivatives except interest rate hedges",
+      "Quarterly rebalancing required"
+    ],
+    "excluded_sectors": [
+      "Tobacco",
+      "Weapons manufacturing",
+      "Nuclear power"
+    ],
+    "esg_requirements": "UNPRI compliant, minimum ESG score of 65"
+  },
+  "portfolio_allocation": {
+    "fixed_income": {
+      "target": 0.65,
+      "actual": 0.68,
+      "value": 340000000
+    },
+    "equities": {
+      "target": 0.30,
+      "actual": 0.28,
+      "value": 140000000
+    },
+    "alternatives": {
+      "target": 0.05,
+      "actual": 0.04,
+      "value": 20000000
+    }
+  },
+  "performance_targets": {
+    "return_objective": "Liability discount rate + 0.5% annually",
+    "time_horizon": 25,
+    "benchmark_return": 0.065,
+    "target_return": 0.070,
+    "maximum_volatility": 0.12
+  },
+  "fees": {
+    "management_fee_bps": 15,
+    "performance_fee": null,
+    "custody_fee_bps": 2,
+    "total_annual_fee": 850000
+  },
+  "custodian": {
+    "name": "State Street Global Advisors",
+    "account_id": "RSPENSIONFUND-001",
+    "relationship_manager": "Jessica Chen",
+    "account_type": "Institutional Master Trust"
+  },
+  "compliance_info": {
+    "regulatory_bodies": [
+      "SEC",
+      "DOL",
+      "FINRA"
+    ],
+    "compliance_officer": "Helen Greenwood",
+    "audit_firm": "Deloitte & Touche LLP",
+    "last_audit_date": "2023-12-15",
+    "audit_result": "Unqualified Opinion"
+  },
+  "reporting": {
+    "frequency": "monthly",
+    "reporting_date": "Last business day of month",
+    "custom_reports": [
+      "Liability matching analysis",
+      "Funded ratio projection",
+      "Asset-liability study",
+      "Risk decomposition"
+    ]
+  },
+  "communication_preferences": {
+    "primary_contact": "email",
+    "meeting_frequency": "quarterly",
+    "board_meeting_schedule": "4 times per year",
+    "prefer_language": "English"
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "account_status": "active",
+    "next_review_date": "2024-06-30",
+    "relationship_score": 9.2,
+    "tenure_years": 6
+  }
+}

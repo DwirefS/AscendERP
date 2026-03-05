@@ -1,0 +1,173 @@
+{
+  "portfolio_id": "AGGS-2024-001",
+  "portfolio_name": "Aggressive Growth Tech Portfolio",
+  "description": "Technology-focused aggressive growth portfolio with cryptocurrency exposure and equity options strategies",
+  "total_aum": 10000000,
+  "currency": "USD",
+  "inception_date": "2022-01-15",
+  "benchmark": "NASDAQ-100",
+  "risk_profile": "aggressive",
+  "rebalance_frequency": "quarterly",
+  "allocations": {
+    "equities": {
+      "percentage": 60.0,
+      "value": 6000000,
+      "holdings": [
+        {
+          "ticker": "NVDA",
+          "quantity": 8500,
+          "current_price": 875.50,
+          "market_value": 7441750,
+          "percentage_of_portfolio": 74.4,
+          "purchase_date": "2022-03-10",
+          "average_cost": 220.45,
+          "gain_loss_pct": 297.1,
+          "sector": "Technology"
+        },
+        {
+          "ticker": "AAPL",
+          "quantity": 12000,
+          "current_price": 192.35,
+          "market_value": 2308200,
+          "percentage_of_portfolio": 23.1,
+          "purchase_date": "2022-02-15",
+          "average_cost": 165.80,
+          "gain_loss_pct": 16.0,
+          "sector": "Technology"
+        },
+        {
+          "ticker": "MSFT",
+          "quantity": 3500,
+          "current_price": 415.25,
+          "market_value": 1453375,
+          "percentage_of_portfolio": 14.5,
+          "purchase_date": "2022-04-20",
+          "average_cost": 298.90,
+          "gain_loss_pct": 38.9,
+          "sector": "Technology"
+        },
+        {
+          "ticker": "TSLA",
+          "quantity": 2800,
+          "current_price": 242.75,
+          "market_value": 680100,
+          "percentage_of_portfolio": 6.8,
+          "purchase_date": "2022-06-01",
+          "average_cost": 715.50,
+          "gain_loss_pct": -66.1,
+          "sector": "Technology"
+        },
+        {
+          "ticker": "META",
+          "quantity": 5200,
+          "current_price": 505.10,
+          "market_value": 2626520,
+          "percentage_of_portfolio": 26.3,
+          "purchase_date": "2022-07-15",
+          "average_cost": 165.45,
+          "gain_loss_pct": 205.2,
+          "sector": "Technology"
+        }
+      ]
+    },
+    "cryptocurrency": {
+      "percentage": 20.0,
+      "value": 2000000,
+      "holdings": [
+        {
+          "ticker": "BTC",
+          "quantity": 0.25,
+          "current_price": 68500,
+          "market_value": 1137500,
+          "percentage_of_portfolio": 11.4,
+          "purchase_date": "2022-05-20",
+          "average_cost": 45200,
+          "gain_loss_pct": 51.5,
+          "asset_class": "Cryptocurrency"
+        },
+        {
+          "ticker": "ETH",
+          "quantity": 8.5,
+          "current_price": 3850,
+          "market_value": 862500,
+          "percentage_of_portfolio": 8.6,
+          "purchase_date": "2022-06-10",
+          "average_cost": 1520,
+          "gain_loss_pct": 153.3,
+          "asset_class": "Cryptocurrency"
+        }
+      ]
+    },
+    "options": {
+      "percentage": 20.0,
+      "value": 2000000,
+      "holdings": [
+        {
+          "position_id": "OPT-001",
+          "underlying": "NVDA",
+          "option_type": "call",
+          "strike_price": 900.0,
+          "expiration_date": "2024-12-20",
+          "quantity": 50,
+          "current_price": 45.75,
+          "market_value": 228750,
+          "delta": 0.68,
+          "gamma": 0.0012,
+          "vega": 0.85,
+          "theta": -0.05,
+          "iv": 0.32
+        },
+        {
+          "position_id": "OPT-002",
+          "underlying": "META",
+          "option_type": "call",
+          "strike_price": 550.0,
+          "expiration_date": "2024-09-20",
+          "quantity": 75,
+          "current_price": 28.50,
+          "market_value": 213750,
+          "delta": 0.71,
+          "gamma": 0.0015,
+          "vega": 0.92,
+          "theta": -0.08,
+          "iv": 0.38
+        },
+        {
+          "position_id": "OPT-003",
+          "underlying": "SPY",
+          "option_type": "put",
+          "strike_price": 400.0,
+          "expiration_date": "2024-06-21",
+          "quantity": 100,
+          "current_price": 12.25,
+          "market_value": 122500,
+          "delta": -0.32,
+          "gamma": 0.0018,
+          "vega": 1.15,
+          "theta": -0.12,
+          "iv": 0.28
+        }
+      ]
+    }
+  },
+  "performance_metrics": {
+    "ytd_return": 0.284,
+    "one_year_return": 0.185,
+    "three_year_annualized_return": 0.162,
+    "sharpe_ratio": 1.45,
+    "max_drawdown": -0.385,
+    "volatility": 0.38
+  },
+  "risk_metrics": {
+    "var_95_daily": -145000,
+    "cvar_95_daily": -185000,
+    "beta": 1.85,
+    "correlation_to_benchmark": 0.92
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "manager": "Alexander Chen",
+    "strategy": "Growth-oriented technology and crypto investing with options overlay for upside leverage",
+    "status": "active"
+  }
+}

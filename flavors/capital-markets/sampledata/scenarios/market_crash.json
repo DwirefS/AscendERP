@@ -1,0 +1,188 @@
+{
+  "scenario_id": "CRASH-2008",
+  "scenario_name": "Financial Crisis Market Crash (2008-style)",
+  "description": "Severe equity market correction with credit market seizure and volatility spike",
+  "scenario_type": "historical_analog",
+  "severity": "extreme",
+  "probability_estimate": 0.02,
+  "event_trigger": "Systemic financial institution failure or credit market collapse",
+  "duration_days": 180,
+  "creation_date": "2024-03-04",
+  "market_conditions": {
+    "equity_market": {
+      "large_cap_shock": -0.40,
+      "mid_cap_shock": -0.45,
+      "small_cap_shock": -0.50,
+      "sector_specific_shocks": {
+        "financials": -0.60,
+        "technology": -0.38,
+        "industrials": -0.42,
+        "consumer_discretionary": -0.48,
+        "consumer_staples": -0.20,
+        "healthcare": -0.18,
+        "energy": -0.35,
+        "utilities": -0.12,
+        "real_estate": -0.55,
+        "materials": -0.40
+      },
+      "correlation_regime": "high_positive",
+      "sector_correlations": 0.85,
+      "intra_sector_correlations": 0.92
+    },
+    "volatility": {
+      "vix_level": 65,
+      "vix_term_structure": "inverted",
+      "implied_volatility_by_tenor": {
+        "1_month": 0.68,
+        "3_month": 0.62,
+        "6_month": 0.58,
+        "1_year": 0.52
+      },
+      "volatility_persistence": "high"
+    },
+    "fixed_income_market": {
+      "credit_spread_shock_bps": {
+        "investment_grade": 200,
+        "high_yield": 400,
+        "high_yield_spread_level": 1800
+      },
+      "treasury_yields": {
+        "2y_yield": 0.005,
+        "5y_yield": 0.015,
+        "10y_yield": 0.020,
+        "30y_yield": 0.030,
+        "yield_curve_shape": "flattened"
+      },
+      "credit_rating_migration": {
+        "upgrade_probability": 0.01,
+        "downgrade_probability": 0.35,
+        "default_probability": 0.08
+      }
+    },
+    "currency_market": {
+      "usd_index_change": 0.15,
+      "carry_trade_unwind": true,
+      "volatility_induced_fx_moves": {
+        "eurusd": -0.12,
+        "gbpusd": -0.10,
+        "jpyusd": 0.25,
+        "emerging_market_fx": -0.18
+      },
+      "funding_currency_stress": true
+    },
+    "commodity_market": {
+      "oil_price_shock": -0.45,
+      "gold_price_shock": 0.20,
+      "copper_price_shock": -0.50,
+      "commodity_volatility": 0.55
+    },
+    "credit_conditions": {
+      "liquidity_condition": "severe_stress",
+      "bid_ask_spread_increase": 15.0,
+      "market_depth_decline": 0.90,
+      "counterparty_risk": "elevated",
+      "repo_market_dysfunction": true,
+      "credit_default_swap_spreads": {
+        "financial_institutions": 350,
+        "airlines": 280,
+        "auto_manufacturers": 320
+      },
+      "banking_system_stress": true
+    }
+  },
+  "portfolio_impact_scenarios": {
+    "aggressive_portfolio": {
+      "expected_loss_pct": -45.2,
+      "expected_loss_amount": 4520000,
+      "worst_case_loss_pct": -52.1,
+      "best_case_loss_pct": -38.5,
+      "recovery_duration_months": 24
+    },
+    "balanced_portfolio": {
+      "expected_loss_pct": -18.5,
+      "expected_loss_amount": 4625000,
+      "worst_case_loss_pct": -22.3,
+      "best_case_loss_pct": -14.2,
+      "recovery_duration_months": 12
+    },
+    "conservative_portfolio": {
+      "expected_loss_pct": -8.2,
+      "expected_loss_amount": 8200000,
+      "worst_case_loss_pct": -11.5,
+      "best_case_loss_pct": -5.3,
+      "recovery_duration_months": 6
+    }
+  },
+  "systemic_effects": {
+    "contagion_effects": true,
+    "deleveraging_cascade": true,
+    "margin_call_cascades": true,
+    "fire_sales": true,
+    "counterparty_failures": true,
+    "regulatory_intervention": true
+  },
+  "key_correlations": {
+    "equity_bond_correlation": 0.45,
+    "equity_vix_correlation": -0.92,
+    "credit_equity_correlation": 0.88,
+    "usd_equity_correlation": -0.65,
+    "gold_equity_correlation": 0.05
+  },
+  "risk_factor_moves": {
+    "market_risk": -0.40,
+    "credit_risk": 0.35,
+    "interest_rate_risk": 0.05,
+    "volatility_risk": 0.65,
+    "liquidity_risk": 0.80,
+    "fx_risk": 0.25,
+    "geopolitical_risk": 0.50
+  },
+  "policy_responses": [
+    "Emergency central bank liquidity provisions",
+    "Government bank recapitalization",
+    "Circuit breaker trading halts",
+    "Suspension of short-selling rules",
+    "Emergency rate cuts (200-300 bps)",
+    "Quantitative easing programs",
+    "Regulatory forbearance on capital ratios"
+  ],
+  "recovery_path": {
+    "timeline_months": 36,
+    "phases": [
+      {
+        "phase": "Panic (Months 0-3)",
+        "equity_recovery": -0.15,
+        "credit_spread_change": 100
+      },
+      {
+        "phase": "Stabilization (Months 3-12)",
+        "equity_recovery": 0.25,
+        "credit_spread_change": -150
+      },
+      {
+        "phase": "Recovery (Months 12-36)",
+        "equity_recovery": 0.35,
+        "credit_spread_change": -200
+      }
+    ]
+  },
+  "stress_test_benchmarks": {
+    "use_for_var_stress": true,
+    "use_for_cvar_stress": true,
+    "use_for_hedge_effectiveness": true,
+    "hedge_ratio_required": 0.50,
+    "capital_buffer_required_pct": 8.5
+  },
+  "metadata": {
+    "created_date": "2024-03-04",
+    "last_reviewed": "2024-03-04",
+    "review_frequency": "quarterly",
+    "historical_precedent": "2008 Global Financial Crisis",
+    "sources": [
+      "Federal Reserve CCAR guidelines",
+      "Basel Committee stress tests",
+        "Historical event analysis"
+    ],
+    "confidence_level": "high"
+  }
+}

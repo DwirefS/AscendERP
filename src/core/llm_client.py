@@ -70,6 +70,44 @@ class LLMClient(ABC):
         """
         pass
 
+    async def generate(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        **kwargs
+    ) -> LLMResponse:
+        """
+        Generate a response from a single prompt string.
+
+        This is a convenience wrapper around chat_completion() that converts
+        a single prompt into the messages format. All 6 Capital Markets agents
+        call .generate(prompt=...) in their PRREEL cognitive loop, so this
+        bridge method is essential for connecting agents to the LLM client.
+
+        Args:
+            prompt: The user prompt string
+            system_prompt: Optional system prompt for context/instructions
+            temperature: Sampling temperature (0.0 = deterministic, 1.0 = creative)
+            max_tokens: Maximum tokens to generate
+            **kwargs: Provider-specific parameters
+
+        Returns:
+            LLMResponse with the model's generated content
+        """
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        return await self.chat_completion(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs
+        )
+
 
 class AzureAIFoundryLLMClient(LLMClient):
     """

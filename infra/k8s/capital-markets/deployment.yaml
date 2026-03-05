@@ -1,0 +1,319 @@
+# ==============================================================================
+# ANTS Capital Markets — Full Stack K8s Deployment
+#
+# Updated: 2026-03-04 (v2 — full stack with ANF mounts, secrets, live agents)
+#
+# HISTORY:
+#   v1 (2026-03-04): Initial mock-only deployment with ConfigMap env vars
+#   v2 (2026-03-04): Full stack — ANF PVC mounts, PostgreSQL + AI Foundry
+#                     secrets, Redis/OPA/Guardrails service endpoints,
+#                     MOCK_MODE=false for real agent reasoning
+#
+# WHAT CHANGED (v1 → v2):
+#   - Added ANF PersistentVolumeClaim mounts for all 7 volumes
+#   - Added env vars for PostgreSQL, Redis, OPA, Guardrails, AI Foundry
+#   - Added secretRef for pg-ants-secret and ai-foundry-secret
+#   - Set MOCK_MODE=false (was true) — enables real LLM + memory + policy
+#   - Increased resource limits (512Mi → 1Gi request, 1Gi → 2Gi limit)
+#   - Kept all v1 config (envFrom, probes, security) intact
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capital-markets-api
+  namespace: ants-capital-markets
+  labels:
+    app: ants
+    component: capital-markets-api
+    flavor: capital-markets
+    project: ants-capital-markets
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ants
+      component: capital-markets-api
+  template:
+    metadata:
+      labels:
+        app: ants
+        component: capital-markets-api
+        flavor: capital-markets
+        project: ants-capital-markets
+    spec:
+      serviceAccountName: ants-cm-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+      - name: capital-markets-api
+        # ---------------------------------------------------------------------
+        # GAP #9 — FIXED (2026-03-04)
+        # WHAT: Original image field used a shell variable ${ACR_NAME} which
+        #   Kubernetes cannot resolve — K8s manifests don't support shell
+        #   variable interpolation natively.
+        # ORIGINAL:
+        #   image: "${ACR_NAME}.azurecr.io/ants-capital-markets:latest"
+        # FIX: Hardcoded the actual ACR login server (antscmlab.azurecr.io).
+        # TODO: For production, use Helm templating or kustomize overlays
+        #   to parameterize the image registry per environment.
+        # ---------------------------------------------------------------------
+        image: "antscmlab.azurecr.io/ants-capital-markets:latest"
+        imagePullPolicy: Always  # Changed from IfNotPresent to pick up new builds
+
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        # =====================================================================
+        # Environment variables — wired to real services (v2)
+        # =====================================================================
+        # [ORIGINAL v1] envFrom for ConfigMap and generic secrets
+        # envFrom:
+        # - configMapRef:
+        #     name: ants-cm-config
+        # - secretRef:
+        #     name: ants-cm-secrets
+
+        env:
+        # --- Operational Mode ---
+        # MOCK_MODE=false enables real LLM inference, memory, policy engine
+        # Set to "true" to fall back to numpy simulations (no external deps)
+        - name: MOCK_MODE
+          value: "false"
+
+        # --- Azure AI Foundry (LLM + Embeddings) ---
+        - name: AI_FOUNDRY_ENDPOINT
+          value: "https://finance-rag-project-resource.services.ai.azure.com"
+        - name: AI_FOUNDRY_API_VERSION
+          value: "2024-05-01-preview"
+        - name: AI_FOUNDRY_LLM_DEPLOYMENT
+          value: "Llama-4-Maverick-17B-128E-Instruct-FP8"
+        - name: AI_FOUNDRY_EMBEDDING_DEPLOYMENT
+          value: "text-embedding-3-small"
+        - name: AI_FOUNDRY_FALLBACK_LLM
+          value: "gpt-4o"
+        - name: AI_FOUNDRY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-foundry-secret
+              key: api-key
+
+        # --- PostgreSQL (pgvector) ---
+        - name: POSTGRES_HOST
+          value: "pg-ants-lab-cm.postgres.database.azure.com"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB
+          value: "capital_markets"
+        - name: POSTGRES_USER
+          value: "ants_admin"
+        - name: POSTGRES_SSL_MODE
+          value: "require"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pg-ants-secret
+              key: password
+
+        # --- Redis (agent state caching) ---
+        - name: REDIS_HOST
+          value: "redis-master.ants-capital-markets.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"
+
+        # --- OPA Policy Engine ---
+        - name: OPA_ENDPOINT
+          value: "http://opa.ants-capital-markets.svc.cluster.local:8181"
+        - name: OPA_POLICY_PATH
+          value: "/v1/data/capital_markets"
+
+        # --- NeMo Guardrails ---
+        - name: GUARDRAILS_ENDPOINT
+          value: "http://guardrails.ants-capital-markets.svc.cluster.local:8090"
+
+        # --- ANF Mount Paths (used by memory substrate + lakehouse) ---
+        - name: ANF_MODELS_PATH
+          value: "/mnt/anf/models"
+        - name: ANF_EPISODIC_PATH
+          value: "/mnt/anf/memory/episodic"
+        - name: ANF_SEMANTIC_PATH
+          value: "/mnt/anf/memory/semantic"
+        - name: ANF_PROCEDURAL_PATH
+          value: "/mnt/anf/memory/procedural"
+        - name: ANF_LEARNING_PATH
+          value: "/mnt/anf/learning"
+        - name: ANF_LAKEHOUSE_PATH
+          value: "/mnt/anf/lakehouse"
+        - name: ANF_RECEIPTS_PATH
+          value: "/mnt/anf/audit/receipts"
+
+        # --- Observability ---
+        - name: OTLP_ENDPOINT
+          value: "http://otel-collector.ants-capital-markets.svc.cluster.local:4317"
+        - name: LOG_LEVEL
+          value: "INFO"
+
+        # --- Tenant ---
+        - name: DEFAULT_TENANT
+          value: "ants-lab-demo"
+
+        # --- Pod Identity (downward API) ---
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+
+        # Resource constraints (increased for full stack with LLM calls)
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "1"
+            memory: 2Gi
+
+        # Liveness probe - detects if pod is dead and needs restart
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Readiness probe - detects if pod can receive traffic
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+
+        # Startup probe - gives the pod time to start up
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          failureThreshold: 30
+
+        # =================================================================
+        # Volume mounts — ANF NFS + config + logs
+        # =================================================================
+        volumeMounts:
+        # [ORIGINAL v1] Config and logs
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: logs
+          mountPath: /app/logs
+
+        # [NEW v2] ANF NFS mounts — 7 volumes for agent memory + data
+        - name: anf-models
+          mountPath: /mnt/anf/models
+        - name: anf-episodic
+          mountPath: /mnt/anf/memory/episodic
+        - name: anf-semantic
+          mountPath: /mnt/anf/memory/semantic
+        - name: anf-procedural
+          mountPath: /mnt/anf/memory/procedural
+        - name: anf-learning
+          mountPath: /mnt/anf/learning
+        - name: anf-lakehouse
+          mountPath: /mnt/anf/lakehouse
+        - name: anf-receipts
+          mountPath: /mnt/anf/audit/receipts
+
+        # Security context for the container
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
+      # =================================================================
+      # Volumes — ANF PVCs + config + logs
+      # =================================================================
+      volumes:
+      # [ORIGINAL v1] Config and logs
+      - name: config
+        configMap:
+          name: ants-cm-config
+          optional: true  # Allow pod to start even if ConfigMap doesn't exist yet
+      - name: logs
+        emptyDir:
+          sizeLimit: 500Mi
+
+      # [NEW v2] ANF NFS PersistentVolumeClaims
+      - name: anf-models
+        persistentVolumeClaim:
+          claimName: pvc-anf-models
+      - name: anf-episodic
+        persistentVolumeClaim:
+          claimName: pvc-anf-episodic
+      - name: anf-semantic
+        persistentVolumeClaim:
+          claimName: pvc-anf-semantic
+      - name: anf-procedural
+        persistentVolumeClaim:
+          claimName: pvc-anf-procedural
+      - name: anf-learning
+        persistentVolumeClaim:
+          claimName: pvc-anf-learning
+      - name: anf-lakehouse
+        persistentVolumeClaim:
+          claimName: pvc-anf-lakehouse
+      - name: anf-receipts
+        persistentVolumeClaim:
+          claimName: pvc-anf-receipts
+
+      # Pod disruption budget considerations
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                  - capital-markets-api
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ants-cm-sa
+  namespace: ants-capital-markets
+  labels:
+    app: ants
+    flavor: capital-markets
+    project: ants-capital-markets

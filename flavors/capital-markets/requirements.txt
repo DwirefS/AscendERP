@@ -1,0 +1,50 @@
+# ==============================================================================
+# ANTS Capital Markets — Python Dependencies
+#
+# Updated 2026-03-04: Full stack dependencies for live agent mode
+# (MOCK_MODE=false with LLM, memory, guardrails, policy engine)
+#
+# Previous version (mock-only) had: fastapi, uvicorn, pydantic, numpy, scipy,
+# httpx, python-json-logger, pyyaml
+#
+# New additions for live mode marked with # [LIVE]
+# ==============================================================================
+
+# --- Core API Framework ---
+fastapi>=0.109
+uvicorn[standard]>=0.27
+pydantic>=2.0
+
+# --- Computation ---
+numpy>=1.24
+scipy>=1.12
+
+# --- HTTP Client (Azure AI Foundry calls, health checks) ---
+httpx>=0.26
+
+# --- Logging & Config ---
+python-json-logger>=2.0
+pyyaml>=6.0
+structlog>=23.1            # [LIVE] Structured logging used by all agents and core modules
+
+# --- Database (PostgreSQL + pgvector) ---
+asyncpg>=0.29             # [LIVE] Async PostgreSQL driver for memory substrate
+# pgvector extension is server-side, no Python package needed
+
+# --- File I/O (ANF filesystem operations) ---
+aiofiles>=23.0            # [LIVE] Async file writes to ANF mount paths
+
+# --- OpenTelemetry (observability — optional but recommended) ---
+opentelemetry-api>=1.20   # [LIVE] Distributed tracing API
+opentelemetry-sdk>=1.20   # [LIVE] Tracing SDK
+opentelemetry-instrumentation-fastapi>=0.41  # [LIVE] Auto-instrument FastAPI
+
+# --- Redis (caching — used by guardrails and agent state) ---
+redis>=5.0                # [LIVE] Redis client for caching layer
+
+# --- Azure AI / OpenAI (embeddings, LLM inference) ---
+openai>=1.12              # [LIVE] Azure OpenAI client for embeddings + chat completion
+azure-identity>=1.15      # [LIVE] Azure credential provider (DefaultAzureCredential)
+
+# --- UUID and crypto (audit receipts) ---
+# hashlib, uuid — both stdlib, no pip install needed

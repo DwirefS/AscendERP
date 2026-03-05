@@ -1,0 +1,211 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.config.agents.configMapName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: configuration
+    release: {{ .Release.Name }}
+  annotations:
+    description: "Capital Markets Agents Configuration"
+    managed-by: "Helm"
+
+data:
+  agents_config.yaml: |
+    # Capital Markets Agents Configuration
+    # This ConfigMap contains the agents_config.yaml loaded at runtime
+    # See /flavors/capital-markets/config/agents_config.yaml for full configuration
+
+    # Global agent settings
+    defaults:
+      model_name: "azure_openai/gpt-4o"
+      max_iterations: 15
+      timeout_seconds: 60
+      memory_enabled: true
+
+    agents:
+      # Agent configurations are loaded from the actual config file
+      # mounted into the container at {{ .Values.config.agents.configPath }}
+      # This section can be overridden by the actual mounted volume
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.config.councils.configMapName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: configuration
+    release: {{ .Release.Name }}
+  annotations:
+    description: "Capital Markets Councils Configuration"
+    managed-by: "Helm"
+
+data:
+  councils_config.yaml: |
+    # Capital Markets Councils Configuration
+    # This ConfigMap contains the councils_config.yaml loaded at runtime
+    # See /flavors/capital-markets/config/councils_config.yaml for full configuration
+
+    # Council definitions for governance
+    defaults:
+      voting_mechanism: "weighted"
+      timeout_seconds: 60
+
+    councils:
+      # Execution Council
+      execution:
+        display_name: "Execution Council"
+        description: "Governs trade execution decisions"
+        authority:
+          max_single_trade_usd: 100000000
+          max_daily_trading_volume_usd: 500000000
+
+      # Risk Council
+      risk:
+        display_name: "Risk Council"
+        description: "Governs risk management and limits enforcement"
+        authority:
+          var_95_limit_usd: 10000000
+          var_99_limit_usd: 15000000
+
+      # Governance Council
+      governance:
+        display_name: "Governance Council"
+        description: "Oversees policies and high-level governance"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.config.models.configMapName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: configuration
+    release: {{ .Release.Name }}
+  annotations:
+    description: "Capital Markets Models Configuration"
+    managed-by: "Helm"
+
+data:
+  models_config.yaml: |
+    # Capital Markets Models Configuration
+    # This ConfigMap contains the models_config.yaml loaded at runtime
+    # See /flavors/capital-markets/config/models_config.yaml for full configuration
+
+    # Risk calculation parameters
+    risk:
+      var:
+        calculation_method: "historical_simulation"
+        lookback_days: 250
+        confidence_levels: [95, 99]
+
+      stress_testing:
+        frequency: "daily"
+        scenarios:
+          - name: "market_crash"
+            market_move_pct: -2.0
+            volatility_shock_pct: 50
+
+    # Trading limits
+    trading:
+      daily_trading_volume:
+        limit_usd: 100000000
+      single_trade:
+        limit_usd: 50000000
+
+    # Simulation settings
+    simulation:
+      market_data:
+        source: "simulator"
+        frequency: "daily"
+        lookback_years: 3
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: capital-markets-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: configuration
+    release: {{ .Release.Name }}
+  annotations:
+    description: "Global Capital Markets Configuration"
+    managed-by: "Helm"
+
+data:
+  # Application-level configuration
+  environment: {{ .Values.global.environment | quote }}
+  timezone: {{ .Values.global.timezone | quote }}
+  domain: {{ .Values.global.domain | quote }}
+
+  # Feature flags
+  features.json: |
+    {
+      "anf_storage": {{ .Values.storage.anf.enabled | lower }},
+      "monitoring": {{ .Values.monitoring.enabled | lower }},
+      "postgresql": {{ .Values.postgresql.enabled | lower }},
+      "redis_cache": {{ .Values.redis.enabled | lower }},
+      "analytics": {{ .Values.analytics.enabled | lower }},
+      "network_policy": {{ .Values.networkPolicy.enabled | lower }}
+    }
+
+  # Agent service discovery (for inter-agent communication)
+  agents_services.json: |
+    {
+      "trading_agent": "http://trading-agent-agent:{{ .Values.agents.trading.service.port }}",
+      "risk_management_agent": "http://risk-management-agent-agent:{{ .Values.agents.risk_management.service.port }}",
+      "derivatives_agent": "http://derivatives-agent-agent:{{ .Values.agents.derivatives.service.port }}",
+      "portfolio_manager_agent": "http://portfolio-manager-agent-agent:{{ .Values.agents.portfolio_manager.service.port }}",
+      "compliance_agent": "http://compliance-agent-agent:{{ .Values.agents.compliance.service.port }}",
+      "client_service_agent": "http://client-service-agent-agent:{{ .Values.agents.client_service.service.port }}"
+    }
+
+  # Database configuration
+  database_config.json: |
+    {
+      "host": "postgresql.{{ .Release.Namespace }}.svc.cluster.local",
+      "port": 5432,
+      "database": {{ .Values.postgresql.auth.database | quote }},
+      "username": {{ .Values.postgresql.auth.username | quote }},
+      "pool_size": 10,
+      "max_overflow": 20,
+      "pool_recycle": 3600
+    }
+
+  # Logging configuration
+  logging_config.json: |
+    {
+      "level": "INFO",
+      "format": "json",
+      "handlers": ["console", "file"],
+      "file_path": "/var/log/capital-markets.log",
+      "max_bytes": 104857600,
+      "backup_count": 5
+    }
+
+---
+# Deprecated: Old secret name reference (for backward compatibility)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: capital-markets-secrets-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: configuration
+    release: {{ .Release.Name }}
+
+data:
+  # Note: Secrets should NOT be stored in ConfigMaps
+  # This is just a reference configuration
+  secrets_location: "Azure Key Vault"
+  secrets_reference: |
+    # All secrets are stored in Azure Key Vault and mounted via workload identity
+    # Do NOT store actual secrets in ConfigMaps or environment variables
+    # See: https://docs.microsoft.com/en-us/azure/aks/workload-identity-overview

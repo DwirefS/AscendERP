@@ -1,0 +1,537 @@
+# Capital Markets Agents Configuration
+# Defines all 6 specialized agents with model parameters, tools, and memory settings
+# Last Updated: 2026-03-04
+#
+# Model deployment info (Azure AI Foundry, PayGo serverless):
+#   LLM:        Llama-4-Maverick-17B-128E-Instruct-FP8 (via OpenAI SDK)
+#   Embeddings: text-embedding-3-small (via OpenAI SDK)
+#   Fallback:   gpt-4o (via OpenAI SDK)
+#   All share endpoint: finance-rag-project-resource.services.ai.azure.com
+#
+# Previous model (gpt-4o) kept as fallback. Switched to Llama-4-Maverick
+# for GTC demo to showcase open-source LLM capabilities.
+
+# Global agent settings applied to all agents unless overridden
+defaults:
+  # model_name: "azure_openai/gpt-4o"  # [ORIGINAL] — kept as fallback
+  model_name: "Llama-4-Maverick-17B-128E-Instruct-FP8"  # [LIVE] Primary LLM
+  max_iterations: 15
+  timeout_seconds: 60
+  memory_enabled: true
+  memory_tiers:
+    - episodic     # Recent transaction history
+    - semantic     # Market concepts and relationships
+    - procedural   # Learned execution patterns
+  observability:
+    metrics_enabled: true
+    tracing_enabled: true
+    logging_level: "INFO"
+
+# Agent Definitions
+agents:
+
+  # 1. Trading Agent
+  # Executes equity and derivatives orders with smart order routing
+  trading:
+    display_name: "Trading Agent"
+    description: "Executes orders with optimal venue selection and execution strategy"
+
+    # LLM Configuration
+    llm:
+      model_name: "azure_openai/gpt-4o"
+      temperature: 0.1              # Low: deterministic trading decisions
+      top_p: 0.9
+      max_tokens: 2048
+      presence_penalty: 0.0
+      frequency_penalty: 0.0
+
+    # Control Parameters
+    control:
+      max_iterations: 15
+      timeout_seconds: 60
+      retry_count: 3
+      retry_delay_seconds: 5
+
+    # Tools Available
+    tools:
+      - name: "fetch_market_data"
+        description: "Get current market prices, bid-ask spreads, volume"
+        required: true
+      - name: "check_trading_limits"
+        description: "Verify order against position and concentration limits"
+        required: true
+      - name: "calculate_slippage"
+        description: "Model market impact and estimate slippage"
+        required: true
+      - name: "route_order"
+        description: "Submit order to venue (simulator or real API)"
+        required: true
+      - name: "verify_execution"
+        description: "Validate fill quality and execution metrics"
+        required: true
+      - name: "fetch_order_status"
+        description: "Get current status of submitted orders"
+        required: false
+      - name: "cancel_order"
+        description: "Cancel pending orders if needed"
+        required: false
+
+    # Memory Configuration
+    memory:
+      episodic:
+        enabled: true
+        retention_days: 30
+        max_entries: 100000
+      semantic:
+        enabled: true
+        retention_days: 365
+        concepts: ["execution_patterns", "venue_performance", "client_preferences"]
+      procedural:
+        enabled: true
+        retention_days: 180
+        strategies: ["vwap", "twap", "implementation_shortfall", "iceberg"]
+
+    # Performance SLAs
+    performance:
+      execution_time_sla_ms: 5000
+      fill_rate_target: 0.95
+      slippage_target_bps: 2
+      success_rate_threshold: 0.85
+
+    # Risk Configuration
+    risk:
+      max_order_size_usd: 50000000              # $50M single trade
+      max_daily_volume_usd: 100000000           # $100M daily
+      concentration_limit_pct: 5                 # 5% of daily volume in single stock
+      allowed_order_types: ["market", "limit", "iceberg", "vwap", "twap"]
+
+  # End Trading Agent
+
+
+  # 2. Risk Management Agent
+  # Comprehensive portfolio risk monitoring with VaR, Greeks, stress testing
+  risk_management:
+    display_name: "Risk Management Agent"
+    description: "Monitors portfolio risk, calculates VaR and Greeks, detects limit breaches"
+
+    # LLM Configuration
+    llm:
+      model_name: "azure_openai/gpt-4o"
+      temperature: 0.3              # Moderate: analytical but avoid hallucination
+      top_p: 0.9
+      max_tokens: 3000
+      presence_penalty: 0.0
+      frequency_penalty: 0.0
+
+    # Control Parameters
+    control:
+      max_iterations: 20
+      timeout_seconds: 120
+      retry_count: 2
+      retry_delay_seconds: 10
+
+    # Tools Available
+    tools:
+      - name: "calculate_var"
+        description: "Calculate Value-at-Risk (95%, 99% confidence)"
+        required: true
+      - name: "calculate_greeks"
+        description: "Calculate option Greeks (Delta, Gamma, Vega, Theta)"
+        required: true
+      - name: "check_position_limits"
+        description: "Verify positions against concentration and exposure limits"
+        required: true
+      - name: "stress_test"
+        description: "Run portfolio stress tests (2σ market moves)"
+        required: true
+      - name: "alert_breach"
+        description: "Alert humans when limits are breached"
+        required: true
+      - name: "fetch_market_risk_factors"
+        description: "Get volatility, correlations, yield curves"
+        required: true
+      - name: "calculate_cvar"
+        description: "Calculate Conditional Value-at-Risk (tail risk)"
+        required: false
+      - name: "backtesting_analysis"
+        description: "Validate VaR models against historical data"
+        required: false
+
+    # Memory Configuration
+    memory:
+      episodic:
+        enabled: true
+        retention_days: 30
+        max_entries: 50000
+      semantic:
+        enabled: true
+        retention_days: 365
+        concepts: ["risk_models", "market_regimes", "crisis_patterns"]
+      procedural:
+        enabled: true
+        retention_days: 180
+        patterns: ["risk_reduction_tactics", "hedging_strategies", "portfolio_rebalancing"]
+
+    # Performance SLAs
+    performance:
+      calculation_time_sla_ms: 10000
+      var_accuracy_target: 0.95
+      breach_detection_latency_ms: 100
+
+    # Risk Configuration
+    risk:
+      var_confidence_levels: [95, 99]
+      var_lookback_days: 250
+      stress_test_scenarios:
+        - name: "market_shock"
+          description: "2σ down move across all assets"
+          market_move_pct: -2.0
+        - name: "volatility_spike"
+          description: "VIX to 40 (historical average crisis level)"
+          vix_target: 40
+        - name: "credit_event"
+          description: "Credit spreads widen 2σ"
+          spread_move_bps: 200
+      concentration_limits:
+        single_issuer_pct: 10
+        single_sector_pct: 30
+        hhi_index_max: 2500        # Herfindahl-Hirschman Index
+      exposure_limits:
+        counterparty_usd: 500000000  # $500M
+        default_loss_pct: 40
+
+  # End Risk Management Agent
+
+
+  # 3. Derivatives Agent
+  # Complex derivatives valuation, Greeks, hedging strategies
+  derivatives:
+    display_name: "Derivatives Agent"
+    description: "Values complex derivatives, calculates Greeks, designs hedges"
+
+    # LLM Configuration
+    llm:
+      model_name: "azure_openai/gpt-4o"
+      temperature: 0.5              # Moderate-High: creative hedging strategies
+      top_p: 0.95
+      max_tokens: 4000
+      presence_penalty: 0.1
+      frequency_penalty: 0.1
+
+    # Control Parameters
+    control:
+      max_iterations: 20
+      timeout_seconds: 180          # Derivatives pricing takes longer
+      retry_count: 3
+      retry_delay_seconds: 15
+
+    # Tools Available
+    tools:
+      - name: "price_option"
+        description: "Price vanilla options (Black-Scholes, binomial)"
+        required: true
+      - name: "price_exotic"
+        description: "Price exotic options (barrier, lookback, Asian)"
+        required: true
+      - name: "calculate_implied_vol"
+        description: "Calculate implied volatility from market prices"
+        required: true
+      - name: "construct_hedge"
+        description: "Design optimal hedge ratios and instruments"
+        required: true
+      - name: "analyze_greeks_path"
+        description: "Analyze Greek dynamics across underlying price paths"
+        required: true
+      - name: "monte_carlo_valuation"
+        description: "Run Monte Carlo simulation for complex derivatives"
+        required: false
+      - name: "fetch_curve_data"
+        description: "Get yield curves, forward rates, spreads"
+        required: false
+
+    # Memory Configuration
+    memory:
+      episodic:
+        enabled: true
+        retention_days: 60          # Longer retention for multi-leg trades
+        max_entries: 50000
+      semantic:
+        enabled: true
+        retention_days: 365
+        concepts: ["derivative_types", "payoff_profiles", "hedge_ratios"]
+      procedural:
+        enabled: true
+        retention_days: 365
+        strategies: ["delta_hedging", "vega_hedging", "calendar_spreads", "volatility_arbitrage"]
+
+    # Performance SLAs
+    performance:
+      valuation_time_sla_ms: 15000
+      greek_accuracy_target: 0.99
+      hedge_ratio_precision: 0.001
+
+    # Risk Configuration
+    risk:
+      max_notional_exposure_usd: 200000000    # $200M notional
+      greek_limits:
+        delta_limit: 10000000                 # $10M equivalent
+        gamma_limit: 500000                   # Gamma limit
+        vega_limit: 100000                    # $100k per 1% vol move
+        theta_limit: 50000                    # $50k per day decay
+      allowed_instrument_types:
+        - "vanilla_call"
+        - "vanilla_put"
+        - "european"
+        - "american"
+        - "barrier"
+        - "lookback"
+        - "asian"
+        - "swaption"
+        - "volatility_swap"
+      pricing_models: ["black_scholes", "binomial", "monte_carlo", "finite_difference"]
+
+  # End Derivatives Agent
+
+
+  # 4. Portfolio Manager Agent
+  # Asset allocation, rebalancing, optimization
+  portfolio_manager:
+    display_name: "Portfolio Manager Agent"
+    description: "Manages asset allocation, rebalancing, and portfolio optimization"
+
+    # LLM Configuration
+    llm:
+      model_name: "azure_openai/gpt-4o"
+      temperature: 0.2              # Low-Moderate: optimization-focused
+      top_p: 0.9
+      max_tokens: 2500
+      presence_penalty: 0.0
+      frequency_penalty: 0.0
+
+    # Control Parameters
+    control:
+      max_iterations: 15
+      timeout_seconds: 90
+      retry_count: 2
+      retry_delay_seconds: 10
+
+    # Tools Available
+    tools:
+      - name: "optimize_allocation"
+        description: "Run mean-variance optimization (Markowitz)"
+        required: true
+      - name: "calculate_drift"
+        description: "Calculate portfolio drift from target allocation"
+        required: true
+      - name: "generate_rebalance_orders"
+        description: "Create rebalancing trades to return to target"
+        required: true
+      - name: "estimate_tax_impact"
+        description: "Estimate tax consequences of rebalancing"
+        required: true
+      - name: "apply_constraints"
+        description: "Apply client-specific allocation constraints"
+        required: true
+      - name: "fetch_expected_returns"
+        description: "Get forward-looking return estimates"
+        required: true
+      - name: "fetch_correlation_matrix"
+        description: "Get asset correlation matrix"
+        required: false
+
+    # Memory Configuration
+    memory:
+      episodic:
+        enabled: true
+        retention_days: 90          # Keep longer history for trend analysis
+        max_entries: 10000
+      semantic:
+        enabled: true
+        retention_days: 365
+        concepts: ["asset_classes", "client_mandates", "market_regimes"]
+      procedural:
+        enabled: true
+        retention_days: 180
+        patterns: ["rebalancing_cadence", "tax_optimization", "drift_thresholds"]
+
+    # Performance SLAs
+    performance:
+      optimization_time_sla_ms: 20000
+      tracking_error_target_bps: 50
+      rebalance_efficiency_target: 0.95
+
+    # Risk Configuration
+    risk:
+      max_single_allocation_pct: 40
+      min_single_allocation_pct: 1
+      drift_threshold_pct: 5        # Rebalance if drift > 5%
+      rebalance_frequency_days: 30
+      allowed_asset_classes: ["equities", "fixed_income", "alternatives", "cash"]
+      tax_optimization:
+        harvest_strategy: "highest_loss"
+        wash_sale_check: true
+        fifo_accounting: true
+
+  # End Portfolio Manager Agent
+
+
+  # 5. Compliance Agent
+  # Regulatory oversight, policy enforcement, breach detection
+  compliance:
+    display_name: "Compliance Agent"
+    description: "Monitors regulatory compliance, enforces policies, detects violations"
+
+    # LLM Configuration
+    llm:
+      model_name: "azure_openai/gpt-4o"
+      temperature: 0.05             # Very Low: rule-based, minimal creativity
+      top_p: 0.8
+      max_tokens: 1500
+      presence_penalty: 0.0
+      frequency_penalty: 0.0
+
+    # Control Parameters
+    control:
+      max_iterations: 10
+      timeout_seconds: 30           # Fast policy evaluation required
+      retry_count: 1
+      retry_delay_seconds: 2
+
+    # Tools Available
+    tools:
+      - name: "check_policy_compliance"
+        description: "Evaluate against OPA policies"
+        required: true
+      - name: "check_blacklist"
+        description: "Verify counterparties not on sanctions/exclusion lists"
+        required: true
+      - name: "verify_approvals"
+        description: "Confirm required approvals obtained"
+        required: true
+      - name: "generate_audit_log"
+        description: "Record compliance decision in audit trail"
+        required: true
+      - name: "alert_violation"
+        description: "Alert humans when violations detected"
+        required: true
+      - name: "check_regulatory_limits"
+        description: "Verify against Dodd-Frank, CFTC limits"
+        required: true
+      - name: "fetch_client_restrictions"
+        description: "Get client-specific restrictions and mandates"
+        required: false
+
+    # Memory Configuration
+    memory:
+      episodic:
+        enabled: true
+        retention_days: 365         # Long retention for compliance
+        max_entries: 100000
+      semantic:
+        enabled: true
+        retention_days: 365
+        concepts: ["regulatory_rules", "client_mandates", "policy_versions"]
+      procedural:
+        enabled: false              # Less procedural learning for compliance
+
+    # Performance SLAs
+    performance:
+      compliance_check_latency_ms: 100
+      audit_log_completeness_target: 100
+      false_positive_rate_target: 0.01
+
+    # Risk Configuration
+    risk:
+      regulatory_frameworks: ["dodd_frank", "cftc", "sec", "finra", "mifid2"]
+      audit_trail:
+        enabled: true
+        retention_days: 2555        # 7 years
+        include_metadata: true
+      policy_versioning:
+        enabled: true
+        max_versions: 10
+        rollback_allowed: true
+      escalation:
+        auto_alert_threshold: 1
+        require_human_review: true
+
+  # End Compliance Agent
+
+
+  # 6. Client Service Agent
+  # Client relationship management, reporting, communications
+  client_service:
+    display_name: "Client Service Agent"
+    description: "Manages client relationships, generates reports, handles communications"
+
+    # LLM Configuration
+    llm:
+      model_name: "azure_openai/gpt-4o"
+      temperature: 0.7              # High: conversational and empathetic
+      top_p: 0.95
+      max_tokens: 2000
+      presence_penalty: 0.2
+      frequency_penalty: 0.1
+
+    # Control Parameters
+    control:
+      max_iterations: 10
+      timeout_seconds: 45
+      retry_count: 1
+      retry_delay_seconds: 5
+
+    # Tools Available
+    tools:
+      - name: "generate_performance_report"
+        description: "Create customized performance reports"
+        required: true
+      - name: "calculate_client_metrics"
+        description: "Compute return, risk, attribution metrics"
+        required: true
+      - name: "compose_client_communication"
+        description: "Write personalized client messages/emails"
+        required: true
+      - name: "fetch_client_preferences"
+        description: "Get client communication preferences and mandates"
+        required: true
+      - name: "fetch_account_summary"
+        description: "Get client portfolio summary and holdings"
+        required: true
+      - name: "schedule_meeting"
+        description: "Schedule client meetings (calendar integration)"
+        required: false
+      - name: "send_notification"
+        description: "Send alerts to clients about significant events"
+        required: false
+
+    # Memory Configuration
+    memory:
+      episodic:
+        enabled: true
+        retention_days: 365         # Keep long history for relationship continuity
+        max_entries: 50000
+      semantic:
+        enabled: true
+        retention_days: 365
+        concepts: ["client_profiles", "preferences", "communication_history"]
+      procedural:
+        enabled: true
+        retention_days: 180
+        patterns: ["report_templates", "engagement_strategies", "escalation_processes"]
+
+    # Performance SLAs
+    performance:
+      report_generation_sla_ms: 30000
+      response_time_sla_ms: 5000
+      client_satisfaction_target: 0.95
+
+    # Risk Configuration
+    risk:
+      report_formats: ["pdf", "excel", "dashboard"]
+      communication_channels: ["email", "portal", "phone"]
+      max_communication_delay_hours: 24
+      confidentiality_level: "restricted"
+
+  # End Client Service Agent
+
+# End Agents Section

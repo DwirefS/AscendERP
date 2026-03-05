@@ -1,0 +1,368 @@
+# Capital Markets ANTS - Lab Environment Helm Values Overrides
+# Override default values from capital-markets/values.yaml for lab environment
+# Lab is: small, cheap, minimal monitoring
+# Last Updated: 2025-03-04
+
+# ============================================================================
+# Global Configuration
+# ============================================================================
+
+global:
+  environment: "lab"
+  namespace: "default"
+  imageRegistry: "your-registry.azurecr.io"
+  imagePullPolicy: "IfNotPresent"
+  timezone: "UTC"
+  serviceType: "ClusterIP"
+
+# ============================================================================
+# Agents Configuration - Lab Sizing
+# ============================================================================
+
+agents:
+  # Lab: 1 replica per agent (no redundancy)
+  defaults:
+    replicaCount: 1
+    imagePullPolicy: "IfNotPresent"
+
+    resources:
+      requests:
+        cpu: "100m"        # Lab: reduced from 250m
+        memory: "256Mi"    # Lab: reduced from 512Mi
+      limits:
+        cpu: "200m"        # Lab: reduced from 500m
+        memory: "512Mi"    # Lab: reduced from 1Gi
+
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 30    # Lab: longer period to reduce noise
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8000
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 2
+
+  trading:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+
+  risk_management:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+
+  derivatives:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+
+  portfolio_manager:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+
+  compliance:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+
+  client_service:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "200m"
+        memory: "512Mi"
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+config:
+  agents:
+    configMapName: "capital-markets-agents-config"
+    configPath: "/etc/config/agents_config.yaml"
+
+  councils:
+    configMapName: "capital-markets-councils-config"
+    configPath: "/etc/config/councils_config.yaml"
+
+  models:
+    configMapName: "capital-markets-models-config"
+    configPath: "/etc/config/models_config.yaml"
+
+# ============================================================================
+# Storage Configuration
+# ============================================================================
+
+storage:
+  anf:
+    enabled: true
+    mounts:
+      models:
+        path: "/mnt/anf/models"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/models"
+      episodic:
+        path: "/mnt/anf/memory/episodic"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/episodic"
+      semantic:
+        path: "/mnt/anf/memory/semantic"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/semantic"
+      procedural:
+        path: "/mnt/anf/memory/procedural"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/procedural"
+
+  ephemeral:
+    enabled: true
+    sizeLimit: "5Gi"    # Lab: smaller ephemeral size
+
+# ============================================================================
+# Database Configuration - Lab Sizing
+# ============================================================================
+
+postgresql:
+  enabled: true
+
+  auth:
+    username: "ants"
+    password: "PLACEHOLDER_CHANGE_ME"
+    database: "capital_markets"
+    postgresPassword: "PLACEHOLDER_POSTGRES_PASSWORD"
+
+  primary:
+    persistence:
+      enabled: true
+      size: "5Gi"        # Lab: 5GB instead of 10GB
+      storageClassName: "default"
+
+    resources:
+      requests:
+        cpu: "100m"      # Lab: reduced
+        memory: "128Mi"  # Lab: reduced
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+
+  service:
+    type: "ClusterIP"
+    port: 5432
+
+# ============================================================================
+# Redis Cache - Disabled for Lab
+# ============================================================================
+
+redis:
+  enabled: false  # Lab: disabled to save resources
+
+# ============================================================================
+# Monitoring - Disabled for Lab
+# ============================================================================
+
+monitoring:
+  enabled: false
+
+  prometheus:
+    enabled: false
+
+  grafana:
+    enabled: false
+
+  loki:
+    enabled: false
+
+# ============================================================================
+# Ingress - Disabled for Lab
+# ============================================================================
+
+ingress:
+  enabled: false
+
+# ============================================================================
+# Security Context - Lab
+# ============================================================================
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+
+# ============================================================================
+# RBAC
+# ============================================================================
+
+rbac:
+  create: true
+  serviceAccountName: "capital-markets-agents"
+
+# ============================================================================
+# Node Selection - Lab
+# ============================================================================
+
+# Lab: Run on system nodes (no separate agent pool)
+nodeSelector: {}
+  # role: "agents"  # Commented out for lab
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 50      # Lab: reduced weight
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: "app"
+                operator: "In"
+                values:
+                  - "trading-agent"
+                  - "risk-management-agent"
+          topologyKey: "kubernetes.io/hostname"
+
+# ============================================================================
+# Autoscaling - Disabled for Lab
+# ============================================================================
+
+autoscaling:
+  enabled: false
+
+# ============================================================================
+# Pod Disruption Budget - Disabled for Lab
+# ============================================================================
+
+podDisruptionBudget:
+  enabled: false
+
+# ============================================================================
+# Network Policy - Disabled for Lab
+# ============================================================================
+
+networkPolicy:
+  enabled: false  # Lab: disabled for easier troubleshooting
+
+# ============================================================================
+# Pod Security Policy - Disabled for Lab
+# ============================================================================
+
+podSecurityPolicy:
+  enabled: false
+
+# ============================================================================
+# Environment Configuration
+# ============================================================================
+
+env:
+  FLASK_ENV: "production"
+  LOG_FORMAT: "json"
+  PYTHONUNBUFFERED: "1"
+  AZURE_KEY_VAULT_ENABLED: "true"
+
+# ============================================================================
+# Analytics - Disabled for Lab
+# ============================================================================
+
+analytics:
+  enabled: false
+  metricsPort: 9090
+  tracing:
+    enabled: false
+    samplingRate: 0.0
+  eventCapture:
+    enabled: false
+
+# ============================================================================
+# Helm Chart Configuration
+# ============================================================================
+
+# PostgreSQL dependency (from Bitnami)
+# See: https://artifacthub.io/packages/helm/bitnami/postgresql
+database:
+  auth:
+    username: "ants"
+    password: "PLACEHOLDER_POSTGRES_PASSWORD"
+    database: "capital_markets"
+
+  primary:
+    persistence:
+      size: "5Gi"
+
+# ============================================================================
+# Lab-Specific Notes
+# ============================================================================
+
+# This values file is designed for:
+# - Single node testing and validation
+# - Minimal resource usage (~100m CPU, 256Mi memory per agent)
+# - No high availability or redundancy
+# - No monitoring or logging infrastructure
+# - Quick deployment and teardown
+
+# Key differences from production:
+# - 1 replica per agent (no HA)
+# - Smaller resource requests/limits
+# - No autoscaling
+# - No network policies
+# - No pod disruption budgets
+# - PostgreSQL single-instance (no replicas)
+# - No Redis or caching
+# - No Prometheus/Grafana monitoring
+# - No ingress controller
+
+# Estimated resource usage:
+# - CPU: ~600m total (100m x 6 agents)
+# - Memory: ~1.5Gi total (256Mi x 6 agents)
+# - Storage: ~10Gi (PostgreSQL + ephemeral)
+# - Estimated cost: ~$200-300/month compute only
+
+# For production, use values.yaml or create values-prod.yaml with:
+# - 3+ replicas per agent
+# - Higher resource limits
+# - Autoscaling enabled
+# - Network policies enabled
+# - Pod disruption budgets
+# - PostgreSQL HA with replicas
+# - Redis for caching
+# - Full monitoring stack

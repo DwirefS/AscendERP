@@ -1,0 +1,384 @@
+# Capital Markets Models Configuration
+# Risk parameters, trading limits, position limits, and simulation settings
+# Last Updated: 2025-03-04
+
+# Global model settings
+defaults:
+  currency: "USD"
+  risk_free_rate: 0.05
+  market_data_frequency: "realtime"
+  reporting_frequency: "daily"
+
+# Risk Calculation Parameters
+risk:
+  # Value-at-Risk (VaR) Settings
+  var:
+    calculation_method: "historical_simulation"  # Options: historical, parametric, monte_carlo
+    lookback_days: 250                          # 1 year of trading days
+    confidence_levels: [95, 99]                 # Calculate VaR at 95% and 99%
+    update_frequency_hours: 1
+
+    # Backtesting parameters
+    backtesting:
+      enabled: true
+      lookback_periods: 252                     # 1 year for backtesting
+      tolerance_pct: 5                          # VaR accuracy tolerance
+      minimum_observations: 100
+
+  # Greeks Calculation
+  greeks:
+    calculation_method: "black_scholes"         # Options: black_scholes, binomial
+    volatility_source: "implied"                # Options: implied, historical
+    volatility_window_days: 30
+    update_frequency_minutes: 5
+
+    delta:
+      threshold_alert_usd: 10000000             # Alert if daily delta > $10M
+      rehedge_threshold_pct: 20                 # Rehedge if delta drifts > 20%
+
+    gamma:
+      threshold_alert: 500000                   # Alert threshold
+      convexity_limit: 1000000
+
+    vega:
+      threshold_alert_usd: 100000               # Alert if vega exposure > $100k per 1% vol
+      volatility_shock_pct: 20                  # Assume 20% vol shock in stress
+
+    theta:
+      decay_limit_usd: 50000                    # Alert if daily theta decay > $50k
+      rebalance_frequency_days: 7
+
+  # Stress Testing
+  stress_testing:
+    frequency: "daily"
+    scenarios:
+      - name: "market_crash"
+        description: "2σ down move across all assets"
+        market_move_pct: -2.0
+        volatility_shock_pct: 50
+        credit_spread_move_bps: 100
+
+      - name: "volatility_spike"
+        description: "Volatility doubles (VIX to 40)"
+        vix_target: 40
+        equity_move_pct: -5
+        credit_spread_move_bps: 200
+
+      - name: "credit_event"
+        description: "Credit spreads widen 200bps"
+        credit_spread_move_bps: 200
+        default_rate_bps: 50
+        recovery_rate_pct: 40
+
+      - name: "liquidity_stress"
+        description: "Bid-ask spreads widen 5x"
+        bid_ask_multiplier: 5
+        execution_slippage_multiplier: 3
+
+      - name: "correlation_breakdown"
+        description: "Correlations move to 1.0"
+        correlation_shock: 1.0
+
+    acceptable_loss_pct: 20                     # Portfolio loss acceptable under stress
+    daily_monitoring: true
+
+  # Concentration Risk (HHI - Herfindahl-Hirschman Index)
+  concentration:
+    hhi_calculation_enabled: true
+    hhi_index_max: 2500                         # Moderate concentration limit
+
+    # Single Issuer Limits
+    single_issuer_pct: 10                       # 10% max per issuer
+    single_issuer_notional_usd: 100000000       # $100M cap per issuer
+
+    # Sector Limits
+    sector_limits:
+      - sector: "technology"
+        max_pct: 30
+        max_notional_usd: 300000000
+
+      - sector: "financials"
+        max_pct: 30
+        max_notional_usd: 300000000
+
+      - sector: "energy"
+        max_pct: 20
+        max_notional_usd: 200000000
+
+      - sector: "consumer"
+        max_pct: 25
+        max_notional_usd: 250000000
+
+      - sector: "industrials"
+        max_pct: 25
+        max_notional_usd: 250000000
+
+      - sector: "healthcare"
+        max_pct: 25
+        max_notional_usd: 250000000
+
+      - sector: "utilities"
+        max_pct: 15
+        max_notional_usd: 150000000
+
+      - sector: "real_estate"
+        max_pct: 15
+        max_notional_usd: 150000000
+
+    # Counterparty Limits
+    counterparty_limits:
+      default_limit_usd: 500000000              # $500M default per counterparty
+      a_rated_limit_usd: 500000000
+      bbb_rated_limit_usd: 250000000
+      below_bbb_limit_usd: 50000000
+
+    # Geography Limits
+    geography_limits:
+      us_max_pct: 70                            # 70% max in US
+      developed_markets_max_pct: 90             # 90% max in developed markets
+      single_country_max_pct: 30                # 30% max per country (ex-US)
+
+  # Duration and Interest Rate Risk
+  duration:
+    max_duration_years: 10
+    max_duration_contribution_pct: 50
+    key_rate_duration_limits:
+      - tenor_years: 2
+        limit: 5
+
+      - tenor_years: 5
+        limit: 8
+
+      - tenor_years: 10
+        limit: 10
+
+  # Derivative Risk
+  derivative_limits:
+    notional_exposure_limit_usd: 200000000      # $200M total notional
+    leverage_limit: 3.0                         # 3x leverage max
+
+    # Option-specific limits
+    short_option_notional_limit_usd: 100000000
+    vega_limit_per_1pct_move_usd: 100000
+    gamma_neutral_band_pct: 5
+
+# Trading Limits
+trading:
+  # Daily Trading Volume
+  daily_trading_volume:
+    limit_usd: 100000000                        # $100M daily
+    monitoring_window_hours: 24
+    reset_time: "00:00:00 ET"
+
+  # Single Trade Size
+  single_trade:
+    limit_usd: 50000000                         # $50M per trade
+    client_mandate_override: true               # Can be adjusted per client
+    approval_required_above_usd: 10000000       # Execution Council approval > $10M
+
+  # Intraday Trading
+  intraday:
+    max_round_trips: 5                          # Max 5 buy/sell cycles per day
+    holding_period_min_minutes: 1
+    day_trading_pattern_check: true
+
+  # Order Execution
+  order_execution:
+    max_slippage_bps: 10                        # Max 10bps slippage tolerance
+    max_execution_time_minutes: 60              # Max 1 hour to execute
+    default_execution_strategy: "vwap"          # VWAP, TWAP, or implementation shortfall
+    partial_fill_acceptable: true
+
+  # Venue Rules
+  venues:
+    - name: "NYSE"
+      enabled: true
+      min_bid_ask_spread_cents: 1
+
+    - name: "NASDAQ"
+      enabled: true
+      min_bid_ask_spread_cents: 1
+
+    - name: "CBOE"
+      enabled: true
+      min_bid_ask_spread_cents: 1
+
+    - name: "DARK_POOL"
+      enabled: true
+      max_participation_rate_pct: 10            # Max 10% of volume
+      venue_quality_check: true
+
+  # Post-Trade Compliance
+  post_trade:
+    trade_confirmation_required: true
+    verification_delay_minutes: 5
+    settlement_timeline: "T+2"
+
+# Position Limits
+positions:
+  # Long/Short Limits
+  long_only: true                               # Conservative: long-only positions
+  short_selling_allowed: false                  # No naked short selling
+  leverage_allowed: false                       # No leverage in base portfolio
+
+  # Equity Position Limits
+  equity:
+    max_position_usd: 100000000                 # $100M per equity
+    max_portfolio_pct: 70                       # 70% max in equities
+    min_market_cap_billion_usd: 0.1             # Minimum $100M market cap
+    max_price_volatility_daily_pct: 20
+
+  # Fixed Income Position Limits
+  fixed_income:
+    max_position_usd: 100000000                 # $100M per bond
+    max_portfolio_pct: 40                       # 40% max in fixed income
+    min_credit_rating: "BBB-"                   # Minimum BBB- rating
+    max_duration_years: 10
+    max_ytm_pct: 8                              # Max 8% yield to maturity
+
+  # Alternative Positions
+  alternatives:
+    max_position_usd: 25000000                  # $25M per alternative
+    max_portfolio_pct: 20                       # 20% max in alternatives
+    allowed_types: ["hedge_funds", "private_equity", "commodities", "real_estate"]
+    liquidity_check: "quarterly"
+
+  # Cash Positions
+  cash:
+    min_cash_pct: 5                             # Minimum 5% in cash
+    max_cash_pct: 20                            # Maximum 20% in cash
+    default_cash_currency: "USD"
+
+# Simulation Settings
+simulation:
+  # Historical Data
+  market_data:
+    source: "simulator"                         # For lab; use "bloomberg" in production
+    frequency: "daily"                          # Options: realtime, hourly, daily
+    lookback_years: 3                           # 3 years of historical data
+    start_date: "2022-01-01"
+    end_date: "2025-03-04"
+
+  # Ticker Universe
+  tickers:
+    equity_universe_size: 1000                  # Simulate 1000 equities
+    fixed_income_universe_size: 500             # Simulate 500 bonds
+    derivative_universe_size: 200               # Simulate 200 options
+
+    # Major indices
+    major_indices:
+      - "SPX"      # S&P 500
+      - "INDU"     # Dow Jones
+      - "CCMP"     # Nasdaq
+      - "VIX"      # Volatility Index
+
+    # Sector representation
+    sector_allocation:
+      technology: 0.25
+      financials: 0.25
+      healthcare: 0.15
+      consumer: 0.15
+      industrials: 0.10
+      energy: 0.05
+      utilities: 0.03
+      real_estate: 0.02
+
+  # Monte Carlo Simulation
+  monte_carlo:
+    enabled: true
+    num_simulations: 10000                      # 10k simulation paths
+    num_time_steps: 252                         # 1 year of trading days
+    random_seed: 42                             # For reproducibility
+    correlation_shock: 0.7                      # Correlations under stress
+
+  # Portfolio Performance Metrics
+  performance_metrics:
+    - "total_return"
+    - "excess_return"
+    - "sharpe_ratio"
+    - "information_ratio"
+    - "maximum_drawdown"
+    - "sortino_ratio"
+    - "capture_ratio"
+    - "tracking_error"
+
+  # Rebalancing Simulation
+  rebalancing:
+    frequency_days: 30                          # Rebalance monthly
+    drift_threshold_pct: 5                      # Rebalance if drift > 5%
+    tax_loss_harvesting: true
+    transaction_cost_bps: 5                     # Assume 5bps transaction costs
+
+  # Performance Attribution
+  attribution:
+    enabled: true
+    attribution_levels: ["portfolio", "sector", "position"]
+    contribution_tracking: "daily"
+    factor_attribution:
+      - "market_factor"
+      - "size_factor"
+      - "value_factor"
+      - "momentum_factor"
+      - "quality_factor"
+
+# Compliance Parameters
+compliance:
+  # Regulatory Compliance
+  regulatory_frameworks:
+    - "SEC"           # Securities and Exchange Commission
+    - "CFTC"          # Commodity Futures Trading Commission
+    - "FINRA"         # Financial Industry Regulatory Authority
+    - "DODD_FRANK"    # Dodd-Frank Act
+
+  # Benchmarks
+  benchmarks:
+    - name: "S&P 500"
+      ticker: "SPX"
+      weight_pct: 60
+
+    - name: "Bloomberg Bond Index"
+      ticker: "BCOM"
+      weight_pct: 30
+
+    - name: "Cash"
+      currency: "USD"
+      weight_pct: 10
+
+  # Audit Trail Settings
+  audit_trail:
+    enabled: true
+    retention_years: 7
+    granularity: "trade_level"
+    include_metadata: true
+    encryption: "AES-256"
+
+  # Policy Enforcement
+  policies:
+    enabled: true
+    update_frequency: "on_change"
+    require_approval: true
+    dry_run_enabled: true
+
+# Model Validation
+validation:
+  # Backtesting
+  backtesting:
+    enabled: true
+    frequency: "weekly"
+    lookback_years: 3
+    confidence_level_pct: 95
+    exception_rate_threshold_pct: 5
+
+  # Model Recalibration
+  recalibration:
+    enabled: true
+    frequency_days: 90
+    minimum_observation_count: 250
+
+  # Stress Test Validation
+  stress_validation:
+    enabled: true
+    acceptable_loss_pct: 20
+    escalation_if_exceed: true
+
+# End Models Configuration

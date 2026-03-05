@@ -1,0 +1,143 @@
+{
+  "client_id": "HF-2024-002",
+  "client_name": "Quantum Arbitrage Strategies LP",
+  "client_type": "institutional",
+  "client_category": "hedge_fund",
+  "country": "United States",
+  "region": "North America",
+  "aum": 50000000,
+  "currency": "USD",
+  "risk_profile": "aggressive",
+  "risk_tolerance": "high",
+  "established_date": "2016-09-01",
+  "account_opened": "2020-02-10",
+  "contact_person": {
+    "name": "Dr. Vikram Patel",
+    "title": "Founder & Chief Investment Officer",
+    "email": "vpatel@quantumarb.com",
+    "phone": "+1-212-555-0289",
+    "timezone": "US/Eastern"
+  },
+  "fund_details": {
+    "fund_type": "Multi-Strategy Hedge Fund",
+    "fund_domicile": "Cayman Islands",
+    "base_currency": "USD",
+    "investor_count": 87,
+    "min_investment": 500000,
+    "lockup_period": "2 years",
+    "redemption_frequency": "Monthly",
+    "redemption_notice": 45
+  },
+  "mandate": {
+    "objective": "Absolute return with market-neutral strategies focusing on statistical arbitrage, pairs trading, and algorithmic trading",
+    "strategies": [
+      "Statistical Arbitrage (40%)",
+      "Pairs Trading (30%)",
+      "Machine Learning Algorithms (20%)",
+      "High Frequency Trading (10%)"
+    ],
+    "constraints": [
+      "Maximum net exposure: 20%",
+      "Maximum single position: 2% of AUM",
+      "Maximum sector exposure: 15%",
+      "Leverage cap: 2.0x"
+    ],
+    "derivatives_allowed": true,
+    "short_selling_allowed": true
+  },
+  "portfolio_metrics": {
+    "gross_exposure": 1.85,
+    "net_exposure": 0.15,
+    "net_long": 0.575,
+    "net_short": -0.425,
+    "long_positions": 187,
+    "short_positions": 156,
+    "derivative_notional": 35000000
+  },
+  "performance_targets": {
+    "return_objective": "15% annual in normal markets",
+    "time_horizon": 5,
+    "benchmark": "HFR Global Hedge Fund Index",
+    "target_volatility": 0.10,
+    "target_sharpe_ratio": 1.5,
+    "maximum_monthly_drawdown": -0.05
+  },
+  "fees": {
+    "management_fee_pct": 2.0,
+    "performance_fee_pct": 20.0,
+    "hwm_policy": true,
+    "annual_management_fee": 1000000,
+    "estimated_annual_performance_fee": 2800000,
+    "admin_fee_bps": 5
+  },
+  "risk_management": {
+    "risk_officer": "Sarah Montgomery",
+    "var_limit_daily": 250000,
+    "cvar_limit_daily": 350000,
+    "stress_test_frequency": "daily",
+    "model_validation": "quarterly",
+    "counterparty_limits": {
+      "primary_broker": 5000000,
+      "secondary_brokers": 3000000
+    }
+  },
+  "technology_infrastructure": {
+    "trading_platform": "Proprietary in-house system",
+    "algorithmic_trading_capability": true,
+    "hft_systems": true,
+    "machine_learning_models": true,
+    "data_feeds": [
+      "Bloomberg",
+      "Reuters",
+      "Real-time tick data",
+      "Alternative data feeds"
+    ],
+    "computing_architecture": "GPU-accelerated clusters",
+    "uptime_target": 0.9999
+  },
+  "custodian": {
+    "name": "Citadel Securities",
+    "account_id": "QUANTUMARB-LS-001",
+    "relationship_manager": "Michael Zhang",
+    "clearing_account": true
+  },
+  "compliance_info": {
+    "regulatory_bodies": [
+      "SEC",
+      "FINRA",
+      "CFTC"
+    ],
+    "compliance_officer": "Elena Rossi",
+    "audit_firm": "Audit Integrity LLC",
+    "last_audit_date": "2023-10-30",
+    "audit_result": "Unqualified Opinion",
+    "fatca_compliant": true,
+    "aifmd_compliant": true
+  },
+  "reporting": {
+    "frequency": "monthly",
+    "reporting_date": "5 business days after month end",
+    "custom_reports": [
+      "Strategy breakdown analysis",
+      "Greek exposure (Delta, Gamma, Vega, Rho)",
+      "Correlation matrix analysis",
+      "Algorithm performance metrics",
+      "Drawdown analysis",
+      "Risk attribution"
+    ]
+  },
+  "communication_preferences": {
+    "primary_contact": "phone",
+    "meeting_frequency": "monthly",
+    "trading_discussion_calls": "weekly",
+    "prefer_language": "English"
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "account_status": "active",
+    "next_review_date": "2024-04-15",
+    "relationship_score": 9.8,
+    "tenure_years": 4,
+    "volume_tier": "platinum"
+  }
+}

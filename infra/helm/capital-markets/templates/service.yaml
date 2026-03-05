@@ -1,0 +1,145 @@
+{{- range $agentName, $agentConfig := .Values.agents }}
+{{- if and (ne $agentName "defaults") $agentConfig.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $agentName }}-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ $agentName }}-agent
+    component: agent
+    flavor: capital-markets
+    release: {{ .Release.Name }}
+  annotations:
+    description: "Service for {{ $agentName }} agent"
+    managed-by: "Helm"
+
+spec:
+  type: {{ $agentConfig.service.type | default "ClusterIP" }}
+  selector:
+    app: {{ $agentName }}-agent
+    component: agent
+
+  ports:
+    - name: http
+      port: {{ $agentConfig.service.port | default 8000 }}
+      targetPort: {{ $agentConfig.service.targetPort | default 8000 }}
+      protocol: TCP
+
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+      {{- if eq $agentConfig.service.type "NodePort" }}
+      nodePort: {{ add 30000 (atoi (index $agentName 0)) }}
+      {{- end }}
+
+  {{- if and (eq $agentConfig.service.type "LoadBalancer") .Values.global.domain }}
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  {{- end }}
+
+  # Health check
+  publishNotReadyAddresses: false
+
+  # Endpoints
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+
+{{- end }}
+{{- end }}
+
+---
+# Headless service for DNS-based discovery (useful for peer-to-peer communication)
+apiVersion: v1
+kind: Service
+metadata:
+  name: capital-markets-agents
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: agents
+    flavor: capital-markets
+    release: {{ .Release.Name }}
+  annotations:
+    description: "Headless service for capital markets agents"
+    managed-by: "Helm"
+
+spec:
+  clusterIP: None  # Headless service
+  selector:
+    component: agent
+    flavor: capital-markets
+
+  ports:
+    - name: http
+      port: 8000
+      protocol: TCP
+
+  publishNotReadyAddresses: true
+
+---
+# API Gateway aggregator (optional - aggregates all agent endpoints)
+apiVersion: v1
+kind: Service
+metadata:
+  name: capital-markets-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: api-gateway
+    flavor: capital-markets
+    release: {{ .Release.Name }}
+  annotations:
+    description: "API gateway for capital markets flavor"
+    managed-by: "Helm"
+
+spec:
+  type: {{ .Values.global.serviceType | default "ClusterIP" }}
+  selector:
+    component: agent
+    flavor: capital-markets
+
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8000
+      protocol: TCP
+
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+
+---
+# Internal service discovery endpoint (for inter-agent communication)
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: capital-markets-discovery
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: capital-markets
+    component: discovery
+    release: {{ .Release.Name }}
+
+subsets:
+  - addresses:
+      {{- range $agentName, $agentConfig := .Values.agents }}
+      {{- if and (ne $agentName "defaults") $agentConfig.enabled }}
+      - hostname: {{ $agentName }}-agent
+        ip: "10.0.0.1"  # Placeholder - will be resolved via DNS
+      {{- end }}
+      {{- end }}
+    ports:
+      - name: http
+        port: {{ .Values.agents.trading.service.port | default 8000 }}

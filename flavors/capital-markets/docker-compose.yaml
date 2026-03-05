@@ -1,0 +1,177 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database with pgvector extension for vector similarity search
+  postgres:
+    image: pgvector/pgvector:0.5.1-pg15
+    container_name: capital-markets-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-capital_markets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-capital_markets_db}
+      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=pgvector"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - capital-markets-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-capital_markets}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis cache for session and data caching
+  redis:
+    image: redis:7-alpine
+    container_name: capital-markets-redis
+    command: redis-server --appendonly yes --appendfilename "appendonly.aof"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - capital-markets-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Capital Markets API Service
+  capital-markets-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: capital-markets-api
+    environment:
+      # Application settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      ENV: ${ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # Database settings
+      DATABASE_URL: postgresql://${POSTGRES_USER:-capital_markets}:${POSTGRES_PASSWORD:-secure_password_change_me}@postgres:5432/${POSTGRES_DB:-capital_markets_db}
+      DATABASE_POOL_SIZE: "20"
+      DATABASE_MAX_OVERFLOW: "40"
+
+      # Redis settings
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_TTL: "3600"
+
+      # API settings
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+      WORKERS: "4"
+
+      # Azure settings (if using Azure cloud)
+      AZURE_SUBSCRIPTION_ID: ${AZURE_SUBSCRIPTION_ID:-}
+      AZURE_RESOURCE_GROUP: ${AZURE_RESOURCE_GROUP:-DNvidiaBTANF}
+      AZURE_KEY_VAULT_URL: ${AZURE_KEY_VAULT_URL:-}
+
+      # LLM settings
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4}
+      LLM_TEMPERATURE: "0.7"
+
+      # Observability settings
+      JAEGER_HOST: ${JAEGER_HOST:-localhost}
+      JAEGER_PORT: ${JAEGER_PORT:-6831}
+      ENABLE_TRACING: ${ENABLE_TRACING:-false}
+
+      # Security settings
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_ALGORITHM: "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - capital-markets-network
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    # Use environment-specific restart policy
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # Optional: Jaeger for distributed tracing (uncomment if using)
+  # jaeger:
+  #   image: jaegertracing/all-in-one:latest
+  #   container_name: capital-markets-jaeger
+  #   ports:
+  #     - "16686:16686"  # UI
+  #     - "6831:6831/udp"  # Jaeger agent
+  #   environment:
+  #     COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+  #   networks:
+  #     - capital-markets-network
+  #   restart: unless-stopped
+
+  # Optional: Prometheus for metrics collection (uncomment if using)
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: capital-markets-prometheus
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus_data:/prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - capital-markets-network
+  #   restart: unless-stopped
+
+  # Optional: Grafana for visualization (uncomment if using)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: capital-markets-grafana
+  #   environment:
+  #     GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - capital-markets-network
+  #   restart: unless-stopped
+
+networks:
+  capital-markets-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  # prometheus_data:
+  #   driver: local
+  # grafana_data:
+  #   driver: local

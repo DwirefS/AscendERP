@@ -1,0 +1,215 @@
+# Capital Markets ANTS - Lab Environment Example Configuration
+# Copy this file to terraform.tfvars and fill in your Azure details
+# IMPORTANT: Never commit terraform.tfvars with real secrets to version control
+# Last Updated: 2025-03-04
+
+# ============================================================================
+# REQUIRED: Azure Subscription and Authentication
+# ============================================================================
+
+# Get these values from:
+# - subscription_id: az account list --query "[].id" -o tsv
+# - tenant_id: az account list --query "[].tenantId" -o tsv
+
+subscription_id = "PLACEHOLDER_SUBSCRIPTION_ID"  # e.g., 12345678-1234-1234-1234-123456789012
+tenant_id       = "PLACEHOLDER_TENANT_ID"        # e.g., 87654321-4321-4321-4321-210987654321
+
+# Optional: Service Principal credentials (if not using default account)
+# client_id     = "PLACEHOLDER_CLIENT_ID"
+# client_secret = "PLACEHOLDER_CLIENT_SECRET"
+
+# ============================================================================
+# REQUIRED: Network Configuration
+# ============================================================================
+
+# These subnets must be pre-created in your VNet
+# See deployment-notes.md for VNet/subnet creation commands
+
+vnet_id         = "PLACEHOLDER_VNET_ID"           # e.g., /subscriptions/.../virtualNetworks/vnet-ants-lab
+vnet_name       = "vnet-ants-lab"
+
+aks_subnet_id   = "PLACEHOLDER_AKS_SUBNET_ID"     # e.g., /subscriptions/.../subnets/subnet-aks
+aks_subnet_name = "subnet-aks"
+
+anf_subnet_id   = "PLACEHOLDER_ANF_SUBNET_ID"     # e.g., /subscriptions/.../subnets/subnet-anf
+anf_subnet_name = "subnet-anf"
+
+# ============================================================================
+# Resource Group and Location
+# ============================================================================
+
+resource_group_name = "ants-capital-markets-lab"
+
+# Available regions: eastus, westus2, northeurope, westeurope, canadacentral, southeastasia
+location = "eastus"
+
+# ============================================================================
+# Environment and Project Tags
+# ============================================================================
+
+environment = "lab"    # Don't change for lab
+project     = "ants"
+flavor      = "capital-markets"
+
+# ============================================================================
+# AKS Cluster Configuration
+# ============================================================================
+
+# Lab sizing (smaller than production for cost efficiency)
+cluster_name        = "aks-ants-lab"
+kubernetes_version  = "1.29"
+
+# Lab: Fixed 3 nodes, D4s_v3 SKU (~$600/month for compute)
+aks_node_count      = 3
+aks_vm_size         = "Standard_D4s_v3"
+aks_enable_autoscaling = false
+aks_max_node_count  = 5
+
+# ============================================================================
+# Azure NetApp Files Configuration
+# ============================================================================
+
+anf_account_name    = "anf-ants-lab"
+anf_enable_snapshots = true
+
+# Lab: 1TB total (production would be 28TB across 3 tiers)
+anf_pool_size_tb    = 1
+anf_volume_quota_gb = 100
+
+# ============================================================================
+# PostgreSQL Database Configuration
+# ============================================================================
+
+postgres_server_name      = "pg-ants-lab"
+postgres_admin_username   = "antsadmin"
+
+# REQUIRED: Change this to a strong password
+# Requirements: 8+ characters, mix of uppercase, lowercase, numbers, special chars
+postgres_admin_password   = "PLACEHOLDER_POSTGRES_PASSWORD"  # e.g., Ants@Lab2025!
+
+# Lab sizing: burstable tier, 50GB storage
+postgres_sku              = "B_Standard_B1ms"
+postgres_storage_mb       = 51200         # 50GB
+postgres_backup_retention_days = 7
+postgres_geo_redundant    = false         # Lab: no geo-redundancy
+
+# ============================================================================
+# Container Registry Configuration
+# ============================================================================
+
+# Lab: Standard tier (~$10/month for storage)
+acr_sku          = "Standard"
+acr_admin_enabled = true  # For lab access (disable in production)
+
+# ============================================================================
+# Monitoring and Logging
+# ============================================================================
+
+log_analytics_retention_days = 30    # Lab: 30 days
+enable_diagnostics          = true   # Enable diagnostic logs
+enable_monitoring           = false  # Disable alerts to save costs
+
+# ============================================================================
+# Security Configuration
+# ============================================================================
+
+enable_key_vault_purge_protection = false  # Lab: allow easy cleanup
+enable_key_vault_rbac             = true
+key_vault_sku                     = "standard"
+
+# ============================================================================
+# Feature Flags
+# ============================================================================
+
+enable_gpu_pool            = false   # Don't need GPU for lab
+enable_network_policy      = false   # Disable to simplify troubleshooting
+enable_pod_security_policy = false
+enable_workload_identity   = true    # Recommended for security
+
+prevent_resource_destruction = false # Lab: allow cleanup
+
+# ============================================================================
+# Additional Tags
+# ============================================================================
+
+tags = {
+  managed_by  = "terraform"
+  cost_center = "engineering"
+  owner       = "ants-team"
+  purpose     = "capital-markets-showcase"
+}
+
+custom_tags = {
+  # Add organization-specific tags here
+  # billing_account = "12345"
+  # data_classification = "internal"
+}
+
+# ============================================================================
+# INSTRUCTIONS FOR USE
+# ============================================================================
+
+# 1. Copy this file to terraform.tfvars
+#    cp terraform.tfvars.example terraform.tfvars
+
+# 2. Fill in PLACEHOLDER values:
+#    - Get subscription_id and tenant_id: az account list --output table
+#    - Create VNet/subnets and get their IDs: see deployment-notes.md
+#    - Change postgres_admin_password to something strong
+
+# 3. Verify configuration:
+#    terraform validate
+#    terraform plan -out=tfplan
+
+# 4. Review plan output carefully, then apply:
+#    terraform apply tfplan
+
+# 5. Save outputs for later use:
+#    terraform output -json > deployment-outputs.json
+
+# ============================================================================
+# COST ESTIMATES
+# ============================================================================
+
+# Lab infrastructure monthly estimate (eastus):
+# - AKS Cluster (3x D4s_v3):     $600-700
+# - Azure NetApp Files (1TB):     $200-250
+# - PostgreSQL (B1ms):             $100-150
+# - Container Registry:            $10-15
+# - Log Analytics:                 $50-100
+# - Other (IP, storage, etc):      $50-100
+# ------------------------------------------------
+# TOTAL:                        ~$1,000-1,200/month
+
+# Cost optimization:
+# - Delete lab when not in use ($ 0/month)
+# - Use reserved instances in production (save 30-40%)
+# - Use spot VMs for non-critical workloads (save 60-70%)
+
+# ============================================================================
+# SECURITY NOTES
+# ============================================================================
+
+# 1. NEVER commit terraform.tfvars with real credentials to Git
+# 2. Add terraform.tfvars to .gitignore (already done)
+# 3. Store postgres_admin_password in Azure Key Vault or secrets manager
+# 4. Use Azure AD Service Principal for CI/CD pipelines
+# 5. Enable Key Vault purge protection in production
+# 6. Implement network policies (NSGs) in production
+# 7. Use private endpoints for all services in production
+
+# ============================================================================
+# TROUBLESHOOTING
+# ============================================================================
+
+# Issue: "Insufficient quota" error
+# Solution: Request quota increase for your region in Azure Portal
+
+# Issue: "Subnet doesn't have Microsoft.NetApp/volumes delegation"
+# Solution: Re-create ANF subnet with proper delegation (see deployment-notes.md)
+
+# Issue: "Permission denied" errors
+# Solution: Ensure subscription_id and tenant_id are correct
+#           Check that your account has Contributor or Owner role
+
+# For more help, see: deployment-notes.md

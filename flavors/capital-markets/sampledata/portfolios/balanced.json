@@ -1,0 +1,212 @@
+{
+  "portfolio_id": "BAL-2024-002",
+  "portfolio_name": "Balanced Multi-Asset Portfolio",
+  "description": "Diversified portfolio balancing equities, fixed income, and alternatives with moderate risk",
+  "total_aum": 25000000,
+  "currency": "USD",
+  "inception_date": "2021-06-01",
+  "benchmark": "60/40 Portfolio (60% MSCI World / 40% Bloomberg Aggregate Bond)",
+  "risk_profile": "moderate",
+  "rebalance_frequency": "monthly",
+  "allocations": {
+    "equities": {
+      "percentage": 50.0,
+      "value": 12500000,
+      "holdings": [
+        {
+          "ticker": "AAPL",
+          "quantity": 28000,
+          "current_price": 192.35,
+          "market_value": 5385800,
+          "percentage_of_portfolio": 21.5,
+          "purchase_date": "2021-07-10",
+          "average_cost": 145.20,
+          "gain_loss_pct": 32.5,
+          "sector": "Technology"
+        },
+        {
+          "ticker": "MSFT",
+          "quantity": 12000,
+          "current_price": 415.25,
+          "market_value": 4983000,
+          "percentage_of_portfolio": 19.9,
+          "purchase_date": "2021-08-15",
+          "average_cost": 295.50,
+          "gain_loss_pct": 40.4,
+          "sector": "Technology"
+        },
+        {
+          "ticker": "JNJ",
+          "quantity": 8500,
+          "current_price": 157.85,
+          "market_value": 1341725,
+          "percentage_of_portfolio": 5.4,
+          "purchase_date": "2021-09-01",
+          "average_cost": 142.30,
+          "gain_loss_pct": 11.0,
+          "sector": "Healthcare"
+        },
+        {
+          "ticker": "UNH",
+          "quantity": 5200,
+          "current_price": 495.40,
+          "market_value": 2575080,
+          "percentage_of_portfolio": 10.3,
+          "purchase_date": "2021-10-05",
+          "average_cost": 425.15,
+          "gain_loss_pct": 16.5,
+          "sector": "Healthcare"
+        },
+        {
+          "ticker": "WMT",
+          "quantity": 6500,
+          "current_price": 92.15,
+          "market_value": 598975,
+          "percentage_of_portfolio": 2.4,
+          "purchase_date": "2021-11-20",
+          "average_cost": 145.30,
+          "gain_loss_pct": -36.5,
+          "sector": "Consumer"
+        },
+        {
+          "ticker": "XOM",
+          "quantity": 4200,
+          "current_price": 115.45,
+          "market_value": 484890,
+          "percentage_of_portfolio": 1.9,
+          "purchase_date": "2022-01-15",
+          "average_cost": 95.60,
+          "gain_loss_pct": 20.8,
+          "sector": "Energy"
+        }
+      ]
+    },
+    "fixed_income": {
+      "percentage": 30.0,
+      "value": 7500000,
+      "holdings": [
+        {
+          "position_id": "BOND-001",
+          "name": "US Treasury 10Y",
+          "isin": "US912810SA99",
+          "coupon": 0.0425,
+          "maturity_date": "2034-02-15",
+          "par_value": 3500000,
+          "current_price": 95.25,
+          "market_value": 3333750,
+          "duration": 8.2,
+          "ytm": 0.048,
+          "rating": "AAA",
+          "sector": "Government"
+        },
+        {
+          "position_id": "BOND-002",
+          "name": "Corporate Bond Portfolio (Investment Grade)",
+          "isin": "AGGREGATE",
+          "coupon": 0.055,
+          "maturity_date": "2028-06-30",
+          "par_value": 2500000,
+          "current_price": 102.50,
+          "market_value": 2562500,
+          "duration": 3.8,
+          "ytm": 0.042,
+          "rating": "BBB+",
+          "sector": "Corporate"
+        },
+        {
+          "position_id": "BOND-003",
+          "name": "High Yield Bond ETF",
+          "ticker": "HYG",
+          "quantity": 15000,
+          "current_price": 84.25,
+          "market_value": 1263750,
+          "duration": 4.2,
+          "ytm": 0.078,
+          "rating": "B",
+          "sector": "Corporate"
+        }
+      ]
+    },
+    "alternatives": {
+      "percentage": 20.0,
+      "value": 5000000,
+      "holdings": [
+        {
+          "position_id": "RE-001",
+          "asset_class": "Real Estate",
+          "name": "REIT Index Fund",
+          "ticker": "VNQ",
+          "quantity": 22000,
+          "current_price": 85.50,
+          "market_value": 1881000,
+          "percentage_of_portfolio": 7.5,
+          "div_yield": 0.035,
+          "sector": "Real Estate"
+        },
+        {
+          "position_id": "COMM-001",
+          "asset_class": "Commodities",
+          "name": "Commodity Index Fund",
+          "ticker": "DBC",
+          "quantity": 35000,
+          "current_price": 28.75,
+          "market_value": 1006250,
+          "percentage_of_portfolio": 4.0,
+          "sector": "Commodities"
+        },
+        {
+          "position_id": "PE-001",
+          "asset_class": "Private Equity",
+          "name": "Private Equity Fund IV",
+          "nav_per_unit": 125.45,
+          "quantity": 20000,
+          "current_price": 125.45,
+          "market_value": 2509000,
+          "percentage_of_portfolio": 10.0,
+          "strategy": "Buyout",
+          "vintage_year": 2020,
+          "sector": "Private Equity"
+        },
+        {
+          "position_id": "HF-001",
+          "asset_class": "Hedge Fund",
+          "name": "Multi-Strategy Hedge Fund",
+          "nav_per_share": 1850.25,
+          "quantity": 500,
+          "current_price": 1850.25,
+          "market_value": 925125,
+          "percentage_of_portfolio": 3.7,
+          "strategy": "Multi-Strategy",
+          "sector": "Hedge Fund"
+        }
+      ]
+    }
+  },
+  "performance_metrics": {
+    "ytd_return": 0.082,
+    "one_year_return": 0.118,
+    "three_year_annualized_return": 0.095,
+    "five_year_annualized_return": 0.087,
+    "sharpe_ratio": 0.92,
+    "max_drawdown": -0.165,
+    "volatility": 0.14
+  },
+  "risk_metrics": {
+    "var_95_daily": -58500,
+    "cvar_95_daily": -78000,
+    "beta": 0.65,
+    "correlation_to_benchmark": 0.88
+  },
+  "income_metrics": {
+    "annual_dividend_income": 187500,
+    "annual_interest_income": 412500,
+    "total_income": 600000,
+    "portfolio_yield": 2.4
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "manager": "Diana Reeves",
+    "strategy": "Core portfolio suitable for institutional investors seeking diversification across asset classes",
+    "status": "active"
+  }
+}
