@@ -1,0 +1,290 @@
+{{- range $agentName, $agentConfig := .Values.agents }}
+{{- if and (ne $agentName "defaults") $agentConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $agentName }}-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ $agentName }}-agent
+    flavor: capital-markets
+    component: agent
+    release: {{ .Release.Name }}
+    version: {{ .Chart.AppVersion | quote }}
+  annotations:
+    description: "Capital Markets ANTS {{ $agentName }} Agent"
+    managed-by: "Helm"
+
+spec:
+  replicas: {{ $agentConfig.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: {{ $agentName }}-agent
+      component: agent
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  template:
+    metadata:
+      labels:
+        app: {{ $agentName }}-agent
+        component: agent
+        flavor: capital-markets
+        release: {{ .Release.Name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+
+    spec:
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        capabilities:
+          drop:
+            - ALL
+
+      # Service account
+      serviceAccountName: {{ include "capital-markets.serviceAccountName" . }}
+
+      # Pod scheduling preferences
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
+
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+
+      # Init containers - wait for dependencies
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -z postgresql.{{ .Release.Namespace }}.svc.cluster.local 5432; do echo waiting for DB; sleep 2; done;']
+
+      # Agent container
+      containers:
+        - name: {{ $agentName }}-agent
+          image: "{{ .Values.global.imageRegistry }}/{{ $agentConfig.image.repository }}:{{ $agentConfig.image.tag }}"
+          imagePullPolicy: {{ $agentConfig.imagePullPolicy | default .Values.global.imagePullPolicy }}
+
+          # Ports
+          ports:
+            - name: http
+              containerPort: {{ $agentConfig.service.targetPort | default 8000 }}
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+
+          # Probes for health checks
+          livenessProbe:
+            {{- toYaml $agentConfig.livenessProbe | nindent 12 }}
+
+          readinessProbe:
+            {{- toYaml $agentConfig.readinessProbe | nindent 12 }}
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 30
+
+          # Resource constraints
+          resources:
+            {{- toYaml $agentConfig.resources | nindent 12 }}
+
+          # Environment variables
+          env:
+            # Agent identity
+            - name: AGENT_NAME
+              value: {{ $agentName | quote }}
+            - name: AGENT_FLAVOR
+              value: "capital-markets"
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment | quote }}
+
+            # Logging
+            - name: LOG_LEVEL
+              value: {{ $agentConfig.environment.LOG_LEVEL | default "INFO" | quote }}
+            - name: LOG_FORMAT
+              value: "json"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+
+            # Agent configuration
+            - name: MAX_ITERATIONS
+              value: {{ $agentConfig.environment.MAX_ITERATIONS | default "15" | quote }}
+            - name: TIMEOUT_SECONDS
+              value: {{ $agentConfig.environment.TIMEOUT_SECONDS | default "60" | quote }}
+
+            # Database connection
+            - name: DATABASE_HOST
+              value: "postgresql.{{ .Release.Namespace }}.svc.cluster.local"
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_NAME
+              value: {{ .Values.postgresql.auth.database | quote }}
+            - name: DATABASE_USER
+              value: {{ .Values.postgresql.auth.username | quote }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "capital-markets.secretName" . }}
+                  key: database-password
+
+            # Azure Key Vault
+            - name: AZURE_KEY_VAULT_ENABLED
+              value: "true"
+            - name: AZURE_KEY_VAULT_URL
+              value: {{ .Values.keyVault.url | default "https://ants-kv-lab.vault.azure.net/" | quote }}
+
+            # Configuration paths
+            - name: CONFIG_PATH
+              value: "/etc/config"
+            - name: AGENTS_CONFIG
+              value: "/etc/config/agents_config.yaml"
+            - name: COUNCILS_CONFIG
+              value: "/etc/config/councils_config.yaml"
+            - name: MODELS_CONFIG
+              value: "/etc/config/models_config.yaml"
+
+            # Memory mount paths
+            {{- if .Values.storage.anf.enabled }}
+            - name: ANF_MODELS_PATH
+              value: {{ .Values.storage.anf.mounts.models.path | quote }}
+            - name: ANF_EPISODIC_PATH
+              value: {{ .Values.storage.anf.mounts.episodic.path | quote }}
+            - name: ANF_SEMANTIC_PATH
+              value: {{ .Values.storage.anf.mounts.semantic.path | quote }}
+            - name: ANF_PROCEDURAL_PATH
+              value: {{ .Values.storage.anf.mounts.procedural.path | quote }}
+            {{- end }}
+
+            # Optional: Additional environment variables
+            {{- with $agentConfig.environment }}
+            {{- range $key, $value := . }}
+            {{- if and (ne $key "LOG_LEVEL") (ne $key "MAX_ITERATIONS") (ne $key "TIMEOUT_SECONDS") }}
+            - name: {{ $key | upper }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+
+          # Volume mounts
+          volumeMounts:
+            # Configuration
+            - name: agents-config
+              mountPath: /etc/config/agents_config.yaml
+              subPath: agents_config.yaml
+              readOnly: true
+            - name: councils-config
+              mountPath: /etc/config/councils_config.yaml
+              subPath: councils_config.yaml
+              readOnly: true
+            - name: models-config
+              mountPath: /etc/config/models_config.yaml
+              subPath: models_config.yaml
+              readOnly: true
+
+            # Azure NetApp Files mounts
+            {{- if .Values.storage.anf.enabled }}
+            - name: anf-models
+              mountPath: {{ .Values.storage.anf.mounts.models.path }}
+            - name: anf-episodic
+              mountPath: {{ .Values.storage.anf.mounts.episodic.path }}
+            - name: anf-semantic
+              mountPath: {{ .Values.storage.anf.mounts.semantic.path }}
+            - name: anf-procedural
+              mountPath: {{ .Values.storage.anf.mounts.procedural.path }}
+            {{- end }}
+
+            # Ephemeral storage
+            {{- if .Values.storage.ephemeral.enabled }}
+            - name: ephemeral
+              mountPath: /tmp
+            {{- end }}
+
+            # Secrets (from Azure Key Vault)
+            - name: secrets
+              mountPath: /run/secrets
+              readOnly: true
+
+      # Volumes
+      volumes:
+        # Configuration ConfigMaps
+        - name: agents-config
+          configMap:
+            name: {{ .Values.config.agents.configMapName }}
+        - name: councils-config
+          configMap:
+            name: {{ .Values.config.councils.configMapName }}
+        - name: models-config
+          configMap:
+            name: {{ .Values.config.models.configMapName }}
+
+        # Azure NetApp Files
+        {{- if .Values.storage.anf.enabled }}
+        - name: anf-models
+          nfs:
+            server: {{ .Values.storage.anf.mounts.models.nfsServer }}
+            path: {{ .Values.storage.anf.mounts.models.nfsPath | quote }}
+        - name: anf-episodic
+          nfs:
+            server: {{ .Values.storage.anf.mounts.episodic.nfsServer }}
+            path: {{ .Values.storage.anf.mounts.episodic.nfsPath | quote }}
+        - name: anf-semantic
+          nfs:
+            server: {{ .Values.storage.anf.mounts.semantic.nfsServer }}
+            path: {{ .Values.storage.anf.mounts.semantic.nfsPath | quote }}
+        - name: anf-procedural
+          nfs:
+            server: {{ .Values.storage.anf.mounts.procedural.nfsServer }}
+            path: {{ .Values.storage.anf.mounts.procedural.nfsPath | quote }}
+        {{- end }}
+
+        # Ephemeral storage
+        {{- if .Values.storage.ephemeral.enabled }}
+        - name: ephemeral
+          emptyDir:
+            sizeLimit: {{ .Values.storage.ephemeral.sizeLimit }}
+        {{- end }}
+
+        # Secrets from Azure Key Vault (via workload identity)
+        - name: secrets
+          projected:
+            sources:
+              - secret:
+                  name: {{ include "capital-markets.secretName" . }}
+
+      # Image pull secrets
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+
+      # DNS configuration
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+{{- end }}
+{{- end }}

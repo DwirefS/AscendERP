@@ -34,6 +34,150 @@ class DatabaseClient:
 
         logger.info("database_connected")
 
+    async def initialize_schemas(self):
+        """
+        Create memory schemas and tables if they don't exist.
+        Called at startup to ensure database is ready.
+        Uses pgvector for 1024-dimensional embeddings (NV-EmbedQA-E5-v5).
+        Added 2026-03-04 for automated schema bootstrapping.
+        """
+        logger.info("initializing_database_schemas")
+
+        async with self._pool.acquire() as conn:
+            # Enable pgvector extension
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+
+            # Create memory schema
+            await conn.execute("CREATE SCHEMA IF NOT EXISTS memory;")
+
+            # Episodic: agent execution traces, history
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory.episodic (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    tenant_id TEXT NOT NULL,
+                    agent_id TEXT NOT NULL,
+                    content JSONB NOT NULL,
+                    metadata JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+
+            # Semantic: knowledge with vector embeddings (1024D for NV-EmbedQA)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory.semantic (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    tenant_id TEXT NOT NULL,
+                    agent_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    embedding vector(1024),
+                    metadata JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+
+            # Create IVFFlat index for vector similarity search
+            # Lists=100 is good for up to ~100K vectors; increase for larger datasets
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_semantic_embedding
+                ON memory.semantic
+                USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+            """)
+
+            # Procedural: learned patterns sorted by success rate
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory.procedural (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    tenant_id TEXT NOT NULL,
+                    agent_id TEXT NOT NULL,
+                    pattern JSONB NOT NULL,
+                    success_rate FLOAT DEFAULT 0.0,
+                    execution_count INT DEFAULT 0,
+                    metadata JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+
+            # Create ANTS operational schema for agent management
+            await conn.execute("CREATE SCHEMA IF NOT EXISTS ants;")
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS ants.agents (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    agent_type TEXT NOT NULL UNIQUE,
+                    name TEXT NOT NULL,
+                    status TEXT DEFAULT 'active',
+                    config JSONB DEFAULT '{}',
+                    created_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS ants.executions (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    trace_id TEXT NOT NULL,
+                    agent_id UUID REFERENCES ants.agents(id),
+                    tenant_id TEXT NOT NULL,
+                    user_id TEXT,
+                    session_id TEXT,
+                    input JSONB,
+                    output JSONB,
+                    status TEXT DEFAULT 'running',
+                    started_at TIMESTAMPTZ DEFAULT NOW(),
+                    completed_at TIMESTAMPTZ,
+                    latency_ms FLOAT,
+                    tokens_used INT DEFAULT 0,
+                    error TEXT
+                );
+            """)
+
+            # Create audit schema for immutable receipts
+            await conn.execute("CREATE SCHEMA IF NOT EXISTS audit;")
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS audit.receipts (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    receipt_type TEXT NOT NULL,
+                    trace_id TEXT NOT NULL,
+                    tenant_id TEXT NOT NULL,
+                    agent_id TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    actor TEXT,
+                    resource TEXT,
+                    details JSONB DEFAULT '{}',
+                    policy_decision TEXT,
+                    hash TEXT NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            """)
+
+            # Create indexes for common queries
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_episodic_tenant_agent
+                ON memory.episodic (tenant_id, agent_id);
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_semantic_tenant
+                ON memory.semantic (tenant_id);
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_procedural_agent_success
+                ON memory.procedural (agent_id, success_rate DESC);
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_executions_trace
+                ON ants.executions (trace_id);
+            """)
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_receipts_trace
+                ON audit.receipts (trace_id);
+            """)
+
+        logger.info("database_schemas_initialized")
+
     async def close(self):
         """Close connection pool."""
         if self._pool:
@@ -247,9 +391,11 @@ class DatabaseClient:
         min_success_rate: float = 0.0
     ) -> List[Dict[str, Any]]:
         """Query procedural memories."""
-        conditions = [f"success_rate >= ${len(conditions) + 1}"]
+        # NOTE: Original code had a bug — referenced `conditions` before it was
+        # defined (self-referencing list comprehension). Fixed 2026-03-04.
+        conditions = ["success_rate >= $1"]
         params = [min_success_rate]
-        param_num = len(params) + 1
+        param_num = 2  # Next parameter number after $1
 
         if tenant_id:
             conditions.append(f"tenant_id = ${param_num}")

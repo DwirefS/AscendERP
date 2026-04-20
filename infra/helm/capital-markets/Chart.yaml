@@ -1,0 +1,59 @@
+apiVersion: v2
+name: capital-markets
+description: Capital Markets Multi-Agent ANTS Flavor Helm Chart
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - ants
+  - ai-agents
+  - capital-markets
+  - trading
+  - kubernetes
+
+home: https://github.com/your-org/ants
+sources:
+  - https://github.com/your-org/ants
+
+maintainers:
+  - name: ANTS Team
+    email: ants-team@your-org.com
+
+dependencies:
+  # PostgreSQL for transaction and state persistence
+  - name: postgresql
+    version: "13.2.24"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+    alias: database
+
+  # Redis for caching and distributed sessions
+  - name: redis
+    version: "18.6.1"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+    alias: cache
+
+  # Prometheus for metrics collection (optional)
+  - name: prometheus
+    version: "25.8.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: monitoring.prometheus.enabled
+    alias: metrics
+
+  # Grafana for visualization (optional)
+  - name: grafana
+    version: "7.0.17"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: monitoring.grafana.enabled
+    alias: dashboards
+
+# Chart constraints
+kubeVersion: ">= 1.24.0"
+
+# Additional metadata
+annotations:
+  category: "AI/ML"
+  licenses: "Apache-2.0"
+  charts.bitnami.com/presets: "postgresql=true,redis=true,monitoring=false"

@@ -1,0 +1,425 @@
+# Capital Markets Councils Configuration
+# Defines 3 specialized councils with voting rules, authority limits, and thresholds
+# Last Updated: 2025-03-04
+
+# Global council settings
+defaults:
+  voting_mechanism: "weighted"      # Options: simple, consensus, weighted
+  timeout_seconds: 60
+  observability:
+    audit_logging: true
+    vote_recording: true
+    decision_tracking: true
+
+# Council Definitions
+councils:
+
+  # 1. Execution Council
+  # Approves trades, validates venue selection, enforces trading limits
+  execution:
+    display_name: "Execution Council"
+    description: "Governs trade execution decisions and venue selection"
+
+    # Council Purpose and Scope
+    purpose: "Approve trades ≥ $10M, validate execution strategy, enforce position limits"
+    jurisdiction:
+      - "trade_routing"
+      - "order_sizing"
+      - "execution_strategy"
+      - "venue_selection"
+      - "limit_enforcement"
+
+    # Council Membership
+    members:
+      - agent_name: "trading"
+        role: "voter"
+        voting_power: 40            # Percentage influence on decision
+        can_escalate: true
+        veto_power: false
+
+      - agent_name: "portfolio_manager"
+        role: "voter"
+        voting_power: 30
+        can_escalate: true
+        veto_power: false
+
+      - agent_name: "risk_management"
+        role: "voter"
+        voting_power: 30
+        can_escalate: true
+        veto_power: true            # Risk can veto anything exceeding limits
+
+      - agent_name: "compliance"
+        role: "observer"             # Compliance observes but doesn't vote
+        voting_power: 0
+        can_escalate: false
+        veto_power: false
+
+    # Voting Rules
+    voting:
+      mechanism: "weighted"
+      threshold_rules:
+        - trade_size_usd_min: 0
+          trade_size_usd_max: 10000000
+          threshold: "agent_decision"    # Single Trading Agent decides
+          description: "Trades < $10M decided by Trading Agent alone"
+
+        - trade_size_usd_min: 10000000
+          trade_size_usd_max: 50000000
+          threshold: "majority"          # ≥ 50% voting power needed
+          description: "Trades $10M-$50M need majority approval"
+          timeout_seconds: 60
+          escalation_required: false
+
+        - trade_size_usd_min: 50000000
+          trade_size_usd_max: 100000000
+          threshold: "supermajority"     # ≥ 66% voting power needed
+          description: "Trades $50M-$100M need supermajority"
+          timeout_seconds: 60
+          escalation_required: false
+
+        - trade_size_usd_min: 100000000
+          trade_size_usd_max: null
+          threshold: "unanimous"         # All voters must agree
+          description: "Trades > $100M need unanimous approval"
+          timeout_seconds: 120
+          escalation_required: true      # Human review required
+
+      quorum_required: true
+      min_voters_present: 2
+      veto_enabled: true              # Risk can veto any trade exceeding risk limits
+
+    # Authority Limits
+    authority:
+      max_single_trade_usd: 100000000              # $100M
+      max_daily_trading_volume_usd: 500000000      # $500M
+      max_concentration_pct: 5                      # 5% of portfolio in single position
+      daily_budget_usd: 500000000
+
+    # Decision Timeout Behavior
+    timeout:
+      timeout_seconds: 60
+      action_on_timeout: "escalate"   # Options: escalate, approve, deny
+      escalation_recipient: "human"
+      escalation_mode: "urgent"
+
+    # Observability
+    observability:
+      metrics:
+        - "trade_approval_rate"
+        - "average_decision_time_ms"
+        - "escalation_rate"
+        - "veto_rate"
+      logging:
+        level: "INFO"
+        include_votes: true
+        include_reasoning: true
+
+    # Performance SLAs
+    performance:
+      decision_sla_ms: 10000          # 10 second SLA for decision
+      escalation_sla_ms: 5000         # 5 second to escalate if timeout
+
+  # End Execution Council
+
+
+  # 2. Risk Council
+  # Monitors portfolio risk, enforces position limits, stress testing
+  risk:
+    display_name: "Risk Council"
+    description: "Governs risk management and enforces exposure limits"
+
+    # Council Purpose and Scope
+    purpose: "Monitor portfolio risk, enforce VaR limits, approve stress test results"
+    jurisdiction:
+      - "risk_monitoring"
+      - "var_enforcement"
+      - "position_limits"
+      - "concentration_limits"
+      - "stress_testing"
+      - "limit_breaches"
+
+    # Council Membership
+    members:
+      - agent_name: "risk_management"
+        role: "voter"
+        voting_power: 50            # Risk Manager leads on risk decisions
+        can_escalate: true
+        veto_power: true            # Risk can veto any position
+
+      - agent_name: "compliance"
+        role: "voter"
+        voting_power: 25
+        can_escalate: true
+        veto_power: false
+
+      - agent_name: "trading"
+        role: "observer"
+        voting_power: 0
+        can_escalate: false
+        veto_power: false
+
+      - agent_name: "portfolio_manager"
+        role: "observer"
+        voting_power: 0
+        can_escalate: false
+        veto_power: false
+
+    # Voting Rules
+    voting:
+      mechanism: "weighted"
+      threshold_rules:
+        - description: "Continuous risk monitoring - Risk Agent auto-updates"
+          risk_metric: "var_95"
+          risk_level: "normal"        # VaR < 95th percentile
+          threshold: "automatic"
+          escalation_required: false
+
+        - description: "VaR at 95th percentile - Voting required"
+          risk_metric: "var_95"
+          risk_level: "elevated"      # VaR at 95th percentile
+          threshold: "majority"       # ≥ 50% voting power
+          escalation_required: false
+
+        - description: "VaR at 99th percentile - Escalate immediately"
+          risk_metric: "var_99"
+          risk_level: "critical"      # VaR at 99th percentile
+          threshold: "unanimous"
+          escalation_required: true
+
+        - description: "Stress test failure - Requires approval"
+          risk_metric: "stress_test"
+          risk_level: "failure"
+          threshold: "unanimous"
+          escalation_required: true
+
+      quorum_required: true
+      min_voters_present: 1           # Can operate with just Risk Manager
+      veto_enabled: true
+
+    # Authority Limits
+    authority:
+      var_95_limit_usd: 10000000                   # $10M VaR at 95%
+      var_99_limit_usd: 15000000                   # $15M VaR at 99%
+      max_counterparty_exposure_usd: 500000000     # $500M per counterparty
+      max_sector_concentration_pct: 30
+      max_issuer_concentration_pct: 10
+
+    # Risk Thresholds
+    risk_thresholds:
+      var_normal_threshold_pct: 80                 # < 80th percentile = normal
+      var_elevated_threshold_pct: 95               # 80-95th percentile = elevated
+      var_critical_threshold_pct: 99               # > 95th percentile = critical
+
+      stress_test_acceptable_loss_pct: 20          # Acceptable loss in stress scenario
+      greek_limits:
+        delta_daily_limit_usd: 10000000
+        gamma_daily_limit: 500000
+        vega_daily_limit_usd: 100000
+        theta_daily_limit_usd: 50000
+
+    # Decision Timeout Behavior
+    timeout:
+      timeout_seconds: 120
+      action_on_timeout: "escalate"
+      escalation_recipient: "human"
+      escalation_mode: "urgent"
+
+    # Observability
+    observability:
+      metrics:
+        - "var_95_current"
+        - "var_99_current"
+        - "portfolio_heat_map"
+        - "stress_test_results"
+        - "limit_breach_count"
+        - "average_decision_time_ms"
+      reporting_frequency: "daily"
+
+  # End Risk Council
+
+
+  # 3. Governance Council
+  # Oversees policy changes, compliance, high-level governance
+  governance:
+    display_name: "Governance Council"
+    description: "Oversees compliance policies, governance changes, escalations"
+
+    # Council Purpose and Scope
+    purpose: "Approve policy changes, govern compliance, handle escalations"
+    jurisdiction:
+      - "policy_changes"
+      - "compliance_rule_updates"
+      - "authority_limit_changes"
+      - "escalated_decisions"
+      - "exception_approvals"
+      - "governance_framework"
+
+    # Council Membership
+    members:
+      - agent_name: "compliance"
+        role: "voter"
+        voting_power: 35
+        can_escalate: true
+        veto_power: false
+
+      - agent_name: "risk_management"
+        role: "voter"
+        voting_power: 25
+        can_escalate: true
+        veto_power: false
+
+      - agent_name: "portfolio_manager"
+        role: "voter"
+        voting_power: 20
+        can_escalate: true
+        veto_power: false
+
+      - agent_name: "trading"
+        role: "voter"
+        voting_power: 15
+        can_escalate: false
+        veto_power: false
+
+      - agent_name: "derivatives"
+        role: "observer"
+        voting_power: 0
+        can_escalate: false
+        veto_power: false
+
+      - agent_name: "client_service"
+        role: "observer"
+        voting_power: 0
+        can_escalate: false
+        veto_power: false
+
+    # Voting Rules
+    voting:
+      mechanism: "weighted"
+      threshold_rules:
+        - description: "Policy patch (minor) - Majority required"
+          change_type: "patch"
+          threshold: "majority"      # ≥ 50% voting power
+          timeout_seconds: 300       # 5 minutes for routine decisions
+
+        - description: "Policy minor version - Supermajority required"
+          change_type: "minor"
+          threshold: "supermajority" # ≥ 66% voting power
+          timeout_seconds: 600       # 10 minutes
+
+        - description: "Policy major version - Unanimous required"
+          change_type: "major"
+          threshold: "unanimous"     # All voters must agree
+          timeout_seconds: 1200      # 20 minutes for major changes
+
+        - description: "Escalated trading decision - Supermajority required"
+          change_type: "escalation"
+          threshold: "supermajority"
+          timeout_seconds: 600
+
+      quorum_required: true
+      min_voters_present: 3          # Need at least 3 agents voting
+      veto_enabled: false
+
+    # Authority Limits
+    authority:
+      max_policy_budget_impact: 100000000          # $100M budget impact
+      max_authority_limit_change_pct: 20           # Can't increase limits by > 20%
+      can_override_risk_limits: false
+      can_override_compliance_rules: false
+
+    # Policy Management
+    policy:
+      versioning_enabled: true
+      max_versions_to_keep: 10
+      rollback_enabled: true
+      rollback_delay_seconds: 60     # 1 minute grace period before rollback takes effect
+      policy_validation_required: true
+      test_environment_required: true
+
+    # Decision Timeout Behavior
+    timeout:
+      timeout_seconds: 600           # 10 minutes for governance decisions
+      action_on_timeout: "escalate"
+      escalation_recipient: "human"
+      escalation_mode: "normal"      # Not urgent for governance
+
+    # Observability
+    observability:
+      metrics:
+        - "policy_change_frequency"
+        - "approval_rate"
+        - "escalation_rate"
+        - "average_decision_time_ms"
+        - "rollback_rate"
+      audit_trail:
+        enabled: true
+        retention_days: 2555         # 7 years
+        include_full_reasoning: true
+
+  # End Governance Council
+
+# End Councils Section
+
+
+# Cross-Council Rules
+cross_council_rules:
+  # Rules that span multiple councils
+
+  escalation_rules:
+    - from_council: "execution"
+      condition: "trade_size > $100M"
+      escalate_to: "governance"
+      description: "Large trades escalate to governance for policy review"
+
+    - from_council: "risk"
+      condition: "var_99_breach"
+      escalate_to: "human"
+      description: "Critical risk breaches escalate to human traders"
+
+    - from_council: "execution"
+      condition: "timeout_on_decision"
+      escalate_to: "governance"
+      description: "Execution timeouts escalate to governance"
+
+  # Blocking rules - one council can block another
+  blocking_rules:
+    - council_a: "risk"
+      council_b: "execution"
+      condition: "risk_veto_set"
+      effect: "blocks_all_execution"
+      description: "Risk council can block execution if veto power used"
+
+  # Communication rules
+  communication_rules:
+    - from_council: "risk"
+      to_council: "execution"
+      message_type: "position_update"
+      frequency: "realtime"
+
+    - from_council: "compliance"
+      to_council: "execution"
+      message_type: "policy_change"
+      frequency: "on_change"
+
+# Council Performance Monitoring
+monitoring:
+  metrics_to_track:
+    - "decision_latency_p50"        # 50th percentile decision time
+    - "decision_latency_p95"        # 95th percentile decision time
+    - "decision_latency_p99"        # 99th percentile decision time
+    - "approval_rate"               # % of decisions approved
+    - "escalation_rate"             # % of decisions escalated
+    - "veto_rate"                   # % of decisions vetoed
+    - "timeout_rate"                # % of decisions timing out
+    - "quorum_violations"           # % of votes lacking quorum
+
+  alerting:
+    decision_latency_threshold_ms: 30000  # Alert if decision takes > 30 seconds
+    escalation_rate_threshold_pct: 10     # Alert if > 10% escalation rate
+    timeout_rate_threshold_pct: 5         # Alert if > 5% of decisions timeout
+
+  reporting_frequency: "daily"
+  dashboard_refresh_interval_seconds: 60
+
+# End Councils Configuration

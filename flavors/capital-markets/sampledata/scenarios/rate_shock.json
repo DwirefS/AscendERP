@@ -1,0 +1,263 @@
+{
+  "scenario_id": "RATESHOCK-SUDDEN",
+  "scenario_name": "Sudden Interest Rate Shock (+300 bps)",
+  "description": "Rapid unscheduled interest rate increase across the curve, simulating unexpected inflation shock or policy tightening",
+  "scenario_type": "yield_curve_shock",
+  "severity": "severe",
+  "probability_estimate": 0.05,
+  "event_trigger": "Unexpected inflation print, policy error, or shift in monetary policy regime",
+  "duration_days": 90,
+  "creation_date": "2024-03-04",
+  "market_conditions": {
+    "rate_shock": {
+      "shock_type": "parallel_shift",
+      "shock_magnitude_bps": 300,
+      "timing": "overnight",
+      "Fed_rate_move": {
+        "current_rate": 0.05,
+        "shocked_rate": 0.35,
+        "rate_change_bps": 300
+      }
+    },
+    "yield_curve_dynamics": {
+      "parallel_shift": true,
+      "shift_amount_bps": 300,
+      "curve_reshaping": "partial_steepening",
+      "yields_post_shock": {
+        "2y": 0.045,
+        "5y": 0.058,
+        "10y": 0.072,
+        "30y": 0.082
+      },
+      "yield_changes_bps": {
+        "2y": 320,
+        "5y": 310,
+        "10y": 305,
+        "30y": 280
+      },
+      "duration_effects": "severe"
+    },
+    "credit_spread_dynamics": {
+      "credit_spread_widening": true,
+      "widening_bps": {
+        "investment_grade": 60,
+        "high_yield": 150,
+        "emerging_market": 200
+      },
+      "rating_migration_risk": "elevated",
+      "default_probability_increase": 0.03
+    },
+    "equity_market": {
+      "discount_rate_effect": -0.25,
+      "earnings_growth_derating": -0.15,
+      "total_equity_shock": -0.38,
+      "sector_impacts": {
+        "utilities": -0.12,
+        "consumer_staples": -0.18,
+        "reit": -0.48,
+        "technology": -0.52,
+        "growth": -0.55,
+        "value": -0.25,
+        "financials": 0.05,
+        "industrials": -0.35
+      },
+      "equity_volatility_increase": 1.8
+    },
+    "currency_market": {
+      "usd_strength": 0.12,
+      "carry_trade_unwinding": true,
+      "fx_flows": {
+        "eurusd": -0.12,
+        "gbpusd": -0.10,
+        "audusd": -0.18,
+        "emerging_fx": -0.22
+      },
+      "fx_volatility": 0.22
+    },
+    "commodity_market": {
+      "real_rates_effect": "negative",
+      "commodity_shock": -0.20,
+      "inflation_expectations": 0.02,
+      "gold_hedge_benefit": 0.10,
+      "oil_demand_destruction": -0.15
+    },
+    "refinancing_risk": {
+      "bond_maturity_wall": true,
+      "rollover_risk": "elevated",
+      "financing_cost_increase_bps": 300,
+      "covenant_pressure": true
+    }
+  },
+  "portfolio_impact_by_duration": {
+    "duration_1": {
+      "duration_years": 1,
+      "price_change_pct": -3.0,
+      "realized_loss": -300000
+    },
+    "duration_3": {
+      "duration_years": 3,
+      "price_change_pct": -9.0,
+      "realized_loss": -1500000
+    },
+    "duration_5": {
+      "duration_years": 5,
+      "price_change_pct": -15.0,
+      "realized_loss": -3000000
+    },
+    "duration_7": {
+      "duration_years": 7,
+      "price_change_pct": -21.0,
+      "realized_loss": -4200000
+    },
+    "duration_10": {
+      "duration_years": 10,
+      "price_change_pct": -30.0,
+      "realized_loss": -6000000
+    }
+  },
+  "portfolio_impact_scenarios": {
+    "aggressive_portfolio": {
+      "total_loss_pct": -22.5,
+      "equity_loss": -15.2,
+      "fixed_income_loss": -9.8,
+      "derivatives_loss": -8.5,
+      "expected_loss_amount": 2250000,
+      "duration_impact": -18.2
+    },
+    "balanced_portfolio": {
+      "total_loss_pct": -12.8,
+      "equity_loss": -9.5,
+      "fixed_income_loss": -8.2,
+      "expected_loss_amount": 3200000,
+      "duration_impact": -10.5
+    },
+    "conservative_portfolio": {
+      "total_loss_pct": -8.5,
+      "equity_loss": -2.1,
+      "fixed_income_loss": -7.8,
+      "expected_loss_amount": 8500000,
+      "duration_impact": -7.2
+    }
+  },
+  "sector_specific_impacts": {
+    "banking": {
+      "net_interest_margin_benefit": true,
+      "deposit_flight_risk": true,
+      "mrr_widening_bps": 150,
+      "credit_loss_reserve_build": true,
+      "equity_price_impact": -0.05
+    },
+    "insurance": {
+      "discounting_benefit": true,
+      "liability_repricing": -0.08,
+      "reserve_release": true,
+      "equity_price_impact": 0.08
+    },
+    "reit": {
+      "mortgage_rates_up": -0.25,
+      "refinancing_risk": true,
+      "cost_of_capital_increase": "significant",
+      "dividend_coverage_pressure": true,
+      "equity_price_impact": -0.48
+    },
+    "utilities": {
+      "rate_reset_bonds_impact": -0.10,
+      "debt_refinancing_risk": true,
+      "allowed_roa_stagnation": true,
+      "equity_price_impact": -0.12
+    }
+  },
+  "credit_market_impacts": {
+    "issuance_activity": "severely_reduced",
+    "secondary_market_liquidity": "reduced",
+    "credit_spread_dislocation": true,
+    "institutional_forced_selling": true,
+    "default_wave_risk": {
+      "timing": "6_to_12_months",
+      "expected_default_rate_increase": 0.05,
+      "high_yield_default_rate": 0.08
+    }
+  },
+  "specific_hedge_impacts": {
+    "interest_rate_swaps": {
+      "position": "receiver_5y",
+      "duration": 5,
+      "pnl": 7500000,
+      "hedge_effectiveness": 0.95
+    },
+    "treasury_shorts": {
+      "position": "short_10y",
+      "notional": 50000000,
+      "pnl": 15000000,
+      "hedge_effectiveness": 0.98
+    },
+    "floating_rate_notes": {
+      "position": "long_frn",
+      "coupon_step_up": true,
+      "pnl_benefit": 250000
+    },
+    "inflation_linked_bonds": {
+      "position": "long_tips",
+      "real_rate_loss": -8500000,
+      "breakeven_inflation_benefit": 1200000,
+      "net_pnl": -7300000
+    }
+  },
+  "cascade_effects": {
+    "pension_plan_stress": true,
+    "liability_driven_investment_selling": true,
+    "corporate_debt_refinancing_crisis": true,
+    "mortgage_market_seizure": true,
+    "emerging_market_debt_crisis": true,
+    "credit_card_charge_offs": true
+  },
+  "recovery_characteristics": {
+    "typical_recovery_duration_months": 12,
+    "phases": [
+      {
+        "phase": "Initial Shock (Week 1)",
+        "rate_realization": 0.35,
+        "market_dislocation": true
+      },
+      {
+        "phase": "Adjustment (Weeks 2-4)",
+        "rate_realization": 0.35,
+        "credit_spreads_normalize": false,
+        "equity_repricing": "ongoing"
+      },
+      {
+        "phase": "Stabilization (Months 2-3)",
+        "rate_held": 0.30,
+        "credit_spreads_begin_tightening": true
+      },
+      {
+        "phase": "Recovery (Months 4-12)",
+        "rate_path": "downward_cuts",
+        "full_recovery_timeline": "12_months"
+      }
+    ]
+  },
+  "policy_response": [
+    "Potential rate path reversal after 2-3 months",
+    "Emergency liquidity provisions",
+    "Financial stability coordination",
+    "Regulatory capital relief measures",
+    "Emergency lending facilities"
+  ],
+  "metadata": {
+    "created_date": "2024-03-04",
+    "last_reviewed": "2024-03-04",
+    "review_frequency": "quarterly",
+    "historical_precedent": "Fed rate shock scenarios from CCAR",
+    "sources": [
+      "Federal Reserve stress test guidelines",
+      "Duration analytics",
+      "Historical rate shock analysis"
+    ],
+    "key_assumptions": [
+      "Parallel curve shift",
+      "No Fed rate reversal in first 90 days",
+      "Credit spreads widen due to refinancing risk"
+    ]
+  }
+}

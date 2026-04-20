@@ -1,0 +1,306 @@
+{
+  "scenario_id": "LIQUIDITY-CRISIS",
+  "scenario_name": "Systemic Liquidity Crisis",
+  "description": "Severe market liquidity deterioration with bid-ask spreads widening 10x and trading depth collapsing by 90%, similar to March 2020 or 2008",
+  "scenario_type": "liquidity_event",
+  "severity": "extreme",
+  "probability_estimate": 0.03,
+  "event_trigger": "Flash crash, clearing house stress, broker bankruptcy, or funding market seizure",
+  "duration_days": 120,
+  "creation_date": "2024-03-04",
+  "market_conditions": {
+    "liquidity_measures": {
+      "bid_ask_spread_baseline_bps": {
+        "equities_large_cap": 1,
+        "equities_mid_cap": 3,
+        "equities_small_cap": 8,
+        "bonds_investment_grade": 2,
+        "bonds_high_yield": 8,
+        "currencies": 0.5
+      },
+      "bid_ask_spread_shocked_bps": {
+        "equities_large_cap": 25,
+        "equities_mid_cap": 60,
+        "equities_small_cap": 150,
+        "bonds_investment_grade": 35,
+        "bonds_high_yield": 200,
+        "currencies": 8
+      },
+      "spread_widening_multiple": 10.0
+    },
+    "market_depth": {
+      "normal_depth_usd": {
+        "equities_large_cap": 5000000,
+        "equities_mid_cap": 1000000,
+        "bonds_investment_grade": 10000000,
+        "bonds_high_yield": 2000000
+      },
+      "stressed_depth_usd": {
+        "equities_large_cap": 500000,
+        "equities_mid_cap": 100000,
+        "bonds_investment_grade": 1000000,
+        "bonds_high_yield": 200000
+      },
+      "depth_reduction_pct": 0.90
+    },
+    "execution_impact": {
+      "slippage_bps_for_1mm_execution": {
+        "baseline": 2,
+        "stressed": 50
+      },
+      "time_to_execute": {
+        "baseline_seconds": 5,
+        "stressed_minutes": 45
+      },
+      "execution_feasibility": "limited"
+    },
+    "market_structure": {
+      "trading_halts": true,
+      "circuit_breaker_frequency": "daily",
+      "broker_failures": true,
+      "clearing_delays": true,
+      "settlement_failures": true,
+      "counterparty_risk_elevation": "severe"
+    },
+    "funding_market": {
+      "repo_market_dysfunction": true,
+      "overnight_repo_rates": 0.15,
+      "term_repo_spreads_bps": 250,
+      "collateral_haircuts": {
+        "treasuries": 0.02,
+        "agency_bonds": 0.05,
+        "corporate_bonds": 0.15,
+        "equities": 0.40,
+        "mortgage_backed": 0.20
+      },
+      "collateral_flight_to_quality": true,
+      "cash_hoarding": true
+    },
+    "cross_market_dynamics": {
+      "equity_bond_correlation": 0.75,
+      "volatility_spike": true,
+      "vix_level": 72,
+      "gold_safe_haven_bid": true,
+      "usd_strength": 0.20,
+      "credit_curve_inversion": true
+    },
+    "specific_asset_liquidity": {
+      "equities": {
+        "normal_market_cap_coverage": "99% tradeable",
+        "stressed_market_cap_coverage": "45% tradeable",
+        "illiquid_cap_in_crisis": "55%",
+        "trading_volume_reduction": 0.75,
+        "price_discovery_breakdown": true
+      },
+      "fixed_income": {
+        "corporate_bond_trades_per_day": {
+          "baseline": 3500000,
+          "stressed": 850000
+        },
+        "high_yield_illiquidity": true,
+        "emerging_market_bonds": "virtually_untradeable",
+        "municipal_bonds": "illiquid"
+      },
+      "derivatives": {
+        "option_bid_ask_widening": 10.0,
+        "futures_volume_decline": 0.50,
+        "swap_market_dysfunction": true,
+        "otc_clearing_delays": 3
+      }
+    }
+  },
+  "portfolio_stress_impacts": {
+    "aggressive_portfolio": {
+      "price_impact_loss_pct": -8.5,
+      "price_impact_loss_amount": 850000,
+      "inability_to_exit_pct": 0.25,
+      "forced_liquidation_loss_pct": -15.2,
+      "total_liquidity_crisis_loss_pct": -18.5,
+      "recovery_duration_months": 18
+    },
+    "balanced_portfolio": {
+      "price_impact_loss_pct": -3.2,
+      "price_impact_loss_amount": 800000,
+      "inability_to_exit_pct": 0.15,
+      "forced_liquidation_loss_pct": -6.8,
+      "total_liquidity_crisis_loss_pct": -8.5,
+      "recovery_duration_months": 12
+    },
+    "conservative_portfolio": {
+      "price_impact_loss_pct": -1.8,
+      "price_impact_loss_amount": 1800000,
+      "inability_to_exit_pct": 0.08,
+      "forced_liquidation_loss_pct": -2.5,
+      "total_liquidity_crisis_loss_pct": -3.8,
+      "recovery_duration_months": 8
+    }
+  },
+  "transaction_cost_explosion": {
+    "equity_trading": {
+      "normal_cost_bps": 5,
+      "crisis_cost_bps": 65,
+      "cost_multiple": 13.0
+    },
+    "bond_trading": {
+      "normal_cost_bps": 3,
+      "crisis_cost_bps": 75,
+      "cost_multiple": 25.0
+    },
+    "currency_trading": {
+      "normal_cost_bps": 0.1,
+      "crisis_cost_bps": 2.5,
+      "cost_multiple": 25.0
+    },
+    "options_trading": {
+      "normal_cost_bps": 8,
+      "crisis_cost_bps": 150,
+      "cost_multiple": 18.75
+    }
+  },
+  "risk_management_challenges": {
+    "position_unwinding": {
+      "forced_selling_cascades": true,
+      "fire_sale_losses": true,
+      "negative_feedback_loops": true,
+      "deleveraging_forced": true
+    },
+    "hedge_effectiveness": {
+      "correlation_breakdown": true,
+      "basis_risk_explosion": true,
+      "hedge_counterparty_failures": true,
+      "cross_hedge_basis_widening": true,
+      "protective_put_pricing_collapse": true
+    },
+    "margin_dynamics": {
+      "margin_calls_amplify_selling": true,
+      "haircut_increases": true,
+      "forced_liquidations": true,
+      "leverage_forced_deleveraging": true
+    }
+  },
+  "specific_liquidity_breakdowns": {
+    "equity_market": {
+      "trading_halts_per_day": 50,
+      "limit_up_limit_down_hits": true,
+      "single_stock_circuit_breakers": true,
+      "market_wide_trading_halts": 2,
+      "normal_share_volume": 3500000000,
+      "crisis_share_volume": 875000000,
+      "volume_reduction": 0.75
+    },
+    "fixed_income_market": {
+      "new_issuance": "halted",
+      "secondary_market_trades": {
+        "daily_normal": 1200000,
+        "daily_crisis": 180000
+      },
+      "dealer_inventory_reduction": 0.80,
+      "bid_wanted_lists": true,
+      "agreed_upon_rates": true,
+      "no_automatic_execution": true
+    },
+    "derivatives_market": {
+      "options_market": {
+        "trading_halts": true,
+        "pin_risk_elevated": true,
+        "exercise_delays": true,
+        "settlement_failures": true
+      },
+      "futures_market": {
+        "volume_decline": 0.50,
+        "liquidity_crisis": "severe",
+        "exchange_position_limits_binding": true
+      },
+      "swap_market": {
+        "execution_impossible": true,
+        "clearing_delays": 5,
+        "counterparty_defaults": true
+      }
+    }
+  },
+  "cascade_effects": {
+    "prime_brokerage": {
+      "hedge_fund_margin_calls": true,
+      "forced_fund_liquidations": true,
+      "fund_redemption_gating": true,
+      "side_pocket_creation": true
+    },
+    "banking_system": {
+      "interbank_lending_frozen": true,
+      "repo_market_seizure": true,
+      "funding_stress": "extreme",
+      "central_bank_emergency_lending": "activated"
+    },
+    "pension_funds": {
+      "liability_hedging_failures": true,
+      "rebalancing_impossible": true,
+      "tracking_error_explosion": true,
+      "covenant_violations": true
+    },
+    "insurance_companies": {
+      "variable_annuity_hedging_failures": true,
+      "forced_asset_sales": true,
+      "capital_deterioration": true
+    }
+  },
+  "recovery_timeline": {
+    "phase_1_market_shutdown": {
+      "duration_days": "2-5",
+      "characteristics": "Complete trading halt in most assets"
+    },
+    "phase_2_emergency_measures": {
+      "duration_days": "5-30",
+      "characteristics": "Central bank emergency interventions, trading restrictions lifted partially"
+    },
+    "phase_3_gradual_normalization": {
+      "duration_days": "30-120",
+      "characteristics": "Spreads gradually tighten, volume recovers"
+    },
+    "phase_4_full_recovery": {
+      "duration_months": "12-24",
+      "characteristics": "Return to normal market function"
+    }
+  },
+  "liquidity_hoarding_impact": {
+    "corporate_cash_hoarding": true,
+    "working_capital_strain": true,
+    "supplier_payment_delays": true,
+    "dividend_suspension": true,
+    "covenant_pressure": true,
+    "refinancing_risk": "extreme"
+  },
+  "policy_interventions": [
+    "Federal Reserve emergency lending facilities",
+    "Quantitative easing programs",
+    "Discount window activation",
+    "Market maker backstops",
+    "Circuit breaker trading halts",
+    "Short selling bans",
+    "Derivative exchange circuit breakers",
+    "SEC market coordination",
+    "FINRA capital requirements relief",
+    "Swap dealer position limit exemptions"
+  ],
+  "metadata": {
+    "created_date": "2024-03-04",
+    "last_reviewed": "2024-03-04",
+    "review_frequency": "quarterly",
+    "historical_precedents": [
+      "March 2020 COVID-19 market crash",
+      "2008 Financial Crisis",
+      "May 2010 Flash Crash"
+    ],
+    "sources": [
+      "SEC market microstructure studies",
+      "Federal Reserve liquidity facility papers",
+      "SIFMA market trading data",
+      "Bloomberg market analysis"
+    ],
+    "use_for_testing": [
+      "Liquidity risk models",
+      "Execution algorithms",
+      "Position unwinding strategies",
+      "Contingency funding plans"
+    ]
+  }
+}

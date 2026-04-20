@@ -1,0 +1,221 @@
+{
+  "client_id": "CORP-2024-004",
+  "client_name": "Global Manufacturing Corp Treasury",
+  "client_type": "institutional",
+  "client_category": "corporate_treasury",
+  "country": "United States",
+  "region": "North America",
+  "aum": 200000000,
+  "currency": "USD",
+  "risk_profile": "conservative",
+  "risk_tolerance": "very_low",
+  "established_date": "1982-03-15",
+  "account_opened": "2021-06-01",
+  "contact_person": {
+    "name": "Margaret Stevens",
+    "title": "Chief Financial Officer & Treasurer",
+    "email": "mstevens@globalmfg.com",
+    "phone": "+1-312-555-0789",
+    "timezone": "US/Central"
+  },
+  "company_details": {
+    "legal_name": "Global Manufacturing Corporation",
+    "ticker": "GMC",
+    "exchange": "NYSE",
+    "industry": "Industrial Manufacturing",
+    "market_cap": 8500000000,
+    "annual_revenue": 3200000000,
+    "number_of_employees": 18500,
+    "headquarters": "Chicago, Illinois"
+  },
+  "treasury_mandate": {
+    "objective": "Preserve capital, manage liquidity, optimize cash utilization while ensuring compliance with debt covenants",
+    "primary_functions": [
+      "Cash management",
+      "Liquidity reserve management",
+      "Debt maturity ladder management",
+      "Currency risk hedging",
+      "Interest rate risk management"
+    ],
+    "constraints": [
+      "Maximum credit rating downgrade: 2 notches from AA",
+      "Minimum liquidity reserve: $150M",
+      "Maximum maturity: 3 years (except strategic reserves)",
+      "AAA/AA rated securities only (95% minimum)",
+      "No emerging market exposure",
+      "No leverage",
+      "No derivatives except hedging"
+    ],
+    "debt_covenants": [
+      "Maintain current ratio above 1.5",
+      "Debt-to-EBITDA below 3.0x",
+      "Interest coverage ratio above 4.0x"
+    ]
+  },
+  "portfolio_structure": {
+    "operating_cash": {
+      "percentage": 15.0,
+      "value": 30000000,
+      "description": "Daily operational needs and payroll",
+      "vehicle": "Money market funds and sweep accounts"
+    },
+    "liquidity_reserves": {
+      "percentage": 30.0,
+      "value": 60000000,
+      "description": "3-6 month emergency reserves",
+      "vehicles": [
+        "Overnight/call accounts",
+        "30-90 day CDs",
+        "Commercial paper",
+        "Treasury bills"
+      ]
+    },
+    "short_term_bonds": {
+      "percentage": 35.0,
+      "value": 70000000,
+      "description": "6-12 month maturity",
+      "vehicles": [
+        "US Treasuries (2Y)",
+        "Investment grade corporates",
+        "Agency bonds"
+      ]
+    },
+    "medium_term_bonds": {
+      "percentage": 15.0,
+      "value": 30000000,
+      "description": "1-3 year maturity",
+      "vehicles": [
+        "US Treasuries (3Y/5Y)",
+        "AAA/AA corporates",
+        "Municipal bonds (tax-exempt)"
+      ]
+    },
+    "pension_asset_reserves": {
+      "percentage": 5.0,
+      "value": 10000000,
+      "description": "Segregated accounts for pension plan funding",
+      "vehicles": [
+        "Floating rate notes",
+        "Bond ladders"
+      ]
+    }
+  },
+  "credit_facility": {
+    "primary_bank": "JPMorgan Chase",
+    "revolving_credit_facility": 500000000,
+    "drawn_amount": 0,
+    "commitment_fee_bps": 20,
+    "pricing_grid": "SOFR + 85 bps",
+    "maturity_date": "2027-06-30"
+  },
+  "debt_structure": {
+    "total_debt": 1800000000,
+    "outstanding_bonds": [
+      {
+        "maturity_date": "2025-03-15",
+        "amount": 300000000,
+        "coupon": 0.035,
+        "rating": "AA"
+      },
+      {
+        "maturity_date": "2027-06-30",
+        "amount": 400000000,
+        "coupon": 0.042,
+        "rating": "AA"
+      },
+      {
+        "maturity_date": "2032-12-15",
+        "amount": 600000000,
+        "coupon": 0.052,
+        "rating": "A+"
+      },
+      {
+        "maturity_date": "2045-09-01",
+        "amount": 500000000,
+        "coupon": 0.065,
+        "rating": "A+"
+      }
+    ]
+  },
+  "hedging_programs": {
+    "interest_rate_hedging": {
+      "status": "active",
+      "notional": 250000000,
+      "hedge_ratio": 0.35,
+      "instruments": [
+        "Interest rate swaps",
+        "Treasury futures"
+      ]
+    },
+    "currency_hedging": {
+      "status": "active",
+      "hedged_currencies": [
+        "EUR",
+        "GBP",
+        "JPY"
+      ],
+      "hedge_ratio": 0.75,
+      "instruments": [
+        "Forward contracts",
+        "Currency options"
+      ]
+    }
+  },
+  "fees": {
+    "management_fee": null,
+    "custodian_fee_bps": 2,
+    "investment_banking_fee": "As negotiated",
+    "annual_custodian_fee": 40000
+  },
+  "custodian": {
+    "name": "JPMorgan Chase Bank, N.A.",
+    "account_id": "GMC-TREAS-001",
+    "relationship_manager": "Richard K. Foster",
+    "account_type": "Corporate Treasury Management",
+    "cash_management_services": true
+  },
+  "compliance_info": {
+    "regulatory_bodies": [
+      "SEC",
+      "NYSE"
+    ],
+    "treasury_compliance_officer": "David Blackstone",
+    "audit_firm": "EY",
+    "last_audit_date": "2023-12-31",
+    "audit_result": "Unqualified Opinion",
+    "sox_compliant": true,
+    "sec_reporting": "10-K, 10-Q, 8-K"
+  },
+  "reporting": {
+    "frequency": "daily",
+    "daily_position_reporting": true,
+    "weekly_summary": "Every Friday",
+    "monthly_detailed_report": true,
+    "quarterly_board_report": true,
+    "custom_reports": [
+      "Daily cash positioning",
+      "Debt maturity ladder",
+      "Interest rate exposure",
+      "Currency exposure",
+      "Covenant compliance tracking",
+      "Peer benchmarking analysis"
+    ]
+  },
+  "communication_preferences": {
+    "primary_contact": "email",
+    "emergency_contact": "+1-312-555-0790",
+    "meeting_frequency": "monthly",
+    "treasury_committee_meeting": "quarterly",
+    "board_reporting": "quarterly",
+    "prefer_language": "English"
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "account_status": "active",
+    "next_review_date": "2024-06-30",
+    "relationship_score": 9.5,
+    "tenure_years": 3,
+    "volume_tier": "platinum",
+    "strategic_importance": "high"
+  }
+}

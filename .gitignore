@@ -189,3 +189,40 @@ derby.log
 mlruns/
 wandb/
 *.mlflow
+
+# ============================================
+# Capital Markets Flavor - Security Hardening
+# ============================================
+
+# Azure Lab secrets & deployment
+infra/helm/values-lab-secrets.yaml
+.env.lab
+*.tenant
+*.subscription
+*.connection_string
+
+# Capital Markets sensitive data
+flavors/capital-markets/data/real_*
+flavors/capital-markets/data/client_*
+flavors/capital-markets/config/*.prod.yaml
+*.trading.key
+*.api_key
+*.backtest
+
+# Lab deployment secrets
+# Lab Lessons - LOCAL ONLY, never publish online
+lab-lessons/
+
+# Azure credentials & tokens
+*.azure_token
+*.sas_token
+azure.json
+.azure/
+
+# Additional PII protection
+*.pii
+*.ssn
+*.account_numbers
+*_private.json
+*_private.yaml
+*_private.yml

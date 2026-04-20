@@ -1,0 +1,460 @@
+# Capital Markets ANTS - Helm Chart Default Values
+# Default configuration for capital markets flavor agents and infrastructure
+# Override in values-lab.yaml, values-staging.yaml, values-prod.yaml
+# Last Updated: 2025-03-04
+
+# ============================================================================
+# Global Configuration
+# ============================================================================
+
+global:
+  environment: "production"
+  namespace: "default"
+  domain: "ants.your-domain.com"
+
+  # Image pull configuration
+  imagePullPolicy: "IfNotPresent"
+  imagePullSecrets: []
+
+  # Registry for container images
+  imageRegistry: "your-registry.azurecr.io"
+
+  # Timezone for agent timestamps
+  timezone: "UTC"
+
+# ============================================================================
+# Capital Markets Agents Configuration
+# ============================================================================
+
+agents:
+  # Global agent defaults
+  defaults:
+    replicaCount: 1
+    imagePullPolicy: "IfNotPresent"
+
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8000
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 2
+
+  # 1. Trading Agent
+  trading:
+    enabled: true
+    image:
+      repository: "capital-markets/trading-agent"
+      tag: "latest"
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    service:
+      type: "ClusterIP"
+      port: 8000
+      targetPort: 8000
+    environment:
+      LOG_LEVEL: "INFO"
+      MAX_ITERATIONS: "15"
+      TIMEOUT_SECONDS: "60"
+
+  # 2. Risk Management Agent
+  risk_management:
+    enabled: true
+    image:
+      repository: "capital-markets/risk-management-agent"
+      tag: "latest"
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    service:
+      type: "ClusterIP"
+      port: 8001
+      targetPort: 8001
+    environment:
+      LOG_LEVEL: "INFO"
+      MAX_ITERATIONS: "20"
+      TIMEOUT_SECONDS: "120"
+
+  # 3. Derivatives Agent
+  derivatives:
+    enabled: true
+    image:
+      repository: "capital-markets/derivatives-agent"
+      tag: "latest"
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    service:
+      type: "ClusterIP"
+      port: 8002
+      targetPort: 8002
+    environment:
+      LOG_LEVEL: "INFO"
+      MAX_ITERATIONS: "20"
+      TIMEOUT_SECONDS: "180"
+
+  # 4. Portfolio Manager Agent
+  portfolio_manager:
+    enabled: true
+    image:
+      repository: "capital-markets/portfolio-manager-agent"
+      tag: "latest"
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    service:
+      type: "ClusterIP"
+      port: 8003
+      targetPort: 8003
+    environment:
+      LOG_LEVEL: "INFO"
+      MAX_ITERATIONS: "15"
+      TIMEOUT_SECONDS: "90"
+
+  # 5. Compliance Agent
+  compliance:
+    enabled: true
+    image:
+      repository: "capital-markets/compliance-agent"
+      tag: "latest"
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    service:
+      type: "ClusterIP"
+      port: 8004
+      targetPort: 8004
+    environment:
+      LOG_LEVEL: "INFO"
+      MAX_ITERATIONS: "10"
+      TIMEOUT_SECONDS: "30"
+
+  # 6. Client Service Agent
+  client_service:
+    enabled: true
+    image:
+      repository: "capital-markets/client-service-agent"
+      tag: "latest"
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    service:
+      type: "ClusterIP"
+      port: 8005
+      targetPort: 8005
+    environment:
+      LOG_LEVEL: "INFO"
+      MAX_ITERATIONS: "10"
+      TIMEOUT_SECONDS: "45"
+
+# ============================================================================
+# Configuration Management
+# ============================================================================
+
+config:
+  # Agent configuration
+  agents:
+    configMapName: "capital-markets-agents-config"
+    configPath: "/etc/config/agents_config.yaml"
+    # Configuration is mounted from ConfigMap
+    # See templates/configmap.yaml
+
+  # Council configuration
+  councils:
+    configMapName: "capital-markets-councils-config"
+    configPath: "/etc/config/councils_config.yaml"
+
+  # Models configuration
+  models:
+    configMapName: "capital-markets-models-config"
+    configPath: "/etc/config/models_config.yaml"
+
+# ============================================================================
+# Storage and Memory Mounts
+# ============================================================================
+
+storage:
+  # Azure NetApp Files mount paths
+  anf:
+    enabled: true
+    mounts:
+      models:
+        path: "/mnt/anf/models"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/models"
+      episodic:
+        path: "/mnt/anf/memory/episodic"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/episodic"
+      semantic:
+        path: "/mnt/anf/memory/semantic"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/semantic"
+      procedural:
+        path: "/mnt/anf/memory/procedural"
+        nfsServer: "placeholder-nfs-server"
+        nfsPath: "/procedural"
+
+  # Local storage for ephemeral data
+  ephemeral:
+    enabled: true
+    sizeLimit: "10Gi"
+
+# ============================================================================
+# Database Configuration
+# ============================================================================
+
+postgresql:
+  enabled: true
+  auth:
+    username: "ants"
+    password: "PLACEHOLDER_CHANGE_ME"
+    database: "capital_markets"
+    postgresPassword: "PLACEHOLDER_POSTGRES_PASSWORD"
+
+  primary:
+    persistence:
+      enabled: true
+      size: "10Gi"
+      storageClassName: "default"
+
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+
+  service:
+    type: "ClusterIP"
+    port: 5432
+
+# ============================================================================
+# Redis Cache Configuration
+# ============================================================================
+
+redis:
+  enabled: false  # Optional, disabled by default for lab
+  auth:
+    enabled: true
+    password: "PLACEHOLDER_REDIS_PASSWORD"
+
+  master:
+    persistence:
+      enabled: true
+      size: "5Gi"
+
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "250m"
+        memory: "256Mi"
+
+# ============================================================================
+# Monitoring and Observability
+# ============================================================================
+
+monitoring:
+  enabled: false  # Disabled by default in lab
+
+  prometheus:
+    enabled: false
+    retention: 15d
+    scrapeInterval: "30s"
+
+  grafana:
+    enabled: false
+    dashboards:
+      - "agent-overview"
+      - "council-decisions"
+      - "risk-metrics"
+      - "execution-metrics"
+
+  loki:
+    enabled: false
+    retention: 30d
+
+# ============================================================================
+# Ingress Configuration
+# ============================================================================
+
+ingress:
+  enabled: false
+  className: "nginx"
+
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+  hosts:
+    - host: "agents.capital-markets.your-domain.com"
+      paths:
+        - path: "/"
+          pathType: "Prefix"
+
+  tls:
+    - secretName: "capital-markets-tls"
+      hosts:
+        - "agents.capital-markets.your-domain.com"
+
+# ============================================================================
+# Security Context
+# ============================================================================
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+      - "ALL"
+
+# ============================================================================
+# RBAC Configuration
+# ============================================================================
+
+rbac:
+  create: true
+  serviceAccountName: "capital-markets-agents"
+
+# ============================================================================
+# Node Selection
+# ============================================================================
+
+nodeSelector:
+  role: "agents"  # Schedule on agent node pool
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: "app"
+                operator: "In"
+                values:
+                  - "trading-agent"
+                  - "risk-management-agent"
+          topologyKey: "kubernetes.io/hostname"
+
+# ============================================================================
+# Autoscaling
+# ============================================================================
+
+autoscaling:
+  enabled: false  # Disabled for lab
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# ============================================================================
+# Kubernetes Features
+# ============================================================================
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+networkPolicy:
+  enabled: false  # Disabled for lab troubleshooting
+
+podSecurityPolicy:
+  enabled: false
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+env:
+  FLASK_ENV: "production"
+  LOG_FORMAT: "json"
+  PYTHONUNBUFFERED: "1"
+  AZURE_KEY_VAULT_ENABLED: "true"
+
+envFrom:
+  - configMapRef:
+      name: "capital-markets-config"
+
+# ============================================================================
+# Secrets Management
+# ============================================================================
+
+secrets:
+  enabled: true
+  # Secrets are stored in Azure Key Vault and mounted via workload identity
+  sources:
+    - name: "database-credentials"
+      mountPath: "/run/secrets/database"
+    - name: "api-keys"
+      mountPath: "/run/secrets/api-keys"
+
+# ============================================================================
+# Analytics and Reporting
+# ============================================================================
+
+analytics:
+  enabled: true
+  metricsPort: 9090
+  tracing:
+    enabled: true
+    samplingRate: 0.1  # 10% sampling
+  eventCapture:
+    enabled: true
+    batchSize: 100
+    flushInterval: "30s"

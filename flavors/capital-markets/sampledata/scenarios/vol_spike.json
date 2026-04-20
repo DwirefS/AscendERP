@@ -1,0 +1,213 @@
+{
+  "scenario_id": "VOLSPIKE-2011",
+  "scenario_name": "Volatility Spike & Correlation Breakdown",
+  "description": "Sudden increase in market volatility with correlations moving toward 1.0, reminiscent of August 2011 market turbulence",
+  "scenario_type": "volatility_event",
+  "severity": "severe",
+  "probability_estimate": 0.08,
+  "event_trigger": "Unexpected geopolitical shock, policy uncertainty, or rapid repricing of risk",
+  "duration_days": 60,
+  "creation_date": "2024-03-04",
+  "market_conditions": {
+    "volatility_regime": {
+      "vix_initial": 16,
+      "vix_peak": 80,
+      "vix_peak_duration_days": 15,
+      "volatility_of_volatility": 1.5,
+      "implied_vol_term_structure": {
+        "1_week": 0.82,
+        "1_month": 0.75,
+        "3_month": 0.62,
+        "6_month": 0.48,
+        "1_year": 0.35
+      }
+    },
+    "equity_market": {
+      "price_shock_day_1": -0.08,
+      "price_shock_day_2": -0.05,
+      "cumulative_shock": -0.18,
+      "volatility_increase": 3.5,
+      "realized_volatility": 0.72,
+      "skewness": -0.85,
+      "kurtosis": 6.5,
+      "circuit_breaker_triggers": true
+    },
+    "correlation_dynamics": {
+      "equity_correlation_regime": "high",
+      "equity_bond_correlation": 0.70,
+      "sector_correlation_matrix": {
+        "tech_to_healthcare": 0.92,
+        "financials_to_materials": 0.88,
+        "consumer_to_energy": 0.85,
+        "defensive_to_cyclical": 0.82,
+        "average_correlation": 0.88
+      },
+      "correlation_breakdown_pattern": "gradual_increase_to_crisis",
+      "mean_reversion_period_days": 45
+    },
+    "volatility_clustering": {
+      "garch_alpha": 0.15,
+      "garch_beta": 0.80,
+      "volatility_persistence": 0.95,
+      "daily_vol_autocorrelation": 0.65
+    },
+    "fixed_income_market": {
+      "duration_effects": "amplified",
+      "yield_moves": {
+        "2y_yield_change": -0.010,
+        "5y_yield_change": -0.012,
+        "10y_yield_change": -0.008,
+        "30y_yield_change": -0.005
+      },
+      "credit_spread_widening_bps": 50,
+      "flow_induced_moves": true,
+      "long_duration_selling": true
+    },
+    "fx_market": {
+      "safe_haven_flows": true,
+      "usd_demand": "elevated",
+      "jpy_yen_carry_unwind": true,
+      "fx_vol_increase": 2.8,
+      "vvix_level": 110,
+      "implied_fx_volatility": {
+        "eurusd": 0.18,
+        "gbpusd": 0.22,
+        "jpyusd": 0.28,
+        "emerging_markets": 0.35
+      }
+    },
+    "derivative_market": {
+      "option_volatility_surface_steepening": true,
+      "put_call_skew_widening": 0.08,
+      "term_structure_inversion": true,
+      "swap_spreads_widening": true,
+      "vix_futures_contango": true
+    }
+  },
+  "portfolio_impact_scenarios": {
+    "aggressive_portfolio": {
+      "expected_loss_pct": -12.8,
+      "expected_loss_amount": 1280000,
+      "volatility_increase_impact_pct": -8.5,
+      "correlation_increase_impact_pct": -4.3,
+      "var_breach_probability": 0.25,
+      "max_daily_loss": -22000000
+    },
+    "balanced_portfolio": {
+      "expected_loss_pct": -4.2,
+      "expected_loss_amount": 1050000,
+      "volatility_increase_impact_pct": -2.8,
+      "correlation_increase_impact_pct": -1.4,
+      "var_breach_probability": 0.08,
+      "max_daily_loss": -1250000
+    },
+    "conservative_portfolio": {
+      "expected_loss_pct": -1.5,
+      "expected_loss_amount": 1500000,
+      "volatility_increase_impact_pct": -0.8,
+      "correlation_increase_impact_pct": -0.7,
+      "var_breach_probability": 0.01,
+      "max_daily_loss": -850000
+    }
+  },
+  "greek_sensitivity": {
+    "vega_impact": {
+      "description": "Long vega positions suffer from volatility increase",
+      "option_portfolio_loss_pct": -8.5,
+      "vega_pnl": -425000,
+      "impact_on_hedges": "negative"
+    },
+    "gamma_impact": {
+      "description": "Short gamma hedges pay for volatility moves",
+      "short_gamma_loss": -280000,
+      "daily_rebalancing_cost": -35000,
+      "path_dependency": "high"
+    },
+    "theta_impact": {
+      "description": "Time decay helps long option positions",
+      "theta_pnl": 125000,
+      "days_of_benefit": 60
+    }
+  },
+  "stress_factors": {
+    "liquidity_stress": {
+      "bid_ask_spread_increase": 2.5,
+      "market_depth_reduction": 0.40,
+      "transaction_cost_impact_bps": 25
+    },
+    "forced_selling": {
+      "margin_calls_triggered": true,
+      "leverage_forced_deleveraging": true,
+      "stop_loss_cascades": true
+    },
+    "hedging_effectiveness": {
+      "hedge_effectiveness_degradation": 0.25,
+      "basis_risk_increase": 0.35
+    }
+  },
+  "recovery_path": {
+    "timeline_days": 60,
+    "phases": [
+      {
+        "phase": "Spike (Days 0-15)",
+        "vix_level": 80,
+        "correlation": 0.92
+      },
+      {
+        "phase": "Elevated (Days 15-30)",
+        "vix_level": 45,
+        "correlation": 0.80
+      },
+      {
+        "phase": "Normalization (Days 30-60)",
+        "vix_level": 22,
+        "correlation": 0.65
+      }
+    ]
+  },
+  "trigger_conditions": [
+    "Unexpected Fed policy change",
+    "Geopolitical escalation",
+    "Earnings surprise wave",
+    "Credit event",
+    "Market technical breakdown",
+    "Volatility selling unwind"
+  ],
+  "hedging_effectiveness": {
+    "vix_call_hedge": {
+      "strike": 30,
+      "pnl_at_vix_80": 2500000,
+      "cost": 150000,
+      "roi": 16.67
+    },
+    "put_spread_hedge": {
+      "strike_long": 380,
+      "strike_short": 320,
+      "pnl_at_sp500_decline_20pct": 1800000,
+      "cost": 200000,
+      "roi": 8.0
+    },
+    "variance_swap": {
+      "strike_vols": 0.25,
+      "pnl_at_realized_vol_70pct": 3200000,
+      "cost": 500000,
+      "roi": 5.4
+    }
+  },
+  "metadata": {
+    "created_date": "2024-03-04",
+    "last_reviewed": "2024-03-04",
+    "review_frequency": "quarterly",
+    "historical_precedent": "August 2011 Market Selloff",
+    "sources": [
+      "OptionMetrics implied volatility database",
+      "VIX methodology",
+      "Correlation studies"
+    ],
+    "use_for_testing": [
+      "Options hedging effectiveness",
+      "Volatility model calibration",
+      "Correlation forecasting"
+    ]
+  }
+}

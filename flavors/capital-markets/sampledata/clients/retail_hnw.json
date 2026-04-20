@@ -1,0 +1,155 @@
+{
+  "client_id": "HNW-2024-003",
+  "client_name": "William Harrison Estate",
+  "client_type": "individual",
+  "client_category": "high_net_worth",
+  "country": "United States",
+  "region": "North America",
+  "aum": 5000000,
+  "currency": "USD",
+  "risk_profile": "moderate",
+  "risk_tolerance": "moderate",
+  "established_date": "1995-01-01",
+  "account_opened": "2019-08-15",
+  "primary_account_holder": {
+    "name": "William J. Harrison",
+    "date_of_birth": "1958-05-22",
+    "title": "Retired CEO",
+    "occupation": "Real Estate Developer (Retired)",
+    "email": "wharrison@harrisonestate.com",
+    "phone": "+1-212-555-0456",
+    "timezone": "US/Eastern",
+    "citizenship": "US",
+    "accredited_investor": true
+  },
+  "spouse_info": {
+    "name": "Catherine M. Harrison",
+    "date_of_birth": "1960-08-10",
+    "account_access": "Full access"
+  },
+  "beneficiaries": [
+    {
+      "name": "James Harrison",
+      "relationship": "Son",
+      "percentage": 50
+    },
+    {
+      "name": "Sarah Harrison Trust",
+      "relationship": "Daughter",
+      "percentage": 50
+    }
+  ],
+  "income_profile": {
+    "primary_income_sources": [
+      "Dividend income",
+      "Interest income",
+      "Real estate rental income"
+    ],
+    "annual_income_requirement": 200000,
+    "liquidity_need": "high"
+  },
+  "wealth_composition": {
+    "investable_assets": 5000000,
+    "real_estate": 8500000,
+    "private_business": 3200000,
+    "other_assets": 1200000,
+    "total_net_worth": 17900000
+  },
+  "mandate": {
+    "objective": "Generate steady income while preserving capital and providing growth for heirs",
+    "constraints": [
+      "Minimum 4% annual income distribution required",
+      "No speculative positions",
+      "No leverage",
+      "Diversification across asset classes"
+    ],
+    "preferences": [
+      "Dividend-paying stocks",
+      "Bond and fixed income focus",
+      "ESG-focused investments",
+      "Regular rebalancing"
+    ],
+    "tax_considerations": "Tax-loss harvesting, long-term capital gains optimization",
+    "esg_requirements": true
+  },
+  "portfolio_allocation": {
+    "equities": {
+      "target": 0.45,
+      "value": 2250000
+    },
+    "fixed_income": {
+      "target": 0.40,
+      "value": 2000000
+    },
+    "alternatives": {
+      "target": 0.10,
+      "value": 500000
+    },
+    "cash": {
+      "target": 0.05,
+      "value": 250000
+    }
+  },
+  "performance_targets": {
+    "return_objective": "Inflation + 3% to 4% annually",
+    "time_horizon": 30,
+    "benchmark": "50/50 Equities/Bonds",
+    "target_volatility": 0.10,
+    "maximum_volatility": 0.12
+  },
+  "fees": {
+    "management_fee_bps": 50,
+    "performance_fee": null,
+    "custody_fee_bps": 5,
+    "annual_management_fee": 25000,
+    "advisory_fee": "flat"
+  },
+  "custodian": {
+    "name": "Charles Schwab Private Client Services",
+    "account_id": "HARRISONESTATE-001",
+    "relationship_manager": "Patricia Wells",
+    "account_type": "Discretionary Investment Account"
+  },
+  "tax_planning": {
+    "tax_bracket": 0.37,
+    "state": "NY",
+    "tax_optimization_strategy": "Tax-loss harvesting, municipal bonds for portion of fixed income",
+    "estimated_annual_tax_liability": 180000,
+    "tax_advisor": "Goldman Sachs Tax Advisory",
+    "last_tax_plan_date": "2023-12-31"
+  },
+  "estate_planning": {
+    "estate_planner": "Davis & Partners LLP",
+    "will_on_file": true,
+    "trust_structure": "Revocable Living Trust",
+    "power_of_attorney": "Active",
+    "healthcare_directive": "On file"
+  },
+  "reporting": {
+    "frequency": "quarterly",
+    "reporting_date": "Last calendar day of quarter",
+    "statement_format": "PDF and online portal",
+    "custom_reports": [
+      "Income distribution summary",
+      "Tax lot information",
+      "Capital gains/losses",
+      "Asset allocation tracking",
+      "Performance attribution"
+    ]
+  },
+  "communication_preferences": {
+    "primary_contact": "email",
+    "meeting_frequency": "semi-annually",
+    "annual_review_meeting": "Q1 2024",
+    "prefer_language": "English",
+    "no_unsolicited_calls": true
+  },
+  "metadata": {
+    "last_updated": "2024-03-04T10:30:00Z",
+    "account_status": "active",
+    "next_review_date": "2024-06-15",
+    "relationship_score": 8.7,
+    "tenure_years": 5,
+    "channel": "referred"
+  }
+}
