@@ -335,6 +335,10 @@ class AzureOpenAIClient(BaseLLMClient):
             raise
 
 
+# Public alias: consumers and tests refer to the abstract client as LLMClient.
+LLMClient = BaseLLMClient
+
+
 def create_llm_client(config: LLMConfig) -> BaseLLMClient:
     """Factory function to create appropriate LLM client."""
     if config.provider == ModelProvider.NVIDIA_NIM:

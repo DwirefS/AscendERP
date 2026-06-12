@@ -228,7 +228,7 @@ def policy():
 @policy.command('test')
 def policy_test():
     """Run OPA policy tests."""
-    from platform.bootstrap.antsctl_impl import PolicyManager
+    from ants_platform.bootstrap.antsctl_impl import PolicyManager
 
     click.echo("Running OPA policy tests...\n")
 
@@ -248,7 +248,7 @@ def policy_test():
 @click.argument('policy_file', type=click.Path(exists=True))
 def policy_validate(policy_file: str):
     """Validate a policy file."""
-    from platform.bootstrap.antsctl_impl import PolicyManager
+    from ants_platform.bootstrap.antsctl_impl import PolicyManager
 
     click.echo(f"Validating {policy_file}...")
 
@@ -268,7 +268,7 @@ def policy_validate(policy_file: str):
 @click.option('--input', '-i', 'input_file', type=click.Path(exists=True), required=True, help='Input JSON file')
 def policy_evaluate(policy_path: str, input_file: str):
     """Evaluate a policy with input data."""
-    from platform.bootstrap.antsctl_impl import PolicyManager
+    from ants_platform.bootstrap.antsctl_impl import PolicyManager
     import json
 
     with open(input_file) as f:
@@ -419,7 +419,7 @@ def show_deployment_plan(spec: Dict[str, Any], environment: str):
 
 async def execute_deployment(spec: Dict[str, Any], environment: str):
     """Execute deployment based on spec."""
-    from platform.bootstrap.antsctl_impl import TerraformDeployer, HelmDeployer
+    from ants_platform.bootstrap.antsctl_impl import TerraformDeployer, HelmDeployer
 
     logger.info("executing_deployment", environment=environment)
 
@@ -463,7 +463,7 @@ async def execute_deployment(spec: Dict[str, Any], environment: str):
 
 async def get_deployment_status(environment: str) -> Dict[str, Any]:
     """Get deployment status."""
-    from platform.bootstrap.antsctl_impl import KubernetesManager
+    from ants_platform.bootstrap.antsctl_impl import KubernetesManager
 
     try:
         k8s = KubernetesManager(namespace="ants")
@@ -479,7 +479,7 @@ async def get_deployment_status(environment: str) -> Dict[str, Any]:
 
 async def scale_agents(agent_type: str, replicas: int, environment: str):
     """Scale agent workers."""
-    from platform.bootstrap.antsctl_impl import KubernetesManager
+    from ants_platform.bootstrap.antsctl_impl import KubernetesManager
 
     logger.info("scaling_agents", agent_type=agent_type, replicas=replicas)
 
@@ -494,7 +494,7 @@ async def scale_agents(agent_type: str, replicas: int, environment: str):
 
 async def stream_logs(component: str):
     """Stream logs for component."""
-    from platform.bootstrap.antsctl_impl import KubernetesManager
+    from ants_platform.bootstrap.antsctl_impl import KubernetesManager
 
     k8s = KubernetesManager(namespace="ants")
 
@@ -522,7 +522,7 @@ async def stream_logs(component: str):
 
 async def get_logs(component: str, lines: int) -> list:
     """Get logs for component."""
-    from platform.bootstrap.antsctl_impl import KubernetesManager
+    from ants_platform.bootstrap.antsctl_impl import KubernetesManager
 
     try:
         k8s = KubernetesManager(namespace="ants")
@@ -545,7 +545,7 @@ async def get_logs(component: str, lines: int) -> list:
 
 async def get_agents(environment: str) -> list:
     """Get registered agents."""
-    from platform.bootstrap.antsctl_impl import DatabaseManager
+    from ants_platform.bootstrap.antsctl_impl import DatabaseManager
     import os
 
     try:
@@ -580,7 +580,7 @@ async def get_agents(environment: str) -> list:
 
 async def invoke_agent(agent_type: str, input_data: Dict, tenant: str) -> Dict:
     """Invoke an agent."""
-    from platform.bootstrap.antsctl_impl import AgentInvoker
+    from ants_platform.bootstrap.antsctl_impl import AgentInvoker
     import os
 
     api_gateway_url = os.getenv("ANTS_API_GATEWAY", "http://localhost:8000")
@@ -598,7 +598,7 @@ async def invoke_agent(agent_type: str, input_data: Dict, tenant: str) -> Dict:
 
 async def search_memory(query: str, memory_type: str, tenant: str, limit: int) -> list:
     """Search memory substrate."""
-    from platform.bootstrap.antsctl_impl import DatabaseManager
+    from ants_platform.bootstrap.antsctl_impl import DatabaseManager
     import os
 
     try:
@@ -622,7 +622,7 @@ async def search_memory(query: str, memory_type: str, tenant: str, limit: int) -
 
 async def get_clear_metrics(environment: str) -> Dict[str, Any]:
     """Get CLEAR metrics."""
-    from platform.bootstrap.antsctl_impl import DatabaseManager
+    from ants_platform.bootstrap.antsctl_impl import DatabaseManager
     import os
 
     try:

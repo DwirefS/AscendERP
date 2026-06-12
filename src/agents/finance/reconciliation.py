@@ -105,10 +105,10 @@ class ReconciliationAgent(BaseAgent):
         determine the best reconciliation approach.
 
         Request:
-        - Period: {perception['period_start']} to {perception['period_end']}
-        - Accounts: {perception['accounts']}
-        - Tolerance: {perception['tolerance_threshold']}
-        - Sources: {perception['source_systems']}
+        - Period: {perception.get('period_start')} to {perception.get('period_end')}
+        - Accounts: {perception.get('accounts', [])}
+        - Tolerance: {perception.get('tolerance_threshold', 0.01)}
+        - Sources: {perception.get('source_systems', ['erp', 'bank'])}
 
         Past Successful Patterns:
         {retrieved_context.get('past_patterns', [])}

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List
 import json
 
+pyspark = pytest.importorskip("pyspark", reason="pyspark is an optional extra: pip install 'ants[spark]'")
 from pyspark.sql import SparkSession
 from data.ingestion.connectors.erp_connector import ERPConnector, ConnectorConfig
 from data.etl.pipelines.orchestrator import DataPipelineOrchestrator, OrchestrationConfig

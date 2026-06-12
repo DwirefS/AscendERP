@@ -2,7 +2,8 @@
 Database client for ANTS Memory Substrate.
 PostgreSQL with pgvector extension.
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
+from dataclasses import dataclass
 from datetime import datetime
 import asyncpg
 from asyncpg import Pool
@@ -11,24 +12,51 @@ import structlog
 logger = structlog.get_logger()
 
 
+@dataclass
+class DatabaseConfig:
+    """Connection settings for the ANTS memory database."""
+    host: str = "localhost"
+    port: int = 5432
+    database: str = "ants"
+    username: str = "ants"
+    password: str = ""
+    min_pool_size: int = 5
+    max_pool_size: int = 20
+
+    @property
+    def connection_string(self) -> str:
+        return (
+            f"postgresql://{self.username}:{self.password}"
+            f"@{self.host}:{self.port}/{self.database}"
+        )
+
+
 class DatabaseClient:
     """
     PostgreSQL client for ANTS memory substrate.
     Manages connections and provides query interface.
     """
 
-    def __init__(self, connection_string: str):
-        self.connection_string = connection_string
+    def __init__(self, config: Union[DatabaseConfig, str]):
+        if isinstance(config, str):
+            self.config: Optional[DatabaseConfig] = None
+            self.connection_string = config
+        else:
+            self.config = config
+            self.connection_string = config.connection_string
         self._pool: Optional[Pool] = None
 
     async def connect(self):
         """Create connection pool."""
         logger.info("connecting_to_database")
 
+        min_size = self.config.min_pool_size if self.config else 5
+        max_size = self.config.max_pool_size if self.config else 20
+
         self._pool = await asyncpg.create_pool(
             self.connection_string,
-            min_size=5,
-            max_size=20,
+            min_size=min_size,
+            max_size=max_size,
             command_timeout=60
         )
 
@@ -183,6 +211,10 @@ class DatabaseClient:
         if self._pool:
             await self._pool.close()
             logger.info("database_closed")
+
+    async def disconnect(self):
+        """Alias for close() — kept for API symmetry with connect()."""
+        await self.close()
 
     async def execute(self, query: str, *args) -> str:
         """Execute a query without returning results."""

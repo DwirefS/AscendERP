@@ -3,7 +3,7 @@ Microcontroller MCP Server for physical world control.
 
 Enables ANTS agents to control physical devices via microcontroller APIs.
 """
-from mcp.servers.microcontroller.server import (
+from ants_mcp.servers.microcontroller.server import (
     MicrocontrollerMCPServer,
     DeviceConfig,
     DeviceProtocol,

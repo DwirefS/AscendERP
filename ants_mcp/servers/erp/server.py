@@ -10,7 +10,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from mcp.servers.erp.erp_client import get_erp_client, ERPClient
+from ants_mcp.servers.erp.erp_client import get_erp_client, ERPClient
 
 logger = structlog.get_logger()
 

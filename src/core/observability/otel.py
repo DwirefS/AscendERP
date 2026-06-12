@@ -36,10 +36,6 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 from opentelemetry import propagate
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
-# Instrumentation
-from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
-from opentelemetry.instrumentation.logging import LoggingInstrumentor
-
 logger = logging.getLogger(__name__)
 
 
@@ -219,14 +215,16 @@ def enable_instrumentation():
     - Database clients (psycopg, asyncpg)
     """
     try:
-        # System metrics
+        # System metrics (optional instrumentation package)
+        from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
         SystemMetricsInstrumentor().instrument()
         logger.info("System metrics instrumentation enabled")
     except Exception as e:
         logger.warning(f"System metrics instrumentation failed: {e}")
 
     try:
-        # Logging instrumentation
+        # Logging instrumentation (optional instrumentation package)
+        from opentelemetry.instrumentation.logging import LoggingInstrumentor
         LoggingInstrumentor().instrument(set_logging_format=True)
         logger.info("Logging instrumentation enabled")
     except Exception as e:

@@ -12,7 +12,7 @@ This is the bridge between digital intelligence and physical reality.
 """
 import asyncio
 import json
-from mcp.servers.microcontroller.server import (
+from ants_mcp.servers.microcontroller.server import (
     create_microcontroller_server,
     DeviceConfig,
     DeviceProtocol

@@ -1,13 +1,26 @@
 """
 ANTS API Gateway.
 Main entry point for all agent interactions.
+
+Routing model:
+- /api/v1/*  — primary resource-oriented API (agents, tasks)
+- /v1/*      — invocation + utility endpoints (invoke, memory, auth)
+- /health    — unauthenticated liveness
+- /metrics   — operational summary (requires metrics:read or admin:*)
+
+Rate limiting is applied per credential ("session") at the gateway. In a
+multi-replica deployment the limiter should be backed by Redis with
+per-tenant aggregate limits; the in-memory limiter here is the local
+profile's implementation.
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
+import hashlib
 import structlog
+import time
 import uuid
 
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -47,6 +60,29 @@ class AgentResponse(BaseModel):
     error: Optional[str] = None
 
 
+class CreateAgentRequest(BaseModel):
+    """Request to create (instantiate) an agent."""
+    agent_type: str = Field(..., description="Registered agent type to instantiate")
+    tenant_id: Optional[str] = Field(None, description="Tenant identifier")
+    capabilities: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TaskRequest(BaseModel):
+    """Request to submit a task for asynchronous execution."""
+    task_type: str = Field(..., description="Type of task to execute")
+    input_data: Dict[str, Any] = Field(..., description="Task input payload")
+    priority: int = Field(5, ge=1, le=10, description="1 = highest, 10 = lowest")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TokenRequest(BaseModel):
+    """Request body for token creation."""
+    tenant_id: str = Field(..., description="Tenant ID")
+    user_id: Optional[str] = Field(None, description="User ID")
+    scopes: List[str] = Field(default_factory=lambda: ["agent:invoke", "memory:read"])
+
+
 class HealthResponse(BaseModel):
     """Health check response."""
     status: str
@@ -54,22 +90,55 @@ class HealthResponse(BaseModel):
     components: Dict[str, str]
 
 
+def _build_registry():
+    """
+    Build the agent registry with the agents that can run in the current
+    environment. Agents run without memory/LLM dependencies fall back to
+    their built-in deterministic logic.
+    """
+    from src.core.agent.registry import AgentRegistry
+
+    registry = AgentRegistry()
+
+    try:
+        from src.agents.finance.reconciliation import ReconciliationAgent
+        registry.register(
+            "finance.reconciliation",
+            ReconciliationAgent,
+            {
+                "name": "Reconciliation Agent",
+                "description": "Automates financial reconciliation",
+                "category": "finance",
+                "capabilities": ["reconcile", "discrepancy-detection"],
+            },
+        )
+    except Exception as e:  # pragma: no cover - registration is best-effort
+        logger.warning("agent_registration_failed", agent="finance.reconciliation", error=str(e))
+
+    try:
+        from src.agents.retail.inventory import InventoryAgent
+        registry.register(
+            "retail.inventory",
+            InventoryAgent,
+            {
+                "name": "Inventory Agent",
+                "description": "Manages inventory levels and replenishment",
+                "category": "retail",
+                "capabilities": ["forecast", "replenish"],
+            },
+        )
+    except Exception as e:  # pragma: no cover
+        logger.warning("agent_registration_failed", agent="retail.inventory", error=str(e))
+
+    return registry
+
+
 # Application lifecycle
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application startup and shutdown."""
-    # Startup
     logger.info("api_gateway_starting")
-
-    # Initialize dependencies
-    # - Database connections
-    # - Agent registry
-    # - Memory substrate
-    # - Policy engine
-
     yield
-
-    # Shutdown
     logger.info("api_gateway_stopping")
 
 
@@ -80,6 +149,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Gateway state is initialized eagerly (not in lifespan) so the app also
+# works under test clients that don't run startup events.
+app.state.registry = _build_registry()
+# Per-tenant created agent instances: {tenant_id: [instance_info, ...]}
+app.state.tenant_agents = {}
+# In-memory task queue (local profile; production uses Service Bus/Redis)
+app.state.tasks = {}
+app.state.started_at = time.time()
 
 # CORS middleware
 app.add_middleware(
@@ -92,6 +170,21 @@ app.add_middleware(
 
 # OpenTelemetry instrumentation
 FastAPIInstrumentor.instrument_app(app)
+
+
+async def enforce_rate_limit(request: Request, auth: AuthContext):
+    """
+    Apply per-credential rate limiting. The bucket key combines the hash of
+    the presented credential with the path, so each session has its own
+    budget and one client cannot starve a tenant's other sessions.
+    """
+    credential = (
+        request.headers.get("authorization")
+        or request.headers.get("x-api-key")
+        or auth.tenant_id
+    )
+    client_key = f"{auth.tenant_id}:{hashlib.sha256(credential.encode()).hexdigest()[:16]}"
+    await rate_limiter.check_rate_limit(request, client_key)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -109,6 +202,125 @@ async def health_check():
     )
 
 
+# ---------------------------------------------------------------------------
+# /api/v1 resource API
+# ---------------------------------------------------------------------------
+
+@app.get("/api/v1/agents")
+async def list_agents_api(
+    http_request: Request,
+    auth: AuthContext = Depends(require_scope("agents:read"))
+) -> List[Dict[str, Any]]:
+    """List registered agent types plus this tenant's created instances."""
+    await enforce_rate_limit(http_request, auth)
+
+    registry = app.state.registry
+    agents = [
+        {
+            "type": m.agent_type,
+            "name": m.name,
+            "description": m.description,
+            "category": m.category,
+            "capabilities": m.capabilities,
+            "version": m.version,
+        }
+        for m in registry.list_agents()
+    ]
+    # Tenant isolation: only this tenant's instances are visible
+    agents.extend(app.state.tenant_agents.get(auth.tenant_id, []))
+    return agents
+
+
+@app.post("/api/v1/agents", status_code=201)
+async def create_agent_api(
+    request: CreateAgentRequest,
+    http_request: Request,
+    auth: AuthContext = Depends(require_scope("agents:write"))
+) -> Dict[str, Any]:
+    """Instantiate an agent for the calling tenant."""
+    await enforce_rate_limit(http_request, auth)
+
+    registry = app.state.registry
+    metadata = registry.get_metadata(request.agent_type)
+
+    instance_info = {
+        "instance_id": str(uuid.uuid4()),
+        "type": request.agent_type,
+        "tenant_id": auth.tenant_id,
+        "registered_type": metadata is not None,
+        "capabilities": request.capabilities or (metadata.capabilities if metadata else []),
+        "status": "created" if metadata else "pending_registration",
+    }
+
+    app.state.tenant_agents.setdefault(auth.tenant_id, []).append(instance_info)
+
+    logger.info(
+        "agent_instance_created",
+        tenant_id=auth.tenant_id,
+        agent_type=request.agent_type,
+        registered=metadata is not None,
+    )
+    return instance_info
+
+
+@app.post("/api/v1/tasks", status_code=202)
+async def submit_task_api(
+    request: TaskRequest,
+    http_request: Request,
+    auth: AuthContext = Depends(require_scope("tasks:submit"))
+) -> Dict[str, Any]:
+    """Submit a task for asynchronous execution."""
+    await enforce_rate_limit(http_request, auth)
+
+    task_id = str(uuid.uuid4())
+    task = {
+        "task_id": task_id,
+        "task_type": request.task_type,
+        "tenant_id": auth.tenant_id,
+        "priority": request.priority,
+        "status": "accepted",
+        "submitted_at": time.time(),
+    }
+    app.state.tasks[task_id] = task
+
+    logger.info(
+        "task_submitted",
+        task_id=task_id,
+        task_type=request.task_type,
+        tenant_id=auth.tenant_id,
+    )
+    return task
+
+
+@app.get("/api/v1/tasks/{task_id}")
+async def get_task_api(
+    task_id: str,
+    auth: AuthContext = Depends(require_scope("tasks:submit"))
+) -> Dict[str, Any]:
+    """Get a submitted task's status."""
+    task = app.state.tasks.get(task_id)
+    if not task or task["tenant_id"] != auth.tenant_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@app.get("/metrics")
+async def operational_metrics(
+    auth: AuthContext = Depends(require_scope("metrics:read"))
+) -> Dict[str, Any]:
+    """Operational summary. Requires metrics:read (admin:* implies it)."""
+    return {
+        "uptime_seconds": time.time() - getattr(app.state, "started_at", time.time()),
+        "registered_agent_types": len(app.state.registry.list_agents()),
+        "tenant_agent_instances": sum(len(v) for v in app.state.tenant_agents.values()),
+        "tasks_accepted": len(app.state.tasks),
+    }
+
+
+# ---------------------------------------------------------------------------
+# /v1 invocation + utility API
+# ---------------------------------------------------------------------------
+
 @app.post("/v1/agents/invoke", response_model=AgentResponse)
 async def invoke_agent(
     request: AgentRequest,
@@ -116,19 +328,27 @@ async def invoke_agent(
     auth: AuthContext = Depends(require_scope("agent:invoke"))
 ):
     """
-    Invoke an agent with the given input.
-    Requires authentication and agent:invoke scope.
+    Invoke an agent with the given input. Runs the full PRREEL loop
+    (perceive → retrieve → reason → execute → verify → learn). Without a
+    configured LLM/memory backend the agent uses its deterministic fallback
+    logic, so this endpoint works in the local profile out of the box.
     """
     trace_id = str(uuid.uuid4())
 
-    # Apply rate limiting
-    await rate_limiter.check_rate_limit(http_request, auth.tenant_id)
+    await enforce_rate_limit(http_request, auth)
 
-    # Validate tenant_id matches auth context
     if request.tenant_id != auth.tenant_id:
         raise HTTPException(
             status_code=403,
             detail="Tenant ID mismatch with authentication"
+        )
+
+    registry = app.state.registry
+    metadata = registry.get_metadata(request.agent_type)
+    if metadata is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown agent type: {request.agent_type}"
         )
 
     logger.info(
@@ -140,31 +360,31 @@ async def invoke_agent(
     )
 
     try:
-        # Get agent from registry
-        # agent = agent_registry.get(request.agent_type)
+        from src.core.agent.base import AgentContext
 
-        # Create context
-        # context = AgentContext(
-        #     trace_id=trace_id,
-        #     tenant_id=request.tenant_id,
-        #     user_id=request.user_id,
-        #     session_id=request.session_id,
-        #     metadata=request.metadata
-        # )
-
-        # Run agent
-        # result = await agent.run(request.input_data, context)
-
-        # Placeholder response
-        return AgentResponse(
+        agent = registry.create_agent(request.agent_type)
+        context = AgentContext(
             trace_id=trace_id,
-            success=True,
-            output={"message": "Agent executed successfully"},
-            actions_taken=[],
-            latency_ms=100.0,
-            tokens_used=500
+            tenant_id=request.tenant_id,
+            user_id=request.user_id,
+            session_id=request.session_id,
+            metadata=request.metadata,
         )
 
+        result = await agent.run(request.input_data, context)
+
+        return AgentResponse(
+            trace_id=result.trace_id,
+            success=result.success,
+            output=result.output,
+            actions_taken=result.actions_taken,
+            latency_ms=result.latency_ms,
+            tokens_used=getattr(result, "tokens_used", 0) or 0,
+            error=getattr(result, "error", None),
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(
             "agent_invocation_failed",
@@ -179,26 +399,22 @@ async def invoke_agent(
 
 
 @app.post("/v1/auth/token")
-async def create_token(
-    tenant_id: str = Field(..., description="Tenant ID"),
-    user_id: Optional[str] = Field(None, description="User ID"),
-    scopes: List[str] = Field(default_factory=lambda: ["agent:invoke", "memory:read"])
-):
+async def create_token(request: TokenRequest):
     """
     Create a JWT token for authentication.
     In production, this would verify credentials first.
     """
     token = auth_service.create_jwt_token(
-        tenant_id=tenant_id,
-        user_id=user_id,
-        scopes=scopes
+        tenant_id=request.tenant_id,
+        user_id=request.user_id,
+        scopes=request.scopes
     )
 
     return {
         "access_token": token,
         "token_type": "bearer",
         "expires_in": 86400,  # 24 hours
-        "scopes": scopes
+        "scopes": request.scopes
     }
 
 
@@ -207,41 +423,18 @@ async def list_agents(
     auth: Optional[AuthContext] = Depends(get_optional_auth)
 ):
     """
-    List available agents.
+    List available agents (legacy endpoint).
     Optional authentication for personalized results.
     """
-    # In production, filter based on tenant permissions
+    registry = app.state.registry
     return [
         {
-            "type": "finance.reconciliation",
-            "name": "Reconciliation Agent",
-            "description": "Automates financial reconciliation",
-            "category": "finance"
-        },
-        {
-            "type": "retail.inventory",
-            "name": "Inventory Agent",
-            "description": "Manages inventory levels and replenishment",
-            "category": "retail"
-        },
-        {
-            "type": "cybersecurity.defender",
-            "name": "Defender Triage Agent",
-            "description": "Triages security alerts",
-            "category": "security"
-        },
-        {
-            "type": "hr.recruitment",
-            "name": "Recruitment Agent",
-            "description": "Resume screening and candidate matching",
-            "category": "hr"
-        },
-        {
-            "type": "crm.lead_scoring",
-            "name": "Lead Scoring Agent",
-            "description": "Qualifies and prioritizes leads",
-            "category": "crm"
+            "type": m.agent_type,
+            "name": m.name,
+            "description": m.description,
+            "category": m.category,
         }
+        for m in registry.list_agents()
     ]
 
 
@@ -258,14 +451,13 @@ async def search_memory(
     Search agent memory.
     Requires authentication and memory:read scope.
     """
-    # Apply rate limiting
-    await rate_limiter.check_rate_limit(http_request, auth.tenant_id)
+    await enforce_rate_limit(http_request, auth)
 
     # Validate tenant_id matches auth
     if tenant_id != auth.tenant_id:
         raise HTTPException(status_code=403, detail="Tenant mismatch")
 
-    # Placeholder
+    # Placeholder until the memory substrate is wired into the gateway
     return {
         "results": [],
         "total": 0,

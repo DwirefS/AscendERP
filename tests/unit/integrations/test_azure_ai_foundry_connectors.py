@@ -9,6 +9,10 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from datetime import datetime
 
+# These tests exercise the Azure AI Foundry connector client, which requires
+# the azure-ai-projects SDK (optional "azure" extra).
+pytest.importorskip("azure.ai.projects", reason="azure extra not installed: pip install 'ants[azure]'")
+
 from src.integrations.azure_ai_foundry_connectors import (
     AzureAIFoundryConnectorClient,
     ConnectorType,

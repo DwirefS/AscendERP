@@ -84,8 +84,7 @@ async def example_1_high_availability():
         print(f"   Differentiation Time: <2 seconds")
         print()
 
-        print("Agent Resume:
-")
+        print("Agent Resume:\n")
         print("   ✓ Loaded financial analysis capabilities")
         print("   ✓ Loaded reconciliation procedures from shared memory")
         print("   ✓ Connected to ERP systems")

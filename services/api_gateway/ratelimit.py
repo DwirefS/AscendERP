@@ -5,6 +5,7 @@ Implements token bucket algorithm with Redis backend.
 from fastapi import HTTPException, Request
 from typing import Optional
 from datetime import datetime, timedelta
+import os
 import time
 import structlog
 from collections import defaultdict
@@ -76,10 +77,30 @@ class RateLimiter:
     In production, this should use Redis for distributed rate limiting.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        default_capacity: Optional[int] = None,
+        default_refill_rate: Optional[float] = None,
+    ):
         # In-memory buckets: key -> TokenBucket
         # Key format: "{tenant_id}:{endpoint}" or "{api_key}:{endpoint}"
         self.buckets: dict[str, TokenBucket] = {}
+
+        # Simple per-client defaults (used by check_limit)
+        self.default_capacity = default_capacity or int(
+            os.getenv("ANTS_RATELIMIT_BURST", "50")
+        )
+        self.default_refill_rate = (
+            default_refill_rate
+            if default_refill_rate is not None
+            else float(os.getenv("ANTS_RATELIMIT_REFILL_PER_SECOND", "5"))
+        )
+
+        default_config = RateLimitConfig(
+            requests_per_minute=int(self.default_refill_rate * 60),
+            burst_size=self.default_capacity,
+            cost_per_request=1
+        )
 
         # Default rate limits per endpoint
         self.endpoint_limits = {
@@ -93,12 +114,23 @@ class RateLimiter:
                 burst_size=200,
                 cost_per_request=1
             ),
-            "default": RateLimitConfig(
-                requests_per_minute=100,
-                burst_size=150,
-                cost_per_request=1
-            )
+            "default": default_config
         }
+
+    def check_limit(self, client_id: str, cost: int = 1) -> bool:
+        """
+        Simple per-client check: returns True if the request is allowed.
+        Uses the limiter's default capacity/refill rate.
+        """
+        bucket = self.buckets.get(client_id)
+        if bucket is None:
+            bucket = TokenBucket(
+                capacity=self.default_capacity,
+                refill_rate=self.default_refill_rate
+            )
+            self.buckets[client_id] = bucket
+
+        return bucket.consume(cost)
 
     def _get_bucket_key(self, request: Request, tenant_id: str) -> str:
         """Generate bucket key for request."""

@@ -7,19 +7,36 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHea
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import jwt
+import os
+import secrets as _secrets
 import structlog
 import hashlib
 
 logger = structlog.get_logger()
 
-# Security schemes
-bearer_scheme = HTTPBearer()
+# Security schemes. auto_error=False so that missing credentials produce a
+# 401 from our handlers (HTTPBearer's built-in error is a 403, which
+# conflates "not authenticated" with "not authorized").
+bearer_scheme = HTTPBearer(auto_error=False)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-# Configuration (should come from environment)
-JWT_SECRET = "your-secret-key-change-in-production"
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24
+# Default configuration. ANTS_JWT_SECRET must be set in production; without
+# it a random per-process secret is generated so tokens never validate across
+# restarts or replicas (safe-by-default for local development).
+DEFAULT_JWT_SECRET = os.getenv("ANTS_JWT_SECRET")
+if not DEFAULT_JWT_SECRET:
+    DEFAULT_JWT_SECRET = _secrets.token_urlsafe(48)
+    logger.warning(
+        "jwt_secret_generated",
+        msg="ANTS_JWT_SECRET not set; using ephemeral secret (dev only)"
+    )
+DEFAULT_JWT_ALGORITHM = "HS256"
+DEFAULT_JWT_EXPIRATION_HOURS = 24
+
+# Backwards-compatible module aliases
+JWT_SECRET = DEFAULT_JWT_SECRET
+JWT_ALGORITHM = DEFAULT_JWT_ALGORITHM
+JWT_EXPIRATION_HOURS = DEFAULT_JWT_EXPIRATION_HOURS
 
 
 class AuthContext:
@@ -39,18 +56,44 @@ class AuthContext:
 
     def has_scope(self, scope: str) -> bool:
         """Check if auth context has required scope."""
-        return scope in self.scopes
+        if scope in self.scopes:
+            return True
+        # admin:* grants everything; "agents:*" grants "agents:read" etc.
+        for held in self.scopes:
+            if held == "admin:*":
+                return True
+            if held.endswith(":*") and scope.startswith(held[:-1]):
+                return True
+        return False
 
 
 class AuthService:
-    """Service for authentication operations."""
+    """
+    Service for authentication operations.
 
-    def __init__(self):
+    The gateway resolves credentials against ``AuthService.current`` — the
+    most recently constructed instance. Constructing an AuthService with an
+    explicit ``jwt_secret`` therefore reconfigures process-wide auth, which
+    is how tests (and embedded deployments) inject their own secret.
+    """
+
+    current: "AuthService" = None  # set in __init__
+
+    def __init__(
+        self,
+        jwt_secret: Optional[str] = None,
+        jwt_algorithm: Optional[str] = None,
+        token_expiry_hours: Optional[int] = None,
+    ):
+        self.jwt_secret = jwt_secret or DEFAULT_JWT_SECRET
+        self.jwt_algorithm = jwt_algorithm or DEFAULT_JWT_ALGORITHM
+        self.token_expiry_hours = token_expiry_hours or DEFAULT_JWT_EXPIRATION_HOURS
+
         # In production, this would be backed by database
-        self.api_keys: Dict[str, Dict[str, Any]] = {
-            # Example: API key -> tenant metadata
-            # Format: SHA256(api_key) -> metadata
-        }
+        # Format: SHA256(api_key) -> metadata
+        self.api_keys: Dict[str, Dict[str, Any]] = {}
+
+        AuthService.current = self
 
     def create_jwt_token(
         self,
@@ -63,26 +106,56 @@ class AuthService:
             "tenant_id": tenant_id,
             "user_id": user_id,
             "scopes": scopes or ["agent:invoke", "memory:read"],
-            "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS),
-            "iat": datetime.utcnow()
+            "exp": datetime.utcnow() + timedelta(hours=self.token_expiry_hours),
+            "iat": datetime.utcnow(),
+            # Unique token id: enables revocation/audit and per-session
+            # rate limiting at the gateway.
+            "jti": _secrets.token_hex(8),
         }
 
-        token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        token = jwt.encode(payload, self.jwt_secret, algorithm=self.jwt_algorithm)
         return token
 
     def verify_jwt_token(self, token: str) -> Dict[str, Any]:
         """Verify and decode a JWT token."""
         try:
-            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
             return payload
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401, detail="Token expired")
         except jwt.InvalidTokenError as e:
             raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
+    def create_api_key(
+        self,
+        tenant_id: str,
+        name: str = "",
+        scopes: list[str] = None
+    ) -> str:
+        """
+        Create and register a new API key. Returns the raw key — it is
+        stored only as a SHA256 hash and cannot be recovered later.
+        """
+        api_key = f"ants_{_secrets.token_urlsafe(32)}"
+        key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+
+        self.api_keys[key_hash] = {
+            "tenant_id": tenant_id,
+            "name": name,
+            "scopes": scopes or ["agent:invoke", "memory:read"],
+            "created_at": datetime.utcnow().isoformat()
+        }
+
+        logger.info(
+            "api_key_created",
+            tenant_id=tenant_id,
+            name=name,
+            key_hash=key_hash[:8]
+        )
+        return api_key
+
     def verify_api_key(self, api_key: str) -> Dict[str, Any]:
         """Verify an API key and return tenant metadata."""
-        # Hash the API key
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
         metadata = self.api_keys.get(key_hash)
@@ -97,7 +170,7 @@ class AuthService:
         tenant_id: str,
         scopes: list[str] = None
     ):
-        """Register a new API key (admin operation)."""
+        """Register an externally generated API key (admin operation)."""
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()
 
         self.api_keys[key_hash] = {
@@ -113,22 +186,24 @@ class AuthService:
         )
 
 
-# Global auth service instance
+# Global auth service instance (also becomes AuthService.current)
 auth_service = AuthService()
 
 
 async def get_auth_context(
-    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme),
     api_key: Optional[str] = Security(api_key_header)
 ) -> AuthContext:
     """
     Dependency to extract and validate authentication.
     Supports both JWT tokens and API keys.
     """
+    service = AuthService.current or auth_service
+
     # Try API key first
     if api_key:
         logger.debug("authenticating_with_api_key")
-        metadata = auth_service.verify_api_key(api_key)
+        metadata = service.verify_api_key(api_key)
 
         return AuthContext(
             tenant_id=metadata["tenant_id"],
@@ -140,7 +215,7 @@ async def get_auth_context(
     if credentials:
         logger.debug("authenticating_with_jwt")
         token = credentials.credentials
-        payload = auth_service.verify_jwt_token(token)
+        payload = service.verify_jwt_token(token)
 
         return AuthContext(
             tenant_id=payload["tenant_id"],

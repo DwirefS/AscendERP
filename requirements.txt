@@ -1,0 +1,4 @@
+# Core runtime dependencies for ANTS (local profile).
+# Equivalent to `pip install -e .` — kept in sync with pyproject.toml [project.dependencies].
+# Cloud/ML extras: pip install -e ".[azure,ml,frameworks,mcp]"
+-e .
