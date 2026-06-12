@@ -303,3 +303,89 @@ base64-encoded 32 bytes — hostile to local dev and undocumented.
 **Decision.** If the value decodes to exactly 32 bytes of base64 it is used
 directly; otherwise a 32-byte key is derived via SHA-256 of the raw string.
 Production guidance remains: provision a proper random key from Key Vault.
+
+---
+
+## D-016 — Manufacturing is the next flavor, built as an importable package with root-collected tests
+
+**Date:** 2026-06-12 · **Status:** Accepted
+
+**Context.** User directive: end-to-end AI-agent-native ERP for manufacturing.
+The capital-markets flavor is the proven template, but its hyphenated directory
+(`flavors/capital-markets/`) makes it un-importable — its own tests import
+`flavors.capital_markets`, which cannot resolve, so they are silently never run.
+
+**Decision.** `flavors/manufacturing/` (underscore-safe, importable), shared
+domain contract in `flavors/manufacturing/models.py`, tests under
+`tests/flavors/manufacturing/` so the root suite collects them. Migrating
+capital-markets to the same convention is follow-up work.
+
+---
+
+## D-017 — AutoOptimize loops: Karpathy-autoresearch pattern applied to scheduling policy
+
+**Date:** 2026-06-12 · **Status:** Accepted
+
+**Context.** [karpathy/autoresearch](https://github.com/karpathy/autoresearch)
+(Mar 2026, 66k+ stars) demonstrated a minimal, powerful pattern: agent proposes a
+change → runs a short, measurable experiment → keeps it if the objective improves,
+rolls back otherwise → journals everything.
+
+**Decision.** Apply the loop to a **parameterized SchedulingPolicy** (dispatch
+rule + tunables), evaluated on a deterministic seeded plant simulator with a
+weighted OTD/OEE/cost objective. Every step (accepted or rolled back) is a
+journaled `OptimizationStep`. The policy — not code — is the mutation target:
+safe, bounded, explainable, and auditable, unlike letting an agent edit source in
+production.
+
+---
+
+## D-018 — Swarm scenario engine: MiroFish pattern as decision evidence, not oracle
+
+**Date:** 2026-06-12 · **Status:** Accepted
+
+**Context.** [MiroFish](https://github.com/666ghj/MiroFish) builds a "digital
+world" of persona agents with memory/relations from seed documents and watches
+emergent behavior to produce prediction reports.
+
+**Decision.** `SwarmWorld` models the plant's *ecosystem* (suppliers, machines,
+operators, customers as persona agents) and runs shock scenarios
+(supplier outage, demand spike, machine failure, price spike). The resulting
+`ScenarioReport` (timeline, KPI impact, risks, recommendations, confidence) is
+**deliberation evidence for councils** — the S&OP council consumes it before
+deciding; it never auto-executes. Deterministic per scenario seed so reports are
+reproducible and testable.
+
+---
+
+## D-019 — Generic Agent Skills + AgentHarness live in src/core, not the flavor
+
+**Date:** 2026-06-12 · **Status:** Accepted
+
+**Decision.** `src/core/skills/` (SKILL.md packs: YAML frontmatter + procedure
+body; registry with trigger matching and prompt rendering) and
+`src/core/harness/` (budgets, pre/post policy gates with
+ALLOW/DENY/REQUIRE_APPROVAL, hash-chained receipts, HITL approval queue, replayable
+outcomes, Prometheus counters) are **platform capabilities** — manufacturing is
+the first consumer, every flavor benefits. This begins WS-2 (governance) with real
+running code instead of empty `ants_platform/receipts/` scaffolding.
+
+**Why skills as markdown:** versionable, reviewable, hot-loadable expertise that
+works with any model — the emerging cross-vendor convention for packaged agent
+procedures.
+
+---
+
+## D-020 — deepagents integration is an optional adapter behind the `[deep]` extra
+
+**Date:** 2026-06-12 · **Status:** Accepted
+
+**Context.** [LangChain deepagents](https://github.com/langchain-ai/deepagents)
+(the "batteries-included agent harness": planning todos, sub-agents, virtual FS,
+middleware) is valuable but pulls the LangChain stack into the dependency tree.
+
+**Decision.** ANTS's own harness provides the local-profile primitives; a thin
+adapter exposes manufacturing missions as deepagents-driven plans when
+`pip install "ants[deep]"` is present, and degrades gracefully (clear message,
+native harness path) when not. Keeps the default install lean (D-003) and the
+platform fully open-source-runnable either way.
