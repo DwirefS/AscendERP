@@ -339,9 +339,11 @@ class ProductionPlannerAgent(BaseAgent):
         """
         try:
             from flavors.manufacturing.simulation.plant import PolicyScheduler
-            schedule = PolicyScheduler(policy).build_schedule(work_orders, machines)
+            schedule = PolicyScheduler(policy).build_schedule(
+                work_orders, machines, list(products.values()), start_time=now
+            )
             return schedule, "policy_scheduler"
-        except (ImportError, AttributeError) as e:
+        except (ImportError, AttributeError, TypeError, ValueError) as e:
             logger.info(
                 "policy_scheduler_unavailable",
                 reason=str(e),

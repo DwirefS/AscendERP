@@ -156,18 +156,25 @@ class SupplyDisruptionResponseWorkflow:
         """Run the swarm engine when available, else a heuristic report."""
         try:
             from flavors.manufacturing.simulation.swarm import SwarmWorld
+            from flavors.manufacturing.data.seed import FactorySeed
             from flavors.manufacturing.models import SimulationScenario
         except ImportError as e:
             logger.info("sdr_swarm_unavailable", reason=str(e))
             return self._heuristic_report(shock), "heuristic_fallback"
 
         try:
-            world = SwarmWorld.from_seed({
-                "suppliers": input_data.get("suppliers", []),
-                "machines": input_data.get("machines", []),
-                "products": input_data.get("products", []),
-                "inventory": input_data.get("inventory", []),
-            })
+            from datetime import datetime as _dt
+            seed_data = FactorySeed(
+                seed=int(input_data.get("seed", 42)),
+                anchor=input_data.get("now") or _dt.utcnow(),
+                machines=list(input_data.get("machines", [])),
+                products=list(input_data.get("products", [])),
+                inventory=list(input_data.get("inventory", [])),
+                suppliers=list(input_data.get("suppliers", [])),
+                work_orders=list(input_data.get("work_orders", [])),
+                customer_ids=list(input_data.get("customer_ids", ["CUST-1"])),
+            )
+            world = SwarmWorld.from_seed(seed_data)
             report = world.run_scenario(SimulationScenario(
                 name=f"shock_{shock.get('type', 'unknown')}",
                 narrative=str(shock),

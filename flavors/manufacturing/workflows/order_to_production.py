@@ -173,9 +173,10 @@ class OrderToProductionWorkflow:
         try:
             sim = PlantSimulator(seed=int(input_data.get("seed", 42)))
             sim.load(
-                input_data.get("machines", []),
-                work_orders,
-                input_data.get("inventory", []),
+                machines=input_data.get("machines", []),
+                products=input_data.get("products", []),
+                inventory=input_data.get("inventory", []),
+                work_orders=work_orders,
             )
             result = sim.run(
                 schedule,
