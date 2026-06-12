@@ -57,19 +57,62 @@ This is the chronological record of everything done in this session, with result
 | 14 | Fixed root Dockerfile (multi-stage, copies source, non-root); fixed grafana provisioning mount; added `docker-compose.dev.yml` (pgvector + redis); added `Makefile` (install/dev/test/smoke/serve); added `tests/smoke/` | D-001, D-011 | see Phase 4 results |
 | 15 | Rewrote `.github/workflows/ci-cd.yml`: Python 3.11, pgvector service container, lint advisory + pytest + docker build; removed fictional deploy stages | D-011 | see Phase 4 results |
 
-## Phase 4 — Verification
+## Phase 4 — Verification (final)
 
-Recorded after final test runs (see bottom of file for the final counts).
+All verified on a clean run at session end:
+
+1. **Full test suite:** `168 passed, 9 skipped, 0 failed, 0 errors` (skips are
+   optional-extra dependencies with instructive reasons). Stable across repeated
+   runs and orderings.
+2. **Smoke suite (`make smoke`):** 4/4 — health → token → list agents → full
+   PRREEL reconciliation invoke.
+3. **Real server boot:** `uvicorn services.api_gateway.main:app` starts; over live
+   HTTP: `/health` 200 → `/v1/auth/token` issues JWT → `/v1/agents/invoke` runs the
+   actual ReconciliationAgent PRREEL loop and returns `success: true` with the
+   reconciliation plan/actions.
+4. **DB integration:** memory substrate round-trips (episodic/semantic/procedural,
+   1024-dim pgvector search) pass against a real PostgreSQL 16 + pgvector.
 
 ## Test-result progression
 
-| Point | Collected | Passed | Failed | Errors |
-|---|---|---|---|---|
-| Session start (audit) | 54 of ~201 | 51 | 3 | 8 import-broken modules |
-| After WS-0 fixes | 185 | 126 | 22 | 6 |
-| After gateway rebuild | +27 gateway | 27/27 gateway | — | — |
-| Final (this session) | see FINAL below | | | |
+| Point | Passed | Failed | Errors |
+|---|---|---|---|
+| Session start (audit) | 51 (only 54/~201 even collected) | 3 | 8 import-broken modules |
+| After WS-0 showstopper fixes | 126 | 22 | 6 |
+| After gateway rebuild (D-008) | +27/27 gateway | — | — |
+| **Final** | **168** | **0** | **0** (9 informative skips) |
 
-## FINAL STATUS
+## Additional source fixes from the test-repair pass
 
-(Filled in at end of session — see the last commit on this branch and CI.)
+- All three selfops agents (`dataops`, `secops`, `agentops`): switched stdlib
+  `logging` → `structlog` (kwargs-style calls crashed stdlib loggers);
+  `reason()` now returns the dict-shaped `action` that `BaseAgent.run` →
+  `execute()` requires (matching the ReconciliationAgent convention); agentops
+  gained `_setup_ab_test`, `llm_metrics` perception, normalized threshold keys,
+  and structured recommendation/issue dicts.
+- `services/agent_orchestrator/orchestrator.py`: `submit_task` passed
+  `metadata={...}` into `emit_pheromone(**metadata)` producing a nested dict;
+  now passes explicit `task_type=`/`priority=` kwargs.
+- `services/api_gateway/main.py`: token minting resolves through
+  `AuthService.current` like verification does (mint/verify secrets can no
+  longer diverge after reconfiguration).
+- `src/core/security/encryption.py`: `ENCRYPTION_MASTER_KEY` accepts either
+  base64-encoded 32 bytes or any string (SHA-256-derived key) instead of
+  crashing on non-base64 input.
+
+## What "working end to end" means as of this session
+
+```
+make install            # core deps, ~2 min
+make dev                # pgvector + redis containers (or system Postgres)
+make test               # 168 passed, 9 skipped
+make smoke              # 4 passed
+make serve              # gateway on :8000 — real agent invocation over HTTP
+```
+
+## Next steps (per the master plan)
+
+WS-1 (one spine: mount streaming + capital-markets into the gateway, MCP client
+in the tool registry, UI wiring) → WS-2 (policy gating + audit receipts) →
+WS-3 (eval harness) → WS-4 (README truth pass). See
+`MASTER_ENHANCEMENT_PLAN.md` §3–4.

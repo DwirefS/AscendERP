@@ -1,34 +1,111 @@
 """
-Integration tests for ANTS Agent Framework.
-Tests agent lifecycle, memory substrate, and orchestration.
+Integration tests for the ANTS Agent Framework.
+
+Tests the real interfaces of:
+- src/core/agent/registry.py        (AgentRegistry)
+- src/core/memory/database.py       (DatabaseClient against live PostgreSQL + pgvector)
+- src/agents/finance/reconciliation.py (ReconciliationAgent full PRREEL run)
+- services/agent_orchestrator/orchestrator.py (SwarmOrchestrator local behavior)
 """
-import pytest
 import asyncio
-from datetime import datetime
-from typing import Dict, Any, List
 import json
+import uuid
 
-from src.core.agent.base import BaseAgent, AgentConfig, AgentState
+import asyncpg
+import pytest
+
+from src.core.agent.base import (
+    AgentConfig,
+    AgentContext,
+    AgentResult,
+    AgentState,
+    BaseAgent,
+)
 from src.core.agent.registry import AgentRegistry, AgentMetadata
-from src.core.memory.substrate import MemorySubstrate, MemoryType, MemoryEntry
 from src.core.memory.database import DatabaseClient, DatabaseConfig
-from src.core.inference.llm_client import LLMClient, LLMConfig
-from services.agent_orchestrator.orchestrator import SwarmOrchestrator, Task, PheromoneType
+from src.agents.finance.reconciliation import ReconciliationAgent
+from services.agent_orchestrator.orchestrator import (
+    PheromoneType,
+    SwarmOrchestrator,
+)
+
+EMBEDDING_DIM = 1024  # memory.semantic uses vector(1024) (NV-EmbedQA-E5-v5)
 
 
-@pytest.fixture
-async def db_client():
-    """Create test database client."""
-    config = DatabaseConfig(
+def make_embedding(index: int = 0) -> list:
+    """Build a 1024-dimensional unit basis vector for pgvector tests."""
+    embedding = [0.0] * EMBEDDING_DIM
+    embedding[index] = 1.0
+    return embedding
+
+
+class EchoAgent(BaseAgent):
+    """Minimal concrete agent used for registry and orchestrator tests."""
+
+    async def perceive(self, input_data, context):
+        return {"input": input_data}
+
+    async def retrieve(self, perception, context):
+        return {}
+
+    async def reason(self, perception, retrieved_context, context):
+        return {
+            "action": {"type": "echo", "payload": perception["input"]},
+            "confidence": 1.0,
+        }
+
+    async def execute(self, action, context):
+        return {"echo": action.get("payload")}
+
+    async def verify(self, result, context):
+        return {"complete": True}
+
+    async def learn(self, input_data, actions_taken, context):
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session")
+def db_config() -> DatabaseConfig:
+    """Connection settings for the live test database."""
+    return DatabaseConfig(
         host="localhost",
         port=5432,
         database="ants_test",
         username="test_user",
-        password="test_pass"
+        password="test_pass",
     )
 
-    client = DatabaseClient(config)
+
+@pytest.fixture(scope="session")
+def database_available(db_config) -> bool:
+    """Ping the database once per session; DB tests skip when unreachable."""
+    async def _ping():
+        conn = await asyncpg.connect(db_config.connection_string, timeout=5)
+        await conn.close()
+
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(_ping())
+        return True
+    except Exception:
+        return False
+    finally:
+        loop.close()
+
+
+@pytest.fixture
+async def db_client(db_config, database_available):
+    """Connected DatabaseClient with schemas initialized."""
+    if not database_available:
+        pytest.skip("PostgreSQL test database is unreachable")
+
+    client = DatabaseClient(db_config)
     await client.connect()
+    await client.initialize_schemas()
 
     yield client
 
@@ -36,416 +113,539 @@ async def db_client():
 
 
 @pytest.fixture
-async def memory_substrate(db_client):
-    """Create memory substrate for tests."""
-    substrate = MemorySubstrate(
-        db_client=db_client,
-        tenant_id="test_tenant"
-    )
-
-    yield substrate
+def registry() -> AgentRegistry:
+    """Fresh, isolated agent registry."""
+    return AgentRegistry()
 
 
 @pytest.fixture
-def agent_registry():
-    """Create agent registry."""
-    registry = AgentRegistry()
-    return registry
+def agent_context() -> AgentContext:
+    return AgentContext(
+        trace_id=f"trace-{uuid.uuid4().hex[:12]}",
+        tenant_id="test-tenant",
+        user_id="test-user",
+    )
 
 
 @pytest.fixture
-def llm_client():
-    """Create mock LLM client."""
-    config = LLMConfig(
-        provider="mock",
-        model="test-model",
-        api_key="test-key"
-    )
+async def orchestrator():
+    orch = SwarmOrchestrator()
 
-    # In real tests, would use a mock LLM
-    return config
+    yield orch
+
+    if orch.swarm_active or orch._background_tasks:
+        await orch.stop_swarm()
 
 
-class TestAgentLifecycle:
-    """Tests for agent lifecycle management."""
-
-    @pytest.mark.asyncio
-    async def test_agent_creation_and_initialization(self, memory_substrate, llm_client):
-        """Test creating and initializing an agent."""
-        config = AgentConfig(
-            agent_id="test_agent_001",
-            agent_type="finance.reconciliation",
-            tenant_id="test_tenant",
-            capabilities=["analyze_transactions", "detect_anomalies"]
-        )
-
-        agent = BaseAgent(
-            config=config,
-            memory_substrate=memory_substrate,
-            llm_config=llm_client
-        )
-
-        # Verify initialization
-        assert agent.config.agent_id == "test_agent_001"
-        assert agent.config.agent_type == "finance.reconciliation"
-        assert agent.state == AgentState.INITIALIZED
-
-    @pytest.mark.asyncio
-    async def test_agent_state_transitions(self, memory_substrate, llm_client):
-        """Test agent state transitions."""
-        config = AgentConfig(
-            agent_id="test_agent_002",
-            agent_type="retail.inventory"
-        )
-
-        agent = BaseAgent(config, memory_substrate, llm_client)
-
-        # Test state transitions
-        assert agent.state == AgentState.INITIALIZED
-
-        agent.state = AgentState.ACTIVE
-        assert agent.state == AgentState.ACTIVE
-
-        agent.state = AgentState.IDLE
-        assert agent.state == AgentState.IDLE
-
-        agent.state = AgentState.SLEEPING
-        assert agent.state == AgentState.SLEEPING
-
+# ---------------------------------------------------------------------------
+# Agent registry
+# ---------------------------------------------------------------------------
 
 class TestAgentRegistry:
-    """Tests for agent registry and discovery."""
+    """Tests for the real AgentRegistry API."""
 
-    def test_register_agent(self, agent_registry):
-        """Test registering an agent."""
-        metadata = AgentMetadata(
-            agent_id="agent_reg_001",
-            agent_type="finance.reconciliation",
-            capabilities=["reconcile", "analyze"],
-            version="1.0.0",
-            status="active"
-        )
-
-        agent_registry.register(metadata)
-
-        # Verify registration
-        retrieved = agent_registry.get_agent("agent_reg_001")
-        assert retrieved is not None
-        assert retrieved.agent_id == "agent_reg_001"
-        assert retrieved.agent_type == "finance.reconciliation"
-
-    def test_search_agents_by_capability(self, agent_registry):
-        """Test searching agents by capability."""
-        # Register multiple agents
-        agents = [
-            AgentMetadata(
-                agent_id=f"agent_{i}",
-                agent_type="finance.reconciliation" if i % 2 == 0 else "retail.inventory",
-                capabilities=["reconcile"] if i % 2 == 0 else ["forecast"],
-                version="1.0.0",
-                status="active"
-            )
-            for i in range(10)
-        ]
-
-        for agent in agents:
-            agent_registry.register(agent)
-
-        # Search by capability
-        reconcilers = agent_registry.search_agents(capability="reconcile")
-        assert len(reconcilers) == 5
-
-        forecasters = agent_registry.search_agents(capability="forecast")
-        assert len(forecasters) == 5
-
-    def test_agent_deregistration(self, agent_registry):
-        """Test removing an agent from registry."""
-        metadata = AgentMetadata(
-            agent_id="agent_dereg_001",
-            agent_type="test.agent",
-            capabilities=[],
-            version="1.0.0",
-            status="active"
-        )
-
-        agent_registry.register(metadata)
-        assert agent_registry.get_agent("agent_dereg_001") is not None
-
-        agent_registry.deregister("agent_dereg_001")
-        assert agent_registry.get_agent("agent_dereg_001") is None
-
-
-class TestMemorySubstrate:
-    """Tests for memory substrate operations."""
-
-    @pytest.mark.asyncio
-    async def test_store_and_retrieve_episodic_memory(self, memory_substrate):
-        """Test storing and retrieving episodic memories."""
-        # Store episodic memory (agent trace)
-        trace_data = {
-            "task": "reconcile_transactions",
-            "input": {"account_id": "ACC_001", "date": "2024-01-15"},
-            "output": {"status": "success", "reconciled_count": 42},
-            "duration_ms": 1234
-        }
-
-        memory_id = await memory_substrate.store_episodic(
-            agent_id="agent_mem_001",
-            content=json.dumps(trace_data),
-            metadata={"task_type": "reconciliation"}
-        )
-
-        assert memory_id is not None
-
-        # Retrieve episodic memories
-        memories = await memory_substrate.get_episodic_history(
-            agent_id="agent_mem_001",
-            limit=10
-        )
-
-        assert len(memories) > 0
-        assert memories[0].agent_id == "agent_mem_001"
-
-    @pytest.mark.asyncio
-    async def test_semantic_memory_with_vector_search(self, memory_substrate):
-        """Test semantic memory storage and vector search."""
-        # Store semantic memories
-        documents = [
-            "Revenue recognition follows ASC 606 guidelines",
-            "Depreciation is calculated using straight-line method",
-            "Accounts receivable aging should be reviewed monthly"
-        ]
-
-        for doc in documents:
-            await memory_substrate.store_semantic(
-                agent_id="agent_sem_001",
-                content=doc,
-                metadata={"source": "accounting_policy"}
-            )
-
-        # Search by semantic similarity
-        results = await memory_substrate.retrieve_semantic(
-            query="How should we recognize revenue?",
-            limit=5,
-            threshold=0.5
-        )
-
-        assert len(results) > 0
-        # First result should be about revenue recognition
-        assert "revenue" in results[0].content.lower()
-
-    @pytest.mark.asyncio
-    async def test_procedural_memory_patterns(self, memory_substrate):
-        """Test storing and retrieving procedural patterns."""
-        # Store procedural pattern
-        pattern_data = {
-            "pattern_name": "anomaly_detection_threshold",
-            "pattern_type": "threshold_adjustment",
-            "parameters": {
-                "initial_threshold": 0.8,
-                "adjusted_threshold": 0.75,
-                "reason": "reduced_false_positives"
+    def test_register_and_list_agents(self, registry):
+        registry.register(
+            "test.echo",
+            EchoAgent,
+            {
+                "name": "Echo Agent",
+                "description": "Echoes input back for diagnostics",
+                "category": "testing",
+                "capabilities": ["echo", "diagnostics"],
             },
-            "effectiveness": 0.92
-        }
-
-        pattern_id = await memory_substrate.store_procedural(
-            agent_id="agent_proc_001",
-            pattern_name="anomaly_detection_threshold",
-            pattern_data=pattern_data,
-            metadata={"domain": "fraud_detection"}
         )
 
-        assert pattern_id is not None
+        agents = registry.list_agents()
+        assert len(agents) == 1
+        assert isinstance(agents[0], AgentMetadata)
+        assert agents[0].agent_type == "test.echo"
+        assert agents[0].name == "Echo Agent"
+        assert agents[0].agent_class is EchoAgent
 
-        # Retrieve patterns
-        patterns = await memory_substrate.get_procedural_patterns(
-            agent_id="agent_proc_001"
+    def test_get_metadata_and_defaults(self, registry):
+        registry.register("test.minimal", EchoAgent, {})
+
+        metadata = registry.get_metadata("test.minimal")
+        assert metadata is not None
+        assert metadata.name == "test.minimal"  # falls back to agent_type
+        assert metadata.version == "1.0.0"
+        assert metadata.category == "general"
+        assert metadata.capabilities == []
+        assert isinstance(metadata.config_template, AgentConfig)
+
+        assert registry.get_metadata("does.not.exist") is None
+
+    def test_list_agents_filtered_by_category(self, registry):
+        registry.register("test.echo", EchoAgent, {"category": "testing"})
+        registry.register("finance.recon", ReconciliationAgent, {"category": "finance"})
+
+        finance_agents = registry.list_agents(category="finance")
+        assert [a.agent_type for a in finance_agents] == ["finance.recon"]
+
+        assert registry.get_categories() == ["finance", "testing"]
+
+    def test_create_agent(self, registry):
+        registry.register("test.echo", EchoAgent, {"name": "Echo Agent"})
+
+        agent = registry.create_agent("test.echo")
+        assert isinstance(agent, EchoAgent)
+
+        custom_config = AgentConfig(name="Custom Echo")
+        custom_agent = registry.create_agent("test.echo", config=custom_config)
+        assert custom_agent.config.name == "Custom Echo"
+
+    def test_create_agent_unknown_type_raises(self, registry):
+        with pytest.raises(ValueError, match="Unknown agent type"):
+            registry.create_agent("not.registered")
+
+    def test_search_agents(self, registry):
+        registry.register(
+            "finance.recon",
+            ReconciliationAgent,
+            {"name": "Reconciliation Agent", "description": "Matches transactions"},
+        )
+        registry.register(
+            "test.echo",
+            EchoAgent,
+            {"name": "Echo Agent", "description": "Echoes input back"},
         )
 
-        assert len(patterns) > 0
-        assert patterns[0].pattern_name == "anomaly_detection_threshold"
+        by_name = registry.search_agents("reconciliation")
+        assert [a.agent_type for a in by_name] == ["finance.recon"]
+
+        by_description = registry.search_agents("echoes input")
+        assert [a.agent_type for a in by_description] == ["test.echo"]
+
+        by_type = registry.search_agents("finance")
+        assert [a.agent_type for a in by_type] == ["finance.recon"]
+
+        assert registry.search_agents("no-such-agent") == []
+
+    def test_instance_registration_lifecycle(self, registry):
+        registry.register("test.echo", EchoAgent, {})
+        agent = registry.create_agent("test.echo")
+        agent_id = agent.config.agent_id
+
+        assert registry.get_agent(agent_id) is None
+
+        registry.register_instance(agent_id, agent)
+        assert registry.get_agent(agent_id) is agent
+
+        registry.unregister_instance(agent_id)
+        assert registry.get_agent(agent_id) is None
+
+        # Unregistering twice is a no-op
+        registry.unregister_instance(agent_id)
 
 
-class TestSwarmOrchestration:
-    """Tests for swarm orchestrator."""
+# ---------------------------------------------------------------------------
+# Database client (live PostgreSQL + pgvector)
+# ---------------------------------------------------------------------------
 
-    @pytest.mark.asyncio
-    async def test_task_submission_and_assignment(self):
-        """Test submitting tasks to swarm."""
-        orchestrator = SwarmOrchestrator()
-        await orchestrator.start()
+@pytest.mark.integration
+class TestDatabaseClient:
+    """Round-trip tests against the live memory database."""
 
-        # Submit task
-        task_id = await orchestrator.submit_task(
-            task_type="reconcile_account",
+    async def test_connect_and_initialize_schemas(self, db_client):
+        assert await db_client.fetchval("SELECT 1") == 1
+
+        for table in [
+            "memory.episodic",
+            "memory.semantic",
+            "memory.procedural",
+            "ants.agents",
+            "ants.executions",
+            "audit.receipts",
+        ]:
+            assert await db_client.fetchval("SELECT to_regclass($1)", table) is not None, (
+                f"expected table {table} to exist"
+            )
+
+        # Semantic embeddings are 1024-dimensional pgvector columns
+        dimension = await db_client.fetchval(
+            """
+            SELECT atttypmod FROM pg_attribute
+            WHERE attrelid = 'memory.semantic'::regclass AND attname = 'embedding'
+            """
+        )
+        assert dimension == EMBEDDING_DIM
+
+    async def test_episodic_round_trip(self, db_client):
+        tenant_id = f"tenant-{uuid.uuid4().hex[:8]}"
+        entry_id = str(uuid.uuid4())
+
+        try:
+            returned_id = await db_client.insert_episodic(
+                entry_id=entry_id,
+                tenant_id=tenant_id,
+                agent_id="agent-episodic",
+                content={"event": "reconciliation_run", "status": "ok"},
+                metadata={"source": "integration-test"},
+            )
+            assert str(returned_id) == entry_id
+
+            rows = await db_client.query_episodic(
+                tenant_id=tenant_id,
+                agent_id="agent-episodic",
+                limit=10,
+            )
+            assert len(rows) == 1
+            row = rows[0]
+            assert str(row["id"]) == entry_id
+            assert row["tenant_id"] == tenant_id
+            assert row["agent_id"] == "agent-episodic"
+
+            content = row["content"]
+            if isinstance(content, str):
+                content = json.loads(content)
+            assert content == {"event": "reconciliation_run", "status": "ok"}
+        finally:
+            await db_client.execute(
+                "DELETE FROM memory.episodic WHERE tenant_id = $1", tenant_id
+            )
+
+    async def test_episodic_query_filters_by_tenant(self, db_client):
+        tenant_a = f"tenant-{uuid.uuid4().hex[:8]}"
+        tenant_b = f"tenant-{uuid.uuid4().hex[:8]}"
+
+        try:
+            await db_client.insert_episodic(
+                str(uuid.uuid4()), tenant_a, "agent-x", {"n": 1}, {}
+            )
+            await db_client.insert_episodic(
+                str(uuid.uuid4()), tenant_b, "agent-x", {"n": 2}, {}
+            )
+
+            rows_a = await db_client.query_episodic(tenant_id=tenant_a)
+            assert len(rows_a) == 1
+            assert rows_a[0]["tenant_id"] == tenant_a
+        finally:
+            await db_client.execute(
+                "DELETE FROM memory.episodic WHERE tenant_id = ANY($1::text[])",
+                [tenant_a, tenant_b],
+            )
+
+    async def test_semantic_insert_and_vector_search(self, db_client):
+        tenant_id = f"tenant-{uuid.uuid4().hex[:8]}"
+        embedding = make_embedding(0)
+
+        try:
+            await db_client.insert_semantic(
+                entry_id=str(uuid.uuid4()),
+                tenant_id=tenant_id,
+                agent_id="agent-semantic",
+                content="Invoices must be matched within tolerance",
+                embedding=embedding,
+                metadata={"topic": "reconciliation"},
+            )
+
+            results = await db_client.vector_search(
+                embedding=embedding,
+                tenant_id=tenant_id,
+                limit=5,
+                threshold=0.7,
+            )
+            assert len(results) == 1
+            assert results[0]["content"] == "Invoices must be matched within tolerance"
+            assert results[0]["similarity"] == pytest.approx(1.0, abs=1e-6)
+        finally:
+            await db_client.execute(
+                "DELETE FROM memory.semantic WHERE tenant_id = $1", tenant_id
+            )
+
+    async def test_vector_search_respects_similarity_threshold(self, db_client):
+        tenant_id = f"tenant-{uuid.uuid4().hex[:8]}"
+
+        try:
+            await db_client.insert_semantic(
+                str(uuid.uuid4()), tenant_id, "agent-semantic",
+                "similar document", make_embedding(0), {},
+            )
+            await db_client.insert_semantic(
+                str(uuid.uuid4()), tenant_id, "agent-semantic",
+                "orthogonal document", make_embedding(1), {},
+            )
+
+            # Querying with the first basis vector: the orthogonal document has
+            # cosine similarity 0 and must be excluded by the 0.7 threshold.
+            results = await db_client.vector_search(
+                embedding=make_embedding(0),
+                tenant_id=tenant_id,
+                limit=10,
+                threshold=0.7,
+            )
+            assert [r["content"] for r in results] == ["similar document"]
+        finally:
+            await db_client.execute(
+                "DELETE FROM memory.semantic WHERE tenant_id = $1", tenant_id
+            )
+
+    async def test_procedural_round_trip_and_update(self, db_client):
+        tenant_id = f"tenant-{uuid.uuid4().hex[:8]}"
+        entry_id = str(uuid.uuid4())
+
+        try:
+            await db_client.insert_procedural(
+                entry_id=entry_id,
+                tenant_id=tenant_id,
+                agent_id="agent-procedural",
+                pattern={"steps": ["fetch", "match", "report"]},
+                success_rate=0.8,
+                metadata={"source": "integration-test"},
+            )
+
+            rows = await db_client.query_procedural(
+                tenant_id=tenant_id,
+                agent_id="agent-procedural",
+                min_success_rate=0.5,
+            )
+            assert len(rows) == 1
+            assert rows[0]["success_rate"] == pytest.approx(0.8)
+            assert rows[0]["execution_count"] == 1
+
+            await db_client.update_procedural_success(entry_id, 0.9)
+
+            rows = await db_client.query_procedural(
+                tenant_id=tenant_id,
+                agent_id="agent-procedural",
+                min_success_rate=0.85,
+            )
+            assert len(rows) == 1
+            assert rows[0]["success_rate"] == pytest.approx(0.9)
+            assert rows[0]["execution_count"] == 2
+
+            # Threshold above the stored rate excludes the entry
+            rows = await db_client.query_procedural(
+                tenant_id=tenant_id,
+                agent_id="agent-procedural",
+                min_success_rate=0.95,
+            )
+            assert rows == []
+        finally:
+            await db_client.execute(
+                "DELETE FROM memory.procedural WHERE tenant_id = $1", tenant_id
+            )
+
+
+# ---------------------------------------------------------------------------
+# Reconciliation agent (full PRREEL loop, deterministic fallback)
+# ---------------------------------------------------------------------------
+
+class TestReconciliationAgent:
+    """Full agent.run() without memory/LLM (deterministic fallback path)."""
+
+    async def test_full_run_succeeds_without_memory_or_llm(self, agent_context):
+        agent = ReconciliationAgent()
+        await agent.initialize(memory=None, policy_engine=None, llm=None)
+        assert agent.state == AgentState.READY
+
+        result = await agent.run(
             input_data={
-                "account_id": "ACC_001",
-                "period": "2024-01"
+                "type": "standard",
+                "period_start": "2026-01-01",
+                "period_end": "2026-01-31",
+                "accounts": ["1000", "2000"],
+                "tolerance": 0.05,
             },
-            priority=7
+            context=agent_context,
         )
 
-        assert task_id is not None
+        assert isinstance(result, AgentResult)
+        assert result.success is True
+        assert result.error is None
+        assert result.trace_id == agent_context.trace_id
+        assert result.latency_ms >= 0
+        assert result.confidence == pytest.approx(0.75)  # fallback confidence
+        assert agent.state == AgentState.READY
 
-        # Check task exists
-        task = orchestrator.get_task(task_id)
-        assert task is not None
-        assert task.type == "reconcile_account"
-        assert task.priority == 7
+    async def test_full_run_produces_reconciliation_report(self, agent_context):
+        agent = ReconciliationAgent()
 
-        await orchestrator.stop()
+        result = await agent.run(
+            input_data={"accounts": ["4000"], "tolerance": 0.01},
+            context=agent_context,
+        )
 
-    @pytest.mark.asyncio
-    async def test_pheromone_signaling(self):
-        """Test pheromone emission and detection."""
-        orchestrator = SwarmOrchestrator()
-        await orchestrator.start()
+        assert result.success is True
+        assert len(result.actions_taken) == 1
+        action_record = result.actions_taken[0]
+        assert action_record["action"]["type"] == "reconcile"
+        assert action_record["policy_decision"] == {"allowed": True}
 
-        # Emit pheromone
+        output = result.output
+        assert output["summary"]["generated"] is True
+        assert output["summary"]["reconciliation_status"] == "complete"
+        assert output["matched_transactions"] == []
+        assert output["discrepancies"] == []
+
+    async def test_perceive_applies_defaults(self, agent_context):
+        agent = ReconciliationAgent()
+
+        perception = await agent.perceive({"accounts": ["A"]}, agent_context)
+
+        assert perception["request_type"] == "standard"
+        assert perception["accounts"] == ["A"]
+        assert perception["tolerance_threshold"] == 0.01
+        assert perception["source_systems"] == ["erp", "bank"]
+        assert perception["urgency"] == "normal"
+
+
+# ---------------------------------------------------------------------------
+# Swarm orchestrator (local, in-process behavior)
+# ---------------------------------------------------------------------------
+
+class TestSwarmOrchestrator:
+    """Tests for SwarmOrchestrator local coordination primitives."""
+
+    async def test_start_and_stop_swarm(self, orchestrator):
+        assert orchestrator.swarm_active is False
+
+        await orchestrator.start_swarm()
+        assert orchestrator.swarm_active is True
+        assert len(orchestrator._background_tasks) == 4
+
+        await orchestrator.stop_swarm()
+        assert orchestrator.swarm_active is False
+        assert all(task.done() for task in orchestrator._background_tasks)
+
+    async def test_register_and_unregister_agent(self, orchestrator):
+        await orchestrator.register_agent("agent-1", "test.echo", ["echo"])
+
+        state = orchestrator.agent_states["agent-1"]
+        assert state.agent_type == "test.echo"
+        assert state.status == "idle"
+        assert state.load == 0.0
+        assert state.capabilities == ["echo"]
+
+        await orchestrator.unregister_agent("agent-1")
+        assert "agent-1" not in orchestrator.agent_states
+
+    async def test_submit_task_queues_task_and_emits_pheromone(self, orchestrator):
+        task_id = await orchestrator.submit_task(
+            task_type="reconcile",
+            input_data={"accounts": ["1000"]},
+            priority=8,
+        )
+
+        task = orchestrator.task_queue[task_id]
+        assert task.type == "reconcile"
+        assert task.priority == 8
+        assert task.status == "pending"
+        assert task.assigned_agent is None
+
+        task_signals = [p for p in orchestrator.pheromones if p.location == task_id]
+        assert len(task_signals) == 1
+        assert task_signals[0].metadata["task_type"] == "reconcile"
+        assert 0.0 < task_signals[0].strength <= 1.0
+
+    async def test_emit_and_sense_pheromones_sorted_by_strength(self, orchestrator):
         await orchestrator.emit_pheromone(
-            type=PheromoneType.TASK_AVAILABLE,
+            type=PheromoneType.EXPERTISE,
+            strength=0.5,
+            location="loc-weak",
+            emitter="agent-a",
+        )
+        await orchestrator.emit_pheromone(
+            type=PheromoneType.EXPERTISE,
+            strength=0.9,
+            location="loc-strong",
+            emitter="agent-b",
+            domain="finance",
+        )
+
+        signals = orchestrator.sense_pheromones("agent-c")
+        assert [s.location for s in signals] == ["loc-strong", "loc-weak"]
+        assert signals[0].emitter_agent == "agent-b"
+        assert signals[0].metadata == {"domain": "finance"}
+
+    async def test_sense_pheromones_filters_by_type(self, orchestrator):
+        await orchestrator.emit_pheromone(
+            type=PheromoneType.THREAT_DETECTED,
             strength=0.8,
-            location="task_queue_finance"
+            location="loc-threat",
+        )
+        await orchestrator.emit_pheromone(
+            type=PheromoneType.RESOURCE_AVAILABLE,
+            strength=0.8,
+            location="loc-resource",
         )
 
-        # Detect pheromones
-        pheromones = await orchestrator.detect_pheromones(
-            location="task_queue_finance"
+        threats = orchestrator.sense_pheromones(
+            "agent-x", pheromone_types=[PheromoneType.THREAT_DETECTED]
+        )
+        assert [s.location for s in threats] == ["loc-threat"]
+
+    async def test_recruit_agents_filters_capability_and_success_rate(self, orchestrator):
+        await orchestrator.register_agent("agent-good", "test.echo", ["echo"])
+        await orchestrator.register_agent("agent-bad", "test.echo", ["echo"])
+        await orchestrator.register_agent("agent-other", "test.echo", ["other"])
+        orchestrator.agent_states["agent-bad"].success_rate = 0.5  # below cutoff
+
+        recruits = await orchestrator.recruit_agents(count=10, capability="echo")
+        assert recruits == ["agent-good"]
+
+        recruits = await orchestrator.recruit_agents(count=10)
+        assert set(recruits) == {"agent-good", "agent-other"}
+
+    async def test_get_swarm_status(self, orchestrator):
+        await orchestrator.register_agent("agent-1", "test.echo", ["echo"])
+        await orchestrator.register_agent("agent-2", "test.echo", ["echo"])
+        await orchestrator.submit_task("reconcile", {})
+
+        status = await orchestrator.get_swarm_status()
+
+        assert status["swarm_active"] is False
+        assert status["total_agents"] == 2
+        assert status["agents_by_type"]["test.echo"]["total"] == 2
+        assert status["agents_by_type"]["test.echo"]["idle"] == 2
+        assert status["agents_by_type"]["test.echo"]["busy"] == 0
+        assert status["pending_tasks"] == 1
+        assert status["running_tasks"] == 0
+        assert status["completed_tasks"] == 0
+        assert status["active_pheromones"] >= 1
+
+    async def test_assign_task_executes_with_registered_agent(self, orchestrator):
+        # Use an isolated registry so the global one is not polluted
+        registry = AgentRegistry()
+        registry.register(
+            "test.echo", EchoAgent, {"name": "Echo Agent", "capabilities": ["echo"]}
+        )
+        orchestrator.registry = registry
+
+        await orchestrator.register_agent("echo-1", "test.echo", ["echo"])
+        task_id = await orchestrator.submit_task(
+            "echo", {"payload": 42, "tenant_id": "test-tenant"}, priority=7
         )
 
-        assert len(pheromones) > 0
-        assert pheromones[0].type == PheromoneType.TASK_AVAILABLE
+        assigned = await orchestrator.assign_task_to_agent(task_id, "echo-1")
+        assert assigned is True
 
-        await orchestrator.stop()
+        # Task execution is scheduled on the running loop; wait for completion
+        for _ in range(500):
+            if task_id in orchestrator.completed_tasks:
+                break
+            await asyncio.sleep(0.01)
 
-    @pytest.mark.asyncio
-    async def test_dynamic_agent_scaling(self):
-        """Test swarm scales agents based on load."""
-        orchestrator = SwarmOrchestrator(
-            min_agents=2,
-            max_agents=10,
-            scale_threshold=5  # Scale up when >5 tasks per agent
-        )
-        await orchestrator.start()
+        task = orchestrator.completed_tasks.get(task_id)
+        assert task is not None, "task did not complete in time"
+        assert task.status == "complete"
+        assert isinstance(task.result, AgentResult)
+        assert task.result.success is True
+        assert task_id not in orchestrator.task_queue
 
-        # Submit many tasks
-        for i in range(20):
-            await orchestrator.submit_task(
-                task_type="process_transaction",
-                input_data={"txn_id": f"TXN_{i}"},
-                priority=5
-            )
+        state = orchestrator.agent_states["echo-1"]
+        assert state.status == "idle"
+        assert state.current_task is None
 
-        # Allow time for scaling decision
-        await asyncio.sleep(0.5)
+    async def test_assign_task_to_unknown_agent_or_task_fails(self, orchestrator):
+        await orchestrator.register_agent("agent-1", "test.echo", ["echo"])
+        task_id = await orchestrator.submit_task("echo", {})
 
-        # Check if agents were scaled
-        active_agents = orchestrator.get_active_agent_count()
-        assert active_agents > 2  # Should scale up from minimum
-
-        await orchestrator.stop()
-
-
-class TestAgentCommunication:
-    """Tests for agent-to-agent communication."""
-
-    @pytest.mark.asyncio
-    async def test_agent_message_passing(self):
-        """Test agents can send messages to each other."""
-        orchestrator = SwarmOrchestrator()
-        await orchestrator.start()
-
-        # Agent 1 sends message to Agent 2
-        message_id = await orchestrator.send_agent_message(
-            from_agent="agent_comm_001",
-            to_agent="agent_comm_002",
-            message_type="REQUEST_DATA",
-            payload={"data_type": "customer_info", "customer_id": "CUST_123"}
-        )
-
-        assert message_id is not None
-
-        # Agent 2 retrieves message
-        messages = await orchestrator.get_agent_messages("agent_comm_002")
-        assert len(messages) > 0
-        assert messages[0].from_agent == "agent_comm_001"
-        assert messages[0].message_type == "REQUEST_DATA"
-
-        await orchestrator.stop()
-
-    @pytest.mark.asyncio
-    async def test_broadcast_message(self):
-        """Test broadcasting message to all agents."""
-        orchestrator = SwarmOrchestrator()
-        await orchestrator.start()
-
-        # Broadcast system message
-        await orchestrator.broadcast_message(
-            message_type="SYSTEM_ALERT",
-            payload={"alert": "Maintenance window starting in 10 minutes"}
-        )
-
-        # All agents should receive it
-        # (In real implementation, would check multiple agent inboxes)
-
-        await orchestrator.stop()
-
-
-class TestAgentPerformance:
-    """Performance tests for agents."""
-
-    @pytest.mark.slow
-    @pytest.mark.asyncio
-    async def test_high_throughput_task_processing(self):
-        """Test orchestrator can handle high task volume."""
-        orchestrator = SwarmOrchestrator(
-            min_agents=10,
-            max_agents=50
-        )
-        await orchestrator.start()
-
-        # Submit 1000 tasks
-        task_ids = []
-        for i in range(1000):
-            task_id = await orchestrator.submit_task(
-                task_type="quick_task",
-                input_data={"task_num": i},
-                priority=5
-            )
-            task_ids.append(task_id)
-
-        assert len(task_ids) == 1000
-
-        await orchestrator.stop()
-
-    @pytest.mark.asyncio
-    async def test_memory_retrieval_performance(self, memory_substrate):
-        """Test memory substrate can handle high retrieval volume."""
-        # Store 100 semantic memories
-        for i in range(100):
-            await memory_substrate.store_semantic(
-                agent_id="agent_perf_001",
-                content=f"Test document {i} about financial topic {i % 10}",
-                metadata={"doc_id": i}
-            )
-
-        # Perform 50 searches
-        start_time = datetime.utcnow()
-
-        for i in range(50):
-            results = await memory_substrate.retrieve_semantic(
-                query=f"financial topic {i % 10}",
-                limit=5
-            )
-            assert len(results) > 0
-
-        end_time = datetime.utcnow()
-        duration = (end_time - start_time).total_seconds()
-
-        # Should complete in reasonable time
-        assert duration < 30  # <30 seconds for 50 searches
+        assert await orchestrator.assign_task_to_agent("missing-task", "agent-1") is False
+        assert await orchestrator.assign_task_to_agent(task_id, "missing-agent") is False
+        assert orchestrator.task_queue[task_id].status == "pending"
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])
+    pytest.main([__file__, "-v"])

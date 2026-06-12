@@ -261,3 +261,45 @@ numbers, which then become the published claims — whatever they turn out to be
 
 **Why.** In a market with funded, shipping competitors, unverifiable claims cost
 more credibility than honest "here's what we measured" numbers buy.
+
+---
+
+## D-013 — structlog is the logging standard for agent code
+
+**Date:** 2026-06-12 · **Status:** Accepted · **Implemented**
+
+**Context.** The selfops agents used stdlib `logging` with structlog-style
+keyword arguments (`logger.warning("msg", threats=...)`), which raises
+`TypeError` at runtime — meaning several "implemented" code paths could never
+have executed successfully.
+
+**Decision.** All agent/platform code logs via `structlog` (the rest of the
+codebase already did). Fixed in dataops/secops/agentops agents.
+
+---
+
+## D-014 — `reason()` returns a dict-shaped `action`; agents must honor the BaseAgent PRREEL contract
+
+**Date:** 2026-06-12 · **Status:** Accepted · **Implemented**
+
+**Context.** `BaseAgent.run` passes `reasoning["action"]` into `execute()`,
+which reads it with `.get()`. DataOps/SecOps/AgentOps returned bare strings,
+crashing every full execution (`'str' object has no attribute 'get'`).
+ReconciliationAgent already used the dict convention.
+
+**Decision.** The PRREEL contract is: `reason()` → `{"action": {<dict>},
+"confidence": float, ...}`. All agents now conform; the rewritten framework
+integration tests enforce it end-to-end.
+
+---
+
+## D-015 — ENCRYPTION_MASTER_KEY accepts base64-32-bytes or any passphrase
+
+**Date:** 2026-06-12 · **Status:** Accepted · **Implemented**
+
+**Context.** `EncryptionHelper` crashed unless the env var was exactly
+base64-encoded 32 bytes — hostile to local dev and undocumented.
+
+**Decision.** If the value decodes to exactly 32 bytes of base64 it is used
+directly; otherwise a 32-byte key is derived via SHA-256 of the raw string.
+Production guidance remains: provision a proper random key from Key Vault.

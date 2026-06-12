@@ -18,7 +18,7 @@ Part of SelfOps: Platform managing itself.
 """
 
 import asyncio
-import logging
+import structlog
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from dataclasses import dataclass
@@ -27,7 +27,7 @@ from enum import Enum
 from src.core.agent.base import BaseAgent, AgentConfig, AgentContext, AgentResult
 from src.core.observability import tracer, trace_agent_execution
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class DataQualityIssueType(Enum):
@@ -205,12 +205,19 @@ class DataOpsAgent(BaseAgent):
             # Identify optimizations
             optimizations = self._identify_cost_optimizations(perception)
 
+            critical_issues = [i for i in prioritized if i["severity"] == "critical"]
+
             reasoning = {
                 "issues_identified": len(issues),
-                "critical_issues": [i for i in prioritized if i["severity"] == "critical"],
+                "critical_issues": critical_issues,
                 "remediation_plan": remediation_plan,
                 "optimizations": optimizations,
-                "action": "remediate" if issues else "monitor"
+                "action": {
+                    "action": "remediate" if issues else "monitor",
+                    "remediation_plan": remediation_plan,
+                    "optimizations": optimizations,
+                    "critical_issues": critical_issues
+                }
             }
 
             logger.info(

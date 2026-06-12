@@ -21,7 +21,7 @@ Part of SelfOps: The platform managing itself.
 """
 
 import asyncio
-import logging
+import structlog
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
@@ -31,7 +31,7 @@ import statistics
 from src.core.agent.base import BaseAgent, AgentConfig, AgentContext, AgentResult
 from src.core.observability import tracer, trace_agent_execution
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class AgentHealthStatus(Enum):
@@ -40,6 +40,10 @@ class AgentHealthStatus(Enum):
     DEGRADED = "degraded"
     FAILING = "failing"
     OFFLINE = "offline"
+
+
+# Backwards-compatible alias: external consumers and tests refer to AgentStatus.
+AgentStatus = AgentHealthStatus
 
 
 class OptimizationType(Enum):
@@ -77,6 +81,10 @@ class AgentPerformanceMetrics:
 
     # Timestamp
     timestamp: datetime
+
+    # Health
+    status: AgentHealthStatus = AgentHealthStatus.HEALTHY
+    total_executions: int = 0
 
 
 @dataclass
@@ -132,10 +140,10 @@ class AgentOpsAgent(BaseAgent):
 
         # Performance thresholds
         self.performance_thresholds = {
-            "max_latency_ms": 2000,
-            "min_success_rate": 0.95,
-            "max_error_rate": 0.05,
-            "max_cost_per_request": 0.10
+            "latency_ms": 5000,
+            "success_rate": 0.95,
+            "error_rate": 0.05,
+            "cost_per_request": 0.10
         }
 
         # Optimization parameters
@@ -160,8 +168,9 @@ class AgentOpsAgent(BaseAgent):
         """
         with tracer.start_as_current_span("agentops.perceive"):
             perception = {
-                "agent_metrics": await self._get_all_agent_metrics(),
-                "cost_analysis": await self._analyze_cost_trends(),
+                "agent_metrics": await self._get_agent_metrics(),
+                "llm_metrics": await self._get_llm_metrics(),
+                "cost_trends": await self._analyze_cost_trends(),
                 "error_patterns": await self._detect_error_patterns(),
                 "resource_utilization": await self._get_resource_utilization(),
                 "active_experiments": await self._get_active_experiments()
@@ -217,9 +226,7 @@ class AgentOpsAgent(BaseAgent):
         """
         with tracer.start_as_current_span("agentops.reason"):
             # Identify underperforming agents
-            underperforming = self._identify_underperforming_agents(
-                perception["agent_metrics"]
-            )
+            underperforming = self._identify_underperforming(perception)
 
             # Generate optimization recommendations
             recommendations = self._generate_recommendations(
@@ -236,7 +243,7 @@ class AgentOpsAgent(BaseAgent):
 
             # Identify cost optimization opportunities
             cost_optimizations = self._identify_cost_optimizations(
-                perception["cost_analysis"]
+                perception["cost_trends"]
             )
 
             reasoning = {
@@ -244,7 +251,11 @@ class AgentOpsAgent(BaseAgent):
                 "recommendations": recommendations,
                 "ab_test_plan": ab_test_plan,
                 "cost_optimizations": cost_optimizations,
-                "action": "optimize" if recommendations else "monitor"
+                "action": {
+                    "action": "optimize" if recommendations else "monitor",
+                    "recommendations": recommendations,
+                    "ab_test_plan": ab_test_plan
+                }
             }
 
             logger.info(
@@ -335,7 +346,7 @@ class AgentOpsAgent(BaseAgent):
 
     # Helper methods
 
-    async def _get_all_agent_metrics(self) -> List[AgentPerformanceMetrics]:
+    async def _get_agent_metrics(self) -> List[AgentPerformanceMetrics]:
         """Get performance metrics for all active agents."""
         # Simulate metrics (in production, query from OpenTelemetry/Azure Monitor)
         metrics = [
@@ -353,7 +364,9 @@ class AgentOpsAgent(BaseAgent):
                 requests_per_hour=10.0,
                 concurrent_requests=2,
                 queue_depth=0,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
+                status=AgentHealthStatus.HEALTHY,
+                total_executions=240
             ),
             AgentPerformanceMetrics(
                 agent_id="security-agent-001",
@@ -369,7 +382,9 @@ class AgentOpsAgent(BaseAgent):
                 requests_per_hour=10.0,
                 concurrent_requests=3,
                 queue_depth=5,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
+                status=AgentHealthStatus.DEGRADED,
+                total_executions=240
             ),
             AgentPerformanceMetrics(
                 agent_id="hr-agent-001",
@@ -385,10 +400,25 @@ class AgentOpsAgent(BaseAgent):
                 requests_per_hour=10.0,
                 concurrent_requests=1,
                 queue_depth=0,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
+                status=AgentHealthStatus.HEALTHY,
+                total_executions=240
             )
         ]
         return metrics
+
+    async def _get_llm_metrics(self) -> Dict[str, Any]:
+        """Get aggregate LLM usage metrics across all agents."""
+        # Simulate LLM metrics (in production, query from LLM gateway telemetry)
+        return {
+            "total_requests_24h": 720,
+            "total_tokens_24h": 372000,
+            "avg_latency_ms": 1100.0,
+            "by_model": {
+                "gpt-4": {"requests": 480, "tokens": 300000},
+                "gpt-3.5-turbo": {"requests": 240, "tokens": 72000}
+            }
+        }
 
     async def _analyze_cost_trends(self) -> Dict[str, Any]:
         """Analyze cost trends across all agents."""
@@ -463,35 +493,49 @@ class AgentOpsAgent(BaseAgent):
             "llama-3.1-8b": {"avg_latency": 300, "avg_cost_per_1k_tokens": 0.001}
         }
 
-    def _identify_underperforming_agents(
+    def _identify_underperforming(
         self,
-        metrics: List[AgentPerformanceMetrics]
+        perception: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Identify agents not meeting performance thresholds."""
         underperforming = []
 
-        for metric in metrics:
-            issues = []
-
-            if metric.avg_latency_ms > self.performance_thresholds["max_latency_ms"]:
-                issues.append("high_latency")
-
-            if metric.success_rate < self.performance_thresholds["min_success_rate"]:
-                issues.append("low_success_rate")
-
-            if metric.error_rate > self.performance_thresholds["max_error_rate"]:
-                issues.append("high_error_rate")
-
-            cost_per_request = metric.estimated_cost_24h / (metric.requests_per_hour * 24)
-            if cost_per_request > self.performance_thresholds["max_cost_per_request"]:
-                issues.append("high_cost")
-
-            if issues:
+        for metric in perception.get("agent_metrics", []):
+            if metric.avg_latency_ms > self.performance_thresholds["latency_ms"]:
                 underperforming.append({
                     "agent_id": metric.agent_id,
                     "agent_type": metric.agent_type,
-                    "issues": issues,
-                    "metrics": metric
+                    "issue": "high_latency",
+                    "current_value": metric.avg_latency_ms,
+                    "threshold": self.performance_thresholds["latency_ms"]
+                })
+
+            if metric.success_rate < self.performance_thresholds["success_rate"]:
+                underperforming.append({
+                    "agent_id": metric.agent_id,
+                    "agent_type": metric.agent_type,
+                    "issue": "low_success_rate",
+                    "current_value": metric.success_rate,
+                    "threshold": self.performance_thresholds["success_rate"]
+                })
+
+            if metric.error_rate > self.performance_thresholds["error_rate"]:
+                underperforming.append({
+                    "agent_id": metric.agent_id,
+                    "agent_type": metric.agent_type,
+                    "issue": "high_error_rate",
+                    "current_value": metric.error_rate,
+                    "threshold": self.performance_thresholds["error_rate"]
+                })
+
+            cost_per_request = metric.estimated_cost_24h / max(metric.requests_per_hour * 24, 1)
+            if cost_per_request > self.performance_thresholds["cost_per_request"]:
+                underperforming.append({
+                    "agent_id": metric.agent_id,
+                    "agent_type": metric.agent_type,
+                    "issue": "high_cost",
+                    "current_value": cost_per_request,
+                    "threshold": self.performance_thresholds["cost_per_request"]
                 })
 
         return underperforming
@@ -501,48 +545,60 @@ class AgentOpsAgent(BaseAgent):
         underperforming: List[Dict[str, Any]],
         perception: Dict[str, Any],
         context: Dict[str, Any]
-    ) -> List[OptimizationRecommendation]:
+    ) -> List[Dict[str, Any]]:
         """Generate optimization recommendations."""
         recommendations = []
 
-        for agent in underperforming:
-            metrics = agent["metrics"]
+        for agent_issue in underperforming:
+            issue = agent_issue["issue"]
 
             # High latency → reduce token limit or optimize prompt
-            if "high_latency" in agent["issues"]:
-                recommendations.append(OptimizationRecommendation(
-                    agent_id=agent["agent_id"],
-                    optimization_type=OptimizationType.TOKEN_LIMIT_ADJUSTMENT,
-                    current_value=metrics.avg_tokens_per_request,
-                    recommended_value=metrics.avg_tokens_per_request * 0.75,
-                    expected_improvement=20.0,  # 20% latency reduction
-                    confidence=0.85,
-                    rationale="Reduce token limit to improve latency"
-                ))
+            if issue == "high_latency":
+                recommendations.append({
+                    "agent_id": agent_issue["agent_id"],
+                    "optimization_type": OptimizationType.TOKEN_LIMIT_ADJUSTMENT.value,
+                    "current_value": agent_issue["current_value"],
+                    "recommended_value": agent_issue["current_value"] * 0.75,
+                    "expected_improvement": 20.0,  # 20% latency reduction
+                    "confidence": 0.85,
+                    "rationale": "Reduce token limit to improve latency"
+                })
 
             # High cost → consider model downgrade or caching
-            if "high_cost" in agent["issues"]:
-                recommendations.append(OptimizationRecommendation(
-                    agent_id=agent["agent_id"],
-                    optimization_type=OptimizationType.MODEL_UPGRADE,
-                    current_value="gpt-4",
-                    recommended_value="gpt-3.5-turbo",
-                    expected_improvement=40.0,  # 40% cost reduction
-                    confidence=0.75,
-                    rationale="Downgrade to gpt-3.5-turbo for cost savings"
-                ))
+            elif issue == "high_cost":
+                recommendations.append({
+                    "agent_id": agent_issue["agent_id"],
+                    "optimization_type": OptimizationType.MODEL_UPGRADE.value,
+                    "current_value": "gpt-4",
+                    "recommended_value": "gpt-3.5-turbo",
+                    "expected_improvement": 40.0,  # 40% cost reduction
+                    "confidence": 0.75,
+                    "rationale": "Downgrade to gpt-3.5-turbo for cost savings"
+                })
 
             # Low success rate → prompt tuning or temperature adjustment
-            if "low_success_rate" in agent["issues"]:
-                recommendations.append(OptimizationRecommendation(
-                    agent_id=agent["agent_id"],
-                    optimization_type=OptimizationType.PROMPT_TUNING,
-                    current_value="current_prompt",
-                    recommended_value="optimized_prompt",
-                    expected_improvement=10.0,  # 10% accuracy improvement
-                    confidence=0.80,
-                    rationale="A/B test prompt variants to improve success rate"
-                ))
+            elif issue == "low_success_rate":
+                recommendations.append({
+                    "agent_id": agent_issue["agent_id"],
+                    "optimization_type": OptimizationType.PROMPT_TUNING.value,
+                    "current_value": "current_prompt",
+                    "recommended_value": "optimized_prompt",
+                    "expected_improvement": 10.0,  # 10% accuracy improvement
+                    "confidence": 0.80,
+                    "rationale": "A/B test prompt variants to improve success rate"
+                })
+
+            # High error rate → lower temperature for more deterministic output
+            elif issue == "high_error_rate":
+                recommendations.append({
+                    "agent_id": agent_issue["agent_id"],
+                    "optimization_type": OptimizationType.TEMPERATURE_ADJUSTMENT.value,
+                    "current_value": agent_issue["current_value"],
+                    "recommended_value": self.performance_thresholds["error_rate"],
+                    "expected_improvement": 15.0,  # 15% error reduction
+                    "confidence": 0.70,
+                    "rationale": "Lower temperature to reduce error rate"
+                })
 
         return recommendations
 
@@ -554,12 +610,12 @@ class AgentOpsAgent(BaseAgent):
         """Plan A/B tests for prompt optimization."""
         tests = []
 
-        for agent in underperforming:
-            if "low_success_rate" in agent["issues"]:
-                agent_type = agent["agent_type"]
+        for agent_issue in underperforming:
+            if agent_issue["issue"] == "low_success_rate":
+                agent_type = agent_issue.get("agent_type")
                 if agent_type in successful_prompts:
                     tests.append({
-                        "agent_id": agent["agent_id"],
+                        "agent_id": agent_issue["agent_id"],
                         "control_prompt": "current",
                         "variants": successful_prompts[agent_type],
                         "sample_size": self.ab_test_sample_size
@@ -568,6 +624,17 @@ class AgentOpsAgent(BaseAgent):
         return {
             "tests": tests,
             "total_tests": len(tests)
+        }
+
+    async def _setup_ab_test(self, test_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Set up and launch a single A/B test experiment."""
+        ab_test_id = f"ab-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{test_config.get('agent_id', 'unknown')}"
+
+        return {
+            "ab_test_id": ab_test_id,
+            "agent_id": test_config.get("agent_id"),
+            "traffic_split": test_config.get("traffic_split", 0.5),
+            "status": "running"
         }
 
     def _identify_cost_optimizations(self, cost_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -588,7 +655,7 @@ class AgentOpsAgent(BaseAgent):
 
     async def _execute_optimizations(
         self,
-        recommendations: List[OptimizationRecommendation]
+        recommendations: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Execute optimization recommendations."""
         applied = []
@@ -597,10 +664,10 @@ class AgentOpsAgent(BaseAgent):
             # Simulate applying optimization
             await asyncio.sleep(0.1)
             applied.append({
-                "agent_id": rec.agent_id,
-                "optimization": rec.optimization_type.value,
+                "agent_id": rec["agent_id"],
+                "optimization": rec["optimization_type"],
                 "status": "applied",
-                "expected_improvement": rec.expected_improvement
+                "expected_improvement": rec["expected_improvement"]
             })
 
         return {

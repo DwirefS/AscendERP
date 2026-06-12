@@ -56,7 +56,17 @@ class EncryptionHelper:
             # Load from environment (in production, use Key Vault)
             key_b64 = os.getenv("ENCRYPTION_MASTER_KEY")
             if key_b64:
-                self.master_key = base64.b64decode(key_b64)
+                try:
+                    decoded = base64.b64decode(key_b64, validate=True)
+                except ValueError:
+                    decoded = None
+
+                if decoded is not None and len(decoded) == 32:
+                    self.master_key = decoded
+                else:
+                    # Not base64-encoded 32 bytes (e.g. dev keys like
+                    # "dev-only-key") — derive a 32-byte key from the raw value.
+                    self.master_key = hashlib.sha256(key_b64.encode("utf-8")).digest()
             else:
                 logger.warning(
                     "No master key provided - encryption disabled. "

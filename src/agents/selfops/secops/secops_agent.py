@@ -21,7 +21,7 @@ Part of SelfOps: Platform managing itself.
 """
 
 import asyncio
-import logging
+import structlog
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from dataclasses import dataclass
@@ -30,7 +30,7 @@ from enum import Enum
 from src.core.agent.base import BaseAgent, AgentConfig, AgentContext, AgentResult
 from src.core.observability import tracer, trace_agent_execution
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class ThreatLevel(Enum):
@@ -196,7 +196,7 @@ class SecOpsAgent(BaseAgent):
             logger.info(
                 "SecOps perception complete",
                 threats=len(perception["threats"]),
-                vulnerabilities=perception["vulnerabilities"]["critical_count"],
+                vulnerabilities=perception["vulnerabilities"].critical_count,
                 violations=len(perception["compliance"])
             )
 
@@ -276,7 +276,12 @@ class SecOpsAgent(BaseAgent):
                 "critical_violations": critical_violations,
                 "response_plan": response_plan,
                 "needs_escalation": needs_escalation,
-                "action": "escalate" if needs_escalation else "remediate"
+                "action": {
+                    "action": "escalate" if needs_escalation else "remediate",
+                    "response_plan": response_plan,
+                    "critical_threats": critical_threats,
+                    "critical_violations": critical_violations
+                }
             }
 
             logger.info(

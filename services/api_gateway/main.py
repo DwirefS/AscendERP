@@ -30,7 +30,8 @@ from services.api_gateway.auth import (
     get_optional_auth,
     require_scope,
     auth_service,
-    AuthContext
+    AuthContext,
+    AuthService
 )
 from services.api_gateway.ratelimit import rate_limiter
 
@@ -404,7 +405,10 @@ async def create_token(request: TokenRequest):
     Create a JWT token for authentication.
     In production, this would verify credentials first.
     """
-    token = auth_service.create_jwt_token(
+    # Mint with the same service used for verification (AuthService.current
+    # is the most recently configured instance; see get_auth_context).
+    service = AuthService.current or auth_service
+    token = service.create_jwt_token(
         tenant_id=request.tenant_id,
         user_id=request.user_id,
         scopes=request.scopes

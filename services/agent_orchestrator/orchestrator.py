@@ -167,7 +167,8 @@ class SwarmOrchestrator:
             type=PheromoneType.TASK_COMPLETE,
             strength=task.pheromone_strength(),
             location=task.id,
-            metadata={"task_type": task_type, "priority": priority}
+            task_type=task_type,
+            priority=priority
         )
 
         logger.info(
