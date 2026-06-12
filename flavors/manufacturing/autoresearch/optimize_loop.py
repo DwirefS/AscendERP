@@ -130,7 +130,7 @@ class AutoOptimizeLoop:
 
     def _evaluate(self, policy: SchedulingPolicy) -> tuple[float, SimulationResult]:
         scheduler = self.scheduler_factory(policy)
-        schedule = scheduler.build_schedule(self.work_orders, self.machines)
+        schedule = scheduler.build_schedule(self.work_orders, self.machines, self.products)
         simulator = self.simulator_factory()
         result = simulator.run(
             schedule, horizon_hours=self.horizon_hours, replications=self.replications

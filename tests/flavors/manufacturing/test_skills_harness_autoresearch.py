@@ -111,7 +111,7 @@ class StubScheduler:
     def __init__(self, policy: SchedulingPolicy):
         self.policy = policy
 
-    def build_schedule(self, work_orders, machines) -> ProductionSchedule:
+    def build_schedule(self, work_orders, machines, products=None) -> ProductionSchedule:
         schedule = ProductionSchedule(policy_name=self.policy.dispatch_rule)
         schedule._policy = self.policy  # contract stub: carry policy to the simulator
         return schedule

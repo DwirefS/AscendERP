@@ -116,3 +116,58 @@ WS-1 (one spine: mount streaming + capital-markets into the gateway, MCP client
 in the tool registry, UI wiring) → WS-2 (policy gating + audit receipts) →
 WS-3 (eval harness) → WS-4 (README truth pass). See
 `MASTER_ENHANCEMENT_PLAN.md` §3–4.
+
+---
+
+# Phase 5 — Manufacturing Flavor (same session, second directive)
+
+Directive: end-to-end AI-agent-native ERP for manufacturing with agent skills,
+Karpathy-AutoResearch capabilities, MiroFish ideas, LangChain deep agents, a
+comprehensive agent harness, security, monitoring, and Mission Control — fully
+open source.
+
+## Researched and applied
+- **karpathy/autoresearch** (Mar 2026): propose→experiment→measure→keep-if-better
+  →journal loop → applied to a bounded `SchedulingPolicy` search space (D-017)
+- **MiroFish** swarm prediction engine → `SwarmWorld` persona-agent scenario
+  engine producing council evidence (D-018)
+- **LangChain deepagents** (0.5, async subagents) → optional `[deep]` adapter +
+  dependency-free native `MissionPlanner` (D-020)
+
+## Built (design → 3 parallel builders + Mission Control/security/integration)
+- Design contract: `docs/plans/MANUFACTURING_FLAVOR_DESIGN.md` +
+  `flavors/manufacturing/models.py`
+- `src/core/skills/` + `src/core/harness/` (platform capabilities, D-019):
+  SKILL.md registry; harness with budgets, ALLOW/DENY/REQUIRE_APPROVAL policy
+  gates, HITL approval queue, hash-chained verifiable receipts, Prometheus/OTel
+- 6 PRREEL agents (MRP, SPC w/ Western Electric rules + Cpk, predictive-
+  maintenance risk, supplier-scored procurement, ABC/safety-stock inventory,
+  EHS triage) — all run deterministically without an LLM
+- 3 councils (S&OP w/ scenario evidence, Quality w/ HITL on critical,
+  Maintenance) + 4 workflows (order_to_production, predictive_maintenance,
+  quality_rca 8D, supply_disruption_response)
+- Deterministic seeded plant DES (168h × 3 reps ≈ 2ms) + 5-rule PolicyScheduler
+- Swarm scenario engine: 21 persona entities, 4 shock types, emergent timeline,
+  shocked-vs-baseline KPI impact, risks/recommendations, confidence
+- AutoOptimize loop with JSONL journal of every accepted/rolled-back step
+- 5 skill packs (scheduling, SPC, RCA/8D, MRP, OEE)
+- Mission Control under `/manufacturing` (fleet, KPIs, work orders, schedule,
+  workflows, scenarios, autoresearch, approvals, receipts, status), every route
+  scope-gated; approval policies: PO >$50k, schedule >20% capacity, EHS critical
+- Gateway registers the 6 agents; `[deep]` extra added
+
+## Integration fixes (cross-builder contract drift)
+- Mission Control `_load_seed` now passes the `FactorySeed` dataclass through
+  (was flattening to dict; broke `SwarmWorld.from_seed`)
+- `AutoOptimizeLoop._evaluate` passes `products` to `build_schedule` per the
+  contract; stub scheduler in tests updated to the same signature
+
+## Verified
+- Full suite: **225 passed, 15 skipped, 0 failed** (was 168 before this phase;
+  63 manufacturing tests added)
+- Live HTTP through the gateway: fleet (6/6 available) → baseline KPIs from a
+  real simulation (OTD 1.0, OEE 0.93, 747 units/168h) → order_to_production
+  workflow → supplier-outage swarm scenario (37 emergent events, OTD −0.28,
+  4 risks, 4 recommendations, confidence 0.95) → AutoOptimize (8 journaled
+  steps; baseline already optimal on the demo seed, so 0 accepted — the
+  keep-only-if-better discipline holding) → status/receipts/approvals

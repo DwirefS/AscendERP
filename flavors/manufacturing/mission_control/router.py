@@ -104,10 +104,10 @@ def _import_flavor(module_suffix: str, attr: str):
     return getattr(module, attr)
 
 
-def _load_seed(seed: int = 42) -> Dict[str, Any]:
+def _load_seed(seed: int = 42):
+    """Return the FactorySeed snapshot for the given seed."""
     build_seed = _import_flavor("data.seed", "build_seed")
-    data = build_seed(seed)
-    return data if isinstance(data, dict) else data.__dict__
+    return build_seed(seed)
 
 
 def build_mission_control_router(
@@ -164,14 +164,14 @@ def build_mission_control_router(
                 from flavors.manufacturing.models import SchedulingPolicy
 
                 schedule = PolicyScheduler(SchedulingPolicy()).build_schedule(
-                    seed_data["work_orders"], seed_data["machines"], seed_data["products"]
+                    seed_data.work_orders, seed_data.machines, seed_data.products
                 )
                 sim = PlantSimulator(seed=42)
                 sim.load(
-                    machines=seed_data["machines"],
-                    products=seed_data["products"],
-                    inventory=seed_data["inventory"],
-                    work_orders=seed_data["work_orders"],
+                    machines=seed_data.machines,
+                    products=seed_data.products,
+                    inventory=seed_data.inventory,
+                    work_orders=seed_data.work_orders,
                 )
                 result = sim.run(schedule, horizon_hours=168.0, replications=3)
                 state.last_kpis = result.kpis.to_dict()
@@ -321,9 +321,9 @@ def build_mission_control_router(
         loop = AutoOptimizeLoop(
             simulator_factory=lambda: _loaded_simulator(PlantSimulator, seed_data, req.seed),
             scheduler_factory=PolicyScheduler,
-            work_orders=seed_data["work_orders"],
-            machines=seed_data["machines"],
-            products=seed_data["products"],
+            work_orders=seed_data.work_orders,
+            machines=seed_data.machines,
+            products=seed_data.products,
             seed=req.seed,
         )
         summary = loop.run(req.steps)
@@ -394,13 +394,13 @@ def build_mission_control_router(
     return router
 
 
-def _loaded_simulator(PlantSimulator, seed_data: Dict[str, Any], seed: int):
+def _loaded_simulator(PlantSimulator, seed_data, seed: int):
     sim = PlantSimulator(seed=seed)
     sim.load(
-        machines=seed_data["machines"],
-        products=seed_data["products"],
-        inventory=seed_data["inventory"],
-        work_orders=seed_data["work_orders"],
+        machines=seed_data.machines,
+        products=seed_data.products,
+        inventory=seed_data.inventory,
+        work_orders=seed_data.work_orders,
     )
     return sim
 
