@@ -63,7 +63,7 @@ services:
       - "--set=decision_logs.console=true"
       - "/policies"
     volumes:
-      - ./platform/policies:/policies:ro
+      - ./ants_platform/policies:/policies:ro
     networks:
       - ants-network
 
@@ -130,7 +130,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "mcp.servers.erp.server"]
+    command: ["python", "-m", "ants_mcp.servers.erp.server"]
     environment:
       - MCP_SERVER_NAME=ants-erp-mcp
     depends_on:
@@ -143,7 +143,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["python", "-m", "mcp.servers.defender.server"]
+    command: ["python", "-m", "ants_mcp.servers.defender.server"]
     environment:
       - MCP_SERVER_NAME=ants-defender-mcp
     networks:

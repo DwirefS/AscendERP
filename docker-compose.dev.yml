@@ -1,0 +1,33 @@
+# ANTS dev dependencies only: PostgreSQL (pgvector) + Redis.
+# Matches the test configuration (ants_test / test_user / test_pass).
+# Usage: make dev / make dev-down
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_DB=ants_test
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d ants_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-dev-data:

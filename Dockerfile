@@ -1,25 +1,30 @@
 # ANTS - AI-Agent Native Tactical System
-# Multi-stage Docker build
+# Multi-stage Docker build (core dependencies only; cloud/ML extras are not installed)
 
 # Stage 1: Build stage
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
-WORKDIR /app
+WORKDIR /build
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY pyproject.toml .
-RUN pip install --no-cache-dir build && \
-    pip wheel --no-cache-dir --wheel-dir /wheels -e .
+# Copy project metadata and source (required to build the wheel)
+COPY pyproject.toml README.md ./
+COPY src/ src/
+COPY ants_platform/ ants_platform/
+COPY services/ services/
+COPY ants_mcp/ ants_mcp/
+COPY data/ data/
+
+# Build wheels for the project and its core dependencies
+RUN pip install --no-cache-dir --upgrade pip wheel && \
+    pip wheel --no-cache-dir --wheel-dir /wheels .
 
 # Stage 2: Runtime stage
-FROM python:3.11-slim as runtime
+FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
@@ -32,18 +37,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user
 RUN groupadd -r ants && useradd -r -g ants ants
 
-# Copy wheels from builder
+# Install application + dependencies from prebuilt wheels
 COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir /wheels/*.whl && rm -rf /wheels
 
-# Install application
-RUN pip install --no-cache-dir /wheels/*.whl && \
-    rm -rf /wheels
-
-# Copy application code
+# Copy application code (ants_mcp and data are not part of the wheel;
+# src/services/ants_platform are copied too so PYTHONPATH=/app resolves them directly)
 COPY src/ /app/src/
 COPY services/ /app/services/
-COPY platform/ /app/platform/
-COPY mcp/ /app/mcp/
+COPY ants_platform/ /app/ants_platform/
+COPY ants_mcp/ /app/ants_mcp/
+COPY data/ /app/data/
 
 # Set ownership
 RUN chown -R ants:ants /app
@@ -55,8 +59,10 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app
 
+EXPOSE 8000
+
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Default command
@@ -65,5 +71,4 @@ CMD ["python", "-m", "uvicorn", "services.api_gateway.main:app", "--host", "0.0.
 # Labels
 LABEL org.opencontainers.image.title="ANTS" \
       org.opencontainers.image.description="AI-Agent Native Tactical System" \
-      org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.vendor="Your Organization"
+      org.opencontainers.image.version="1.0.0"
