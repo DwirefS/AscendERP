@@ -131,7 +131,50 @@ def _build_registry():
     except Exception as e:  # pragma: no cover
         logger.warning("agent_registration_failed", agent="retail.inventory", error=str(e))
 
+    _register_manufacturing_agents(registry)
+
     return registry
+
+
+def _register_manufacturing_agents(registry):
+    """Register the manufacturing flavor's agent fleet (best-effort)."""
+    manufacturing_agents = [
+        ("manufacturing.production_planner", "production_planner_agent",
+         "ProductionPlannerAgent", "MRP planning and policy-driven scheduling",
+         ["mrp", "schedule", "capacity"]),
+        ("manufacturing.quality", "quality_agent", "QualityAgent",
+         "SPC analysis, NCR creation, and disposition", ["spc", "ncr", "cpk"]),
+        ("manufacturing.maintenance", "maintenance_agent", "MaintenanceAgent",
+         "Predictive maintenance risk scoring and PM scheduling",
+         ["risk-scoring", "pm-scheduling"]),
+        ("manufacturing.procurement", "procurement_agent", "ProcurementAgent",
+         "Reorder purchasing and supplier scoring", ["reorder", "supplier-scoring"]),
+        ("manufacturing.inventory", "inventory_agent", "InventoryAgent",
+         "ABC classification, safety stock, shortage projection",
+         ["abc", "safety-stock"]),
+        ("manufacturing.ehs_compliance", "ehs_compliance_agent",
+         "EHSComplianceAgent", "EHS incident triage and compliance calendar",
+         ["incident-triage", "loto"]),
+    ]
+    import importlib
+
+    for agent_type, module_name, cls_name, description, capabilities in manufacturing_agents:
+        try:
+            module = importlib.import_module(
+                f"flavors.manufacturing.agents.{module_name}"
+            )
+            registry.register(
+                agent_type,
+                getattr(module, cls_name),
+                {
+                    "name": cls_name.replace("Agent", " Agent"),
+                    "description": description,
+                    "category": "manufacturing",
+                    "capabilities": capabilities,
+                },
+            )
+        except Exception as e:  # pragma: no cover - flavor is optional
+            logger.warning("agent_registration_failed", agent=agent_type, error=str(e))
 
 
 # Application lifecycle
@@ -171,6 +214,15 @@ app.add_middleware(
 
 # OpenTelemetry instrumentation
 FastAPIInstrumentor.instrument_app(app)
+
+# Mount flavor routers (best-effort: a broken flavor must not take down the gateway)
+try:
+    from flavors.manufacturing.mission_control import build_mission_control_router
+
+    app.include_router(build_mission_control_router(require_scope))
+    logger.info("flavor_mounted", flavor="manufacturing", prefix="/manufacturing")
+except Exception as e:  # pragma: no cover - flavor is optional
+    logger.warning("flavor_mount_failed", flavor="manufacturing", error=str(e))
 
 
 async def enforce_rate_limit(request: Request, auth: AuthContext):
