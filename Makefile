@@ -32,3 +32,6 @@ lint: ## Run ruff (advisory only, never fails)
 
 serve: ## Run the API gateway locally with auto-reload
 	uvicorn services.api_gateway.main:app --reload
+
+demo: ## Run the manufacturing end-to-end demo (no server needed)
+	ENCRYPTION_MASTER_KEY=dev-only-key python examples/manufacturing_end_to_end_demo.py

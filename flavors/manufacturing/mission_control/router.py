@@ -123,6 +123,17 @@ def build_mission_control_router(
     state = state or MissionControlState()
     router = APIRouter(prefix="/manufacturing", tags=["manufacturing"])
 
+    # -- Dashboard -------------------------------------------------------------
+
+    @router.get("/ui", include_in_schema=False)
+    async def dashboard():
+        """Serve the Mission Control dashboard (static, auth happens via API)."""
+        from pathlib import Path
+        from fastapi.responses import HTMLResponse
+
+        page = Path(__file__).parent / "dashboard.html"
+        return HTMLResponse(page.read_text(encoding="utf-8"))
+
     # -- Fleet & KPIs --------------------------------------------------------
 
     @router.get("/fleet")

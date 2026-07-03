@@ -71,3 +71,35 @@ def test_invoke_reconciliation_agent(client, auth_headers):
     body = response.json()
     assert body["success"] is True
     assert body["trace_id"]
+
+
+def test_manufacturing_dashboard_serves(client):
+    response = client.get("/manufacturing/ui")
+    assert response.status_code == 200
+    assert "Mission Control" in response.text
+
+
+def test_manufacturing_fleet_and_kpis(client):
+    token_resp = client.post(
+        "/v1/auth/token",
+        json={"tenant_id": "smoke", "scopes": ["agents:read"]},
+    )
+    headers = {"Authorization": f"Bearer {token_resp.json()['access_token']}"}
+
+    fleet = client.get("/manufacturing/fleet", headers=headers)
+    assert fleet.status_code == 200, fleet.text
+    body = fleet.json()
+    assert body["available"] == body["total"] == 6
+
+    kpis = client.get("/manufacturing/kpis", headers=headers)
+    assert kpis.status_code == 200, kpis.text
+    k = kpis.json()["kpis"]
+    assert 0.0 <= k["otd_rate"] <= 1.0
+    assert 0.0 <= k["oee"] <= 1.0
+
+
+def test_manufacturing_requires_auth(client):
+    assert client.get("/manufacturing/fleet").status_code == 401
+    assert client.post(
+        "/manufacturing/workflows/order_to_production/run", json={"input_data": {}}
+    ).status_code == 401

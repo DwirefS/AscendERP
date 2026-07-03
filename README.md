@@ -12,6 +12,25 @@
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-Enabled-blueviolet?logo=opentelemetry)](https://opentelemetry.io/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+## 🚀 Quickstart (runs locally, no cloud account)
+
+```bash
+pip install -e ".[dev]"          # minimal core, ~2 min
+make test                        # 225+ tests, green
+make demo                        # manufacturing ERP end-to-end in your terminal
+make serve                       # gateway on :8000
+# then open http://localhost:8000/manufacturing/ui  ← Mission Control dashboard
+```
+
+The **manufacturing flavor** is the reference end-to-end vertical: six PRREEL
+agents, decision councils, a plant digital twin, MiroFish-style swarm what-if
+scenarios, Karpathy-autoresearch-style AutoOptimize loops, markdown Agent
+Skills, a governed harness (budgets, policy gates, hash-chained audit
+receipts, human-in-the-loop approvals) and a Mission Control API + dashboard.
+See [`flavors/manufacturing/README.md`](flavors/manufacturing/README.md),
+the [master plan](docs/plans/MASTER_ENHANCEMENT_PLAN.md), and the
+[decision log](docs/decisions/DECISION_LOG.md).
+
 ##  📊 **Implementation Status: 75% Complete (Production-Ready Core)**
 
 **All 4 Priority Steps Complete ✅** | **7/7 Core Features ✅** | **Infrastructure Ready ✅**

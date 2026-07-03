@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ANTS Mission Control — Manufacturing</title>
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --surface-2: #f4f4f2;
+    --border: #e3e2de;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #7a7975;
+    --accent: #2a78d6;
+    --good: #008300;
+    --warning: #eda100;
+    --serious: #eb6834;
+    --critical: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --surface-2: #232322;
+      --border: #3a3a38;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8f8e86;
+      --accent: #3987e5;
+      --good: #2e9e4f;
+      --warning: #c98500;
+      --serious: #d95926;
+      --critical: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--surface-1); color: var(--text-primary);
+    font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 18px 24px 10px;
+  }
+  header h1 { font-size: 18px; font-weight: 650; margin: 0; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  main { padding: 0 24px 48px; max-width: 1200px; margin: 0 auto; }
+  section { margin-top: 28px; }
+  h2 { font-size: 14px; font-weight: 650; margin: 0 0 10px; color: var(--text-secondary);
+       text-transform: uppercase; letter-spacing: 0.04em; }
+  .card { background: var(--surface-2); border: 1px solid var(--border);
+          border-radius: 10px; padding: 16px; }
+  /* Connect bar */
+  .connect { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .connect input { background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font: inherit; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+    padding: 7px 14px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--accent);
+    border: 1px solid var(--accent); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); }
+  .pill.ok      { color: var(--good); }
+  .pill.warn    { color: var(--warning); }
+  .pill.bad     { color: var(--critical); }
+  /* Stat tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+           gap: 12px; }
+  .tile { background: var(--surface-2); border: 1px solid var(--border);
+          border-radius: 10px; padding: 14px 16px; }
+  .tile .label { color: var(--text-secondary); font-size: 12.5px; }
+  .tile .value { font-size: 26px; font-weight: 650; margin-top: 2px; }
+  /* Tables */
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 600;
+       border-bottom: 1px solid var(--border); padding: 6px 10px; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--border); padding: 6px 10px; vertical-align: top; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  .muted { color: var(--text-muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  textarea { width: 100%; min-height: 64px; background: var(--surface-1);
+    color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px; font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  ul { margin: 6px 0; padding-left: 20px; }
+  .toast { position: fixed; bottom: 18px; right: 18px; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+    max-width: 380px; font-size: 13px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ANTS Mission Control</h1>
+  <span class="sub">Manufacturing flavor · local profile</span>
+  <span id="conn-state" class="pill warn">● not connected</span>
+</header>
+<main>
+
+  <section id="connect-section">
+    <div class="card connect">
+      <input id="tenant" value="plant-1" size="10" aria-label="Tenant id">
+      <button id="connect-btn" onclick="connect()">Connect</button>
+      <span class="muted">Issues a dev JWT via <code>/v1/auth/token</code> with Mission Control scopes.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Plant KPIs <span class="muted" id="kpi-asof"></span></h2>
+    <div class="tiles" id="kpi-tiles">
+      <div class="tile"><div class="label">On-time delivery</div><div class="value" id="k-otd">—</div></div>
+      <div class="tile"><div class="label">OEE</div><div class="value" id="k-oee">—</div></div>
+      <div class="tile"><div class="label">Throughput (units)</div><div class="value" id="k-thr">—</div></div>
+      <div class="tile"><div class="label">Scrap rate</div><div class="value" id="k-scrap">—</div></div>
+      <div class="tile"><div class="label">Total cost</div><div class="value" id="k-cost">—</div></div>
+      <div class="tile"><div class="label">Makespan (h)</div><div class="value" id="k-mk">—</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Agent fleet</h2>
+    <div class="card tablewrap">
+      <table id="fleet-table">
+        <thead><tr><th>Agent</th><th>Status</th><th>Tools</th></tr></thead>
+        <tbody><tr><td colspan="3" class="muted">Connect to load…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>What-if scenario (swarm)</h2>
+      <div class="card">
+        <p class="muted" style="margin-top:0">Shock JSON — supplier_outage, demand_spike, machine_failure, material_price_spike:</p>
+        <textarea id="shock">{"type": "supplier_outage", "supplier_id": "SUP-1", "days": 14}</textarea>
+        <p><button onclick="runScenario()">Run scenario</button></p>
+        <div id="scenario-out"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>AutoOptimize (scheduling policy)</h2>
+      <div class="card">
+        <p class="muted" style="margin-top:0">Propose → simulate → keep-if-better → journal. Every step is auditable.</p>
+        <p>
+          <label>Steps <input id="opt-steps" value="8" size="3" aria-label="Optimization steps"></label>
+          <button onclick="runOptimize()">Run loop</button>
+        </p>
+        <div id="opt-out"></div>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Approvals (human-in-the-loop)</h2>
+    <div class="card tablewrap">
+      <table id="approvals-table">
+        <thead><tr><th>Id</th><th>Reason</th><th>Requested</th><th></th></tr></thead>
+        <tbody><tr><td colspan="4" class="muted">None pending.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Audit receipts</h2>
+    <div class="card">
+      <p id="receipts-summary" class="muted">Connect to load…</p>
+    </div>
+  </section>
+
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+let TOKEN = sessionStorage.getItem("ants_token") || null;
+
+const SCOPES = ["agents:read","agents:write","workflows:run","scenarios:run",
+                "optimize:run","approvals:write","receipts:read"];
+
+function toast(msg, ms=4200) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.style.display = "block";
+  clearTimeout(el._t); el._t = setTimeout(() => el.style.display = "none", ms);
+}
+
+async function api(path, opts={}) {
+  const headers = Object.assign(
+    {"Content-Type": "application/json"},
+    TOKEN ? {"Authorization": "Bearer " + TOKEN} : {});
+  const res = await fetch(path, Object.assign({headers}, opts));
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(res.status + ": " + body.slice(0, 240));
+  }
+  return res.json();
+}
+
+async function connect() {
+  const tenant = document.getElementById("tenant").value || "plant-1";
+  try {
+    const data = await api("/v1/auth/token", {
+      method: "POST",
+      body: JSON.stringify({tenant_id: tenant, scopes: SCOPES}),
+    });
+    TOKEN = data.access_token;
+    sessionStorage.setItem("ants_token", TOKEN);
+    setConn(true);
+    await refreshAll();
+    toast("Connected as " + tenant);
+  } catch (e) { setConn(false); toast("Connect failed — " + e.message); }
+}
+
+function setConn(ok) {
+  const el = document.getElementById("conn-state");
+  el.textContent = ok ? "● connected" : "● not connected";
+  el.className = "pill " + (ok ? "ok" : "warn");
+}
+
+function fmtCompact(n) {
+  if (n == null) return "—";
+  if (Math.abs(n) >= 1e6) return (n/1e6).toFixed(1) + "M";
+  if (Math.abs(n) >= 1e3) return (n/1e3).toFixed(1) + "K";
+  return String(Math.round(n * 10) / 10);
+}
+
+async function refreshKpis() {
+  const d = await api("/manufacturing/kpis");
+  const k = d.kpis;
+  document.getElementById("k-otd").textContent  = (k.otd_rate * 100).toFixed(1) + "%";
+  document.getElementById("k-oee").textContent  = (k.oee * 100).toFixed(1) + "%";
+  document.getElementById("k-thr").textContent  = fmtCompact(k.throughput_units);
+  document.getElementById("k-scrap").textContent = (k.scrap_rate * 100).toFixed(1) + "%";
+  document.getElementById("k-cost").textContent = "$" + fmtCompact(k.total_cost);
+  document.getElementById("k-mk").textContent   = fmtCompact(k.makespan_hours);
+  document.getElementById("kpi-asof").textContent = "· as of " + new Date(d.as_of).toLocaleTimeString();
+}
+
+async function refreshFleet() {
+  const d = await api("/manufacturing/fleet");
+  const rows = d.fleet.map(a => {
+    const status = a.available
+      ? '<span class="pill ok">✓ available</span>'
+      : '<span class="pill bad">✕ unavailable</span>';
+    return `<tr><td>${a.agent_type}</td><td>${status}</td>
+            <td class="muted">${(a.tools||[]).join(", ")}</td></tr>`;
+  }).join("");
+  document.querySelector("#fleet-table tbody").innerHTML =
+    rows || '<tr><td colspan="3" class="muted">No agents.</td></tr>';
+}
+
+async function refreshApprovals() {
+  const d = await api("/manufacturing/approvals");
+  const rows = (d.pending || []).map(a => {
+    const id = a.id || a.approval_id || a.request_id;
+    return `<tr><td>${id}</td><td>${a.reason || ""}</td>
+      <td class="muted">${a.requested_at || ""}</td>
+      <td><button onclick="decide('${id}','approve')">Approve</button>
+          <button class="secondary" onclick="decide('${id}','reject')">Reject</button></td></tr>`;
+  }).join("");
+  document.querySelector("#approvals-table tbody").innerHTML =
+    rows || '<tr><td colspan="4" class="muted">None pending.</td></tr>';
+}
+
+async function decide(id, action) {
+  try {
+    await api(`/manufacturing/approvals/${id}/${action}`, {method: "POST", body: "{}"});
+    toast(`Approval ${id} ${action}d`);
+    refreshApprovals();
+  } catch (e) { toast("Failed — " + e.message); }
+}
+
+async function refreshReceipts() {
+  const d = await api("/manufacturing/receipts");
+  document.getElementById("receipts-summary").innerHTML =
+    `Chain: <strong>${d.count}</strong> receipts · integrity ` +
+    (d.verified ? '<span class="pill ok">✓ verified</span>'
+                : '<span class="pill bad">✕ BROKEN</span>');
+}
+
+async function runScenario() {
+  const out = document.getElementById("scenario-out");
+  out.innerHTML = '<p class="muted">Simulating digital world…</p>';
+  let shock;
+  try { shock = JSON.parse(document.getElementById("shock").value); }
+  catch (e) { out.innerHTML = ""; return toast("Shock JSON invalid: " + e.message); }
+  try {
+    const d = await api("/manufacturing/scenarios/run", {
+      method: "POST",
+      body: JSON.stringify({name: shock.type || "scenario", narrative: "", shock}),
+    });
+    const s = d.summary;
+    const impact = Object.entries(s.kpi_impact || {})
+      .map(([k, v]) => `<tr><td>${k}</td><td class="num">${v > 0 ? "+" : ""}${v}</td></tr>`).join("");
+    out.innerHTML = `
+      <p><strong>${s.scenario}</strong> · ${s.events} emergent events ·
+         confidence ${(s.confidence * 100).toFixed(0)}%</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>KPI impact</th><th>Δ vs baseline</th></tr></thead>
+        <tbody>${impact}</tbody></table></div>
+      <p><strong>Risks</strong></p><ul>${(s.risks||[]).map(r => `<li>${r}</li>`).join("")}</ul>
+      <p><strong>Recommendations</strong></p><ul>${(s.recommendations||[]).map(r => `<li>${r}</li>`).join("")}</ul>`;
+  } catch (e) { out.innerHTML = ""; toast("Scenario failed — " + e.message); }
+}
+
+async function runOptimize() {
+  const out = document.getElementById("opt-out");
+  const steps = parseInt(document.getElementById("opt-steps").value || "8", 10);
+  out.innerHTML = '<p class="muted">Running optimization loop…</p>';
+  try {
+    const d = await api("/manufacturing/autoresearch/run", {
+      method: "POST", body: JSON.stringify({steps}),
+    });
+    const rows = (d.steps || []).map(s => {
+      const badge = s.accepted
+        ? '<span class="pill ok">✓ kept</span>'
+        : '<span class="pill warn">↩ rolled back</span>';
+      return `<tr><td class="num">${s.step}</td><td>${s.mutated_field}</td>
+        <td class="num">${(+s.objective_after).toFixed(4)}</td><td>${badge}</td></tr>`;
+    }).join("");
+    const best = d.summary.best_objective;
+    out.innerHTML = `
+      <p>Best objective <strong>${(+best).toFixed(4)}</strong> ·
+         policy <code>${d.summary.best_policy.dispatch_rule}</code> ·
+         ${(d.steps||[]).filter(s => s.accepted).length}/${(d.steps||[]).length} accepted</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>#</th><th>Mutation</th><th>Objective</th><th>Outcome</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`;
+    refreshKpis();
+  } catch (e) { out.innerHTML = ""; toast("Optimize failed — " + e.message); }
+}
+
+async function refreshAll() {
+  await Promise.allSettled([refreshKpis(), refreshFleet(), refreshApprovals(), refreshReceipts()]);
+}
+
+if (TOKEN) { setConn(true); refreshAll().catch(() => setConn(false)); }
+</script>
+</body>
+</html>

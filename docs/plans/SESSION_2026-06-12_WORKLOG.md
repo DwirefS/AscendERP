@@ -171,3 +171,26 @@ open source.
   4 risks, 4 recommendations, confidence 0.95) → AutoOptimize (8 journaled
   steps; baseline already optimal on the demo seed, so 0 accepted — the
   keep-only-if-better discipline holding) → status/receipts/approvals
+
+---
+
+# Phase 6 — Make it visible & keep CI honest
+
+- **Mission Control dashboard** at `/manufacturing/ui`: single-file, zero-build
+  HTML (validated palette tokens, light+dark) — connect (dev JWT), KPI stat
+  tiles, fleet table, swarm scenario runner with risk/recommendation report,
+  AutoOptimize runner with per-step kept/rolled-back journal, HITL approve/
+  reject buttons, receipt-chain integrity badge. Verified serving over live
+  HTTP (200, 14KB; fleet 6/6; receipts verified).
+- **One-command demo**: `make demo` → `examples/manufacturing_end_to_end_demo.py`
+  runs all nine steps in-terminal: seed → MRP plan → twin simulation (OTD 100%,
+  OEE 93.3%) → SPC catches drift (4 Western Electric rules, Cpk 0.198, critical
+  NCR, scrap disposition) → predictive PM fires on an aged machine (risk 0.94)
+  → $85k PO parked by policy then human-approved → supplier-outage swarm
+  scenario (37 events) → AutoOptimize journal → receipt chain verified.
+- **CI now triggers on `claude/**` pushes** (was main/develop only — the
+  rewritten pipeline had never run).
+- 3 manufacturing smoke tests added (dashboard serves, fleet+KPIs, auth
+  required). Full suite: **228 passed, 15 skipped, 0 failed**.
+- README gained an honest local Quickstart pointing at make targets, the
+  manufacturing flavor, plan, and decision log.
