@@ -23,7 +23,10 @@ import json
 from datetime import datetime, timedelta
 import structlog
 from openai import AsyncAzureOpenAI
-from azure.identity.aio import DefaultAzureCredential
+try:
+    from azure.identity.aio import DefaultAzureCredential
+except ImportError:  # pragma: no cover - azure extra not installed
+    DefaultAzureCredential = None
 
 logger = structlog.get_logger()
 

@@ -16,9 +16,15 @@ import os
 import logging
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
-from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
-from azure.keyvault.secrets import SecretClient
-from azure.core.exceptions import ResourceNotFoundError
+try:
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+    from azure.keyvault.secrets import SecretClient
+    from azure.core.exceptions import ResourceNotFoundError
+except ImportError as _e:  # pragma: no cover - azure extra not installed
+    raise ImportError(
+        "src.core.security.secrets_manager requires the azure extra: "
+        "pip install 'ants[azure]'"
+    ) from _e
 import asyncio
 from functools import lru_cache
 

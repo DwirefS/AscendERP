@@ -20,9 +20,14 @@ import logging
 import jwt
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
-from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
-from msal import ConfidentialClientApplication
-import requests
+try:
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+    from msal import ConfidentialClientApplication
+    import requests
+except ImportError as _e:  # pragma: no cover - azure extra not installed
+    raise ImportError(
+        "src.core.security.auth requires the azure extra: pip install 'ants[azure]'"
+    ) from _e
 
 logger = logging.getLogger(__name__)
 

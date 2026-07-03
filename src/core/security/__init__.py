@@ -16,12 +16,21 @@ Philosophy:
 - Comprehensive audit trail
 """
 
-from .secrets_manager import SecretsManager
 from .input_validator import InputValidator, ValidationError
 from .rate_limiter import RateLimiter, RateLimitExceeded
 from .security_audit import SecurityAuditor
 from .encryption import EncryptionHelper
-from .auth import AuthManager, AuthorizationError
+
+# Azure/MSAL-backed modules are optional (pip install "ants[azure]").
+try:
+    from .secrets_manager import SecretsManager
+    from .auth import AuthManager, AuthorizationError
+except ImportError:  # pragma: no cover - azure extra not installed
+    SecretsManager = None
+    AuthManager = None
+
+    class AuthorizationError(Exception):
+        """Raised when authorization fails (azure extra not installed)."""
 
 __all__ = [
     "SecretsManager",
