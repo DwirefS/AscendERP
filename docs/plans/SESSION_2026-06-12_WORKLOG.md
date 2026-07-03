@@ -194,3 +194,21 @@ open source.
   required). Full suite: **228 passed, 15 skipped, 0 failed**.
 - README gained an honest local Quickstart pointing at make targets, the
   manufacturing flavor, plan, and decision log.
+
+---
+
+# Phase 7 — CI to green on GitHub
+
+First-ever CI runs for this repo's pipeline (it had never passed on any branch):
+1. Run 1 (8bf653c): Docker build ✓; tests failed — clean CI env has no azure
+   extra; 3 modules imported azure/msal transitively. Fixed with D-005 guards in
+   src/core/security/{__init__,auth,secrets_manager}.py and
+   memory/embedding_client.py; verified locally by blocking azure/msal/requests
+   in sys.meta_path.
+2. Run 2 (2119910): 207 passed; one module left — EntraAgentIDManager raises at
+   construction without azure-identity → importorskip.
+3. Run 3 (1f07f4b): **CI SUCCESS** — Lint & Test (pgvector service container,
+   full suite) ✓ and Docker Build ✓.
+
+End-to-end is now: local suite 228 green · smoke 7 green · live HTTP verified ·
+one-command demo · Mission Control dashboard · **green CI on GitHub**.
