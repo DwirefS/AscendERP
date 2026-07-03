@@ -9,6 +9,9 @@ import asyncio
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from datetime import datetime, timedelta
 
+# EntraAgentIDManager requires the Azure Identity SDK (optional "azure" extra).
+pytest.importorskip("azure.identity", reason="azure extra not installed: pip install 'ants[azure]'")
+
 from src.integrations.entra_agent_ids import (
     EntraAgentIDManager,
     AgentIdentity,
