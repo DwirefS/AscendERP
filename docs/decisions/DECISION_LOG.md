@@ -389,3 +389,30 @@ adapter exposes manufacturing missions as deepagents-driven plans when
 `pip install "ants[deep]"` is present, and degrades gracefully (clear message,
 native harness path) when not. Keeps the default install lean (D-003) and the
 platform fully open-source-runnable either way.
+
+---
+
+## D-021 — The carve begins: ideas sorted into verdict tiers, no deletions
+
+**Date:** 2026-07-03 · **Status:** Accepted
+
+**Context.** The author's "bulk-up phase" doctrine (README, whitepaper_addition
+§23.6) deliberately maximized idea mass and deferred pruning. A full-corpus
+read (all whitepapers, README, swarm design, Edition 3 — ~13K doc lines)
+produced a complete idea inventory and an honest audit.
+
+**Decision.** `docs/plans/PHILOSOPHY_TO_REALITY.md` is the canonical sorting of
+every idea into six tiers: KEEP & AMPLIFY / MARKET-PROVEN / REAL-NEEDS-EVIDENCE
+/ BEAUTIFUL-NOT-YET-REAL / RESHAPE / QUARANTINE. Consistent with the
+no-deletions doctrine, nothing is removed — speculative essays move to a
+labeled home (`docs/essays/`, future WS-4), projected metrics move to
+hypothesis status pending the WS-3 eval harness, and internal tensions get one
+canonical resolution each ("bounded emergence"; coexistence→elimination as
+sequence; meta-agents for the long tail + catalogs for the head; open core
+anywhere + vendor stack as production profile; positive-framing doctrine scoped
+to vision docs only).
+
+**Why.** The bulk-up phase succeeded at its own goal (no idea was lost) and
+had reached its failure mode (the repo could not run, and unverifiable claims
+were costing credibility). The carve preserves the philosophy while making it
+measurable and shippable.
