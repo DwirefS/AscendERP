@@ -364,13 +364,38 @@ class QualityAgent(BaseAgent):
         severity: str,
         supplier_material: bool,
         out_of_spec: bool,
+        rework_cost_per_unit: Optional[float] = None,
+        unit_value: Optional[float] = None,
     ) -> DispositionType:
-        """Map severity (and material origin) to a disposition recommendation."""
+        """
+        Map severity, material origin and (when known) rework economics to a
+        disposition recommendation. The economics fields are optional and
+        default to None, preserving the original severity-based behavior:
+        when both are provided and rework_cost_per_unit >= unit_value,
+        rework is uneconomical and the defective units are scrapped instead.
+        """
         if supplier_material and severity in ("major", "critical"):
             return DispositionType.RETURN_TO_SUPPLIER
         if severity == "critical":
             return DispositionType.SCRAP
+
+        rework_uneconomical = (
+            rework_cost_per_unit is not None
+            and unit_value is not None
+            and rework_cost_per_unit >= unit_value
+        )
         if severity == "major":
-            return DispositionType.REWORK
-        # Minor: capable process, only a control signal.
-        return DispositionType.REWORK if out_of_spec else DispositionType.USE_AS_IS
+            return (
+                DispositionType.SCRAP
+                if rework_uneconomical
+                else DispositionType.REWORK
+            )
+        # Minor: capable process, only a control signal unless units are
+        # actually defective — then rework (or scrap if uneconomical).
+        if not out_of_spec:
+            return DispositionType.USE_AS_IS
+        return (
+            DispositionType.SCRAP
+            if rework_uneconomical
+            else DispositionType.REWORK
+        )

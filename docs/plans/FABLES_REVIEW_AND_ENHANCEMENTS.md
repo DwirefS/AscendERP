@@ -7,7 +7,7 @@ author's enterprise-IT thesis and the road ahead.
 
 Companions: [`MASTER_ENHANCEMENT_PLAN.md`](MASTER_ENHANCEMENT_PLAN.md) ·
 [`PHILOSOPHY_TO_REALITY.md`](PHILOSOPHY_TO_REALITY.md) ·
-[`../decisions/DECISION_LOG.md`](../decisions/DECISION_LOG.md) (D-001…D-021) ·
+[`../decisions/DECISION_LOG.md`](../decisions/DECISION_LOG.md) (D-001…D-022) ·
 [`SESSION_2026-06-12_WORKLOG.md`](SESSION_2026-06-12_WORKLOG.md)
 
 ---
@@ -109,10 +109,41 @@ the reasoning. (Full chronology in the worklog; decisions in the ADR log.)
   place to become a number. The council result is the proof the harness
   isn't a rubber stamp.
 
+### 5.5 The council answers the evidence — `flavors/manufacturing/councils/quality_council.py` (D-022)
+
+- **What:** `QualityCouncil.decide()` replaced its fixed severity→disposition
+  lookup with evidence-weighted deliberation: the quality engineer vetoes
+  USE_AS_IS whenever defective units carry a spec violation
+  (`quantity_affected > 0`), the manufacturing engineer weighs rework
+  economics (REWORK while `rework_cost_per_unit < unit_value`, SCRAP when
+  not), and the compliance officer's posture is unchanged (critical → SCRAP
+  or RETURN_TO_SUPPLIER, always `requires_human_approval=True`). Member
+  positions and reasons now travel in the decision (`member_assessments`)
+  and rationale. The solo `QualityAgent._recommend_disposition` reads the
+  same two optional economics fields, and the eval feeds each case's full
+  inputs to both subjects — a fair fight, same rubric, same expected
+  answers.
+- **How:** deterministic per-member assessments resolved in a fixed order
+  (binding compliance → quality's conforming-product evidence → economics →
+  default containment REWORK); `decide()` grew only optional kwargs
+  (`rework_cost_per_unit`, `unit_value`, default None ⇒ old behavior for
+  existing callers), so all pre-existing council tests pass unmodified.
+- **Why:** §5's measured result demanded it — the council lost its own A/B
+  test (0.667 vs 0.917) precisely because it read a table instead of the
+  evidence. This is the doctrine closing its own loop: measure honestly,
+  let the number pick the work, ship the fix with the delta.
+- **Measured delta (seed 42, deterministic):** council **0.6667 → 1.0000**
+  (d02/d03/d11 minor-with-defects no longer ship as USE_AS_IS; d06's
+  uneconomical rework now scraps), solo **0.9167 → 1.0000** (d06 fixed by
+  the shared economics fields). The council now ties the upgraded solo
+  agent at 1.0 on this 12-case rubric; separating them again requires cases
+  where deliberation genuinely beats a single policy — conflicting
+  evidence, incomplete inputs — which is the next eval to write.
+
 ### 6. Current totals
 
-**240 tests passed, 0 failed** (15 optional-extra skips) · CI green ·
-gateway + dashboard live-verified · one-command demo · 21 ADRs.
+**250 tests passed, 0 failed** (9 optional-extra skips with Postgres up) ·
+CI green · gateway + dashboard live-verified · one-command demo · 22 ADRs.
 
 ---
 
@@ -308,8 +339,8 @@ philosophy.
 
 | # | Enhancement | Why | Where | Effort |
 |---|---|---|---|---|
-| 1 | Entropy management (decay/summarize/archive/purge as DataOps job) | Highest-leverage unbuilt idea; completes the memory thesis | `src/core/memory/` + selfops | ~1 wk |
-| 2 | Council upgrade: evidence-weighted deliberation + economics terms | Fix the measured 0.67; re-run the eval; publish the delta | `flavors/*/councils`, core council | ~1 wk |
+| 1 | Entropy management (decay/summarize/archive/purge as DataOps job) — ✅ shipped (c5510f8) | Highest-leverage unbuilt idea; completes the memory thesis | `src/core/memory/` + selfops | ~1 wk |
+| 2 | Council upgrade: evidence-weighted deliberation + economics terms — ✅ shipped (this commit): council 0.6667 → 1.0000 (solo 0.9167 → 1.0000) | Fix the measured 0.67; re-run the eval; publish the delta | `flavors/*/councils`, core council | ~1 wk |
 | 3 | Composition root + async task fabric | Injectable system; long-running work off-request | `src/main.py`, bus workers | 1–2 wk |
 | 4 | Model Mesh v1 (route: rules/TimesFM-style/TabPFN-style/local/frontier + receipts record model) | Your model-spectrum vision, governed | `src/core/inference/` | 2 wk |
 | 5 | Landing-zone drivers (transactional/streaming/object/partner/exhaust; local+azure) | Data-plane formalization | `data/landing/` | 2 wk |
@@ -319,4 +350,5 @@ philosophy.
 | 9 | Agent identity layer (delegation chains; Entra in azure profile, signed tokens local) | The missing trust fabric | core/security | 2 wk |
 | 10 | README truth pass + essays move + "predicted 2025→confirmed 2026" | Credibility conversion | docs (WS-4) | days |
 
-Items 1–2 are next up; each lands with eval evidence, per doctrine.
+Items 1–2 have landed with eval evidence, per doctrine (entropy: c5510f8;
+council upgrade: Part I §5.5, council 0.6667 → 1.0000). Item 3 is next up.

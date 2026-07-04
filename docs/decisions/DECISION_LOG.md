@@ -416,3 +416,49 @@ to vision docs only).
 had reached its failure mode (the repo could not run, and unverifiable claims
 were costing credibility). The carve preserves the philosophy while making it
 measurable and shippable.
+
+---
+
+## D-022 — Council deliberation upgraded to evidence-weighted reasoning after WS-3 measurement
+
+**Date:** 2026-07-04 · **Status:** Accepted
+
+**Context.** The WS-3 evidence engine measured the QualityCouncil at **0.6667**
+vs the solo QualityAgent's **0.9167** on the 12-case NCR disposition rubric —
+the council *lost* its own headline A/B test. Root cause: `decide()` read a
+fixed severity→disposition lookup table (`minor → USE_AS_IS`, `major →
+REWORK`) that ignored the actual evidence on the NCR. It shipped defective
+minor-NCR units as USE_AS_IS (d02, d03, d11) and reworked an uneconomical
+major lot where rework cost exceeded unit value (d06 — a case the solo agent
+also missed, since neither subject considered rework economics).
+
+**Decision.** `QualityCouncil.decide()` now deliberates by weighing real
+evidence per member instead of reading the table:
+- **Quality engineer:** any defective units carrying a spec violation
+  (`quantity_affected > 0`) can never ship as USE_AS_IS; a minor NCR with
+  zero defective units is a control signal from a capable process.
+- **Manufacturing engineer (economics):** when `rework_cost_per_unit` and
+  `unit_value` are both known, REWORK only while economical
+  (`rework_cost_per_unit < unit_value`), otherwise SCRAP.
+- **Compliance officer (unchanged):** critical → SCRAP (RETURN_TO_SUPPLIER
+  when supplier material) with `requires_human_approval=True`;
+  supplier-related major/critical goes back to the supplier.
+Resolution order: binding compliance positions → quality's
+conforming-product evidence → economics → default containment (REWORK).
+The member positions and reasons travel in the decision
+(`member_assessments`) and the rationale. `decide()` stays
+backward-compatible: the new `rework_cost_per_unit`/`unit_value` kwargs
+default to None, and with economics unknown the behavior for existing
+callers is unchanged — all pre-existing council tests pass unmodified.
+For a fair fight, `QualityAgent._recommend_disposition` reads the same two
+optional economics fields (defaulting to None ⇒ original behavior), and the
+eval passes each case's full inputs to **both** subjects. Rubric and
+expected answers untouched.
+
+**Measured (seed 42, deterministic).** Solo vs council on the same 12 cases:
+council **0.6667 → 1.0000** (d02/d03/d06/d11 fixed), solo **0.9167 →
+1.0000** (d06 fixed via the shared economics fields). The council no longer
+loses — it ties the upgraded solo agent at 1.0 on this rubric; the remaining
+separation must come from cases where deliberation beats a single policy
+(conflicting evidence, incomplete inputs), which is the next eval to write.
+Full suite green after the change.

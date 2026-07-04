@@ -147,11 +147,15 @@ async def run_solo_vs_council_disposition(seed: int = 42) -> Dict[str, Any]:
 
     async def solo_subject(input_data: Dict[str, Any]) -> Dict[str, Any]:
         # The QualityAgent's own documented disposition policy: severity plus
-        # material origin plus whether any units are actually out of spec.
+        # material origin plus whether any units are actually out of spec,
+        # plus rework economics. Both subjects receive the same full case
+        # inputs (fair fight) — including the economics fields.
         disposition = QualityAgent._recommend_disposition(
             severity=input_data["severity"],
             supplier_material=input_data["supplier_related"],
             out_of_spec=input_data["quantity_affected"] > 0,
+            rework_cost_per_unit=input_data["rework_cost_per_unit"],
+            unit_value=input_data["unit_value"],
         )
         return {"disposition": disposition}
 
@@ -165,7 +169,10 @@ async def run_solo_vs_council_disposition(seed: int = 42) -> Dict[str, Any]:
             quantity_affected=input_data["quantity_affected"],
         )
         decision = await council.decide(
-            ncr, supplier_related=input_data["supplier_related"]
+            ncr,
+            supplier_related=input_data["supplier_related"],
+            rework_cost_per_unit=input_data["rework_cost_per_unit"],
+            unit_value=input_data["unit_value"],
         )
         return {"disposition": decision["disposition"]}
 

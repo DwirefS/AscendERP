@@ -6,11 +6,11 @@
 |---|---:|---:|---:|---:|---:|
 | spc_golden_tasks | 11 | 1.0000 | 100.00% | 0.2 | 0.3 |
 | reorder_golden_tasks | 8 | 1.0000 | 100.00% | 0.1 | 0.1 |
-| maintenance_golden_tasks | 8 | 1.0000 | 100.00% | 0.1 | 0.1 |
+| maintenance_golden_tasks | 8 | 1.0000 | 100.00% | 0.1 | 0.3 |
 
 ## spc_golden_tasks
 
-Ran 11 tasks, 2026-07-03T23:46:06.888679 -> 2026-07-03T23:46:06.890769.
+Ran 11 tasks, 2026-07-04T07:52:13.635057 -> 2026-07-04T07:52:13.637313.
 
 | Task | Score | Latency ms | Error |
 |---|---:|---:|---|
@@ -19,16 +19,16 @@ Ran 11 tasks, 2026-07-03T23:46:06.888679 -> 2026-07-03T23:46:06.890769.
 | spc_cpk_marginal | 1.000 | 0.2 |  |
 | spc_drift | 1.000 | 0.2 |  |
 | spc_in_control_gaussian | 1.000 | 0.3 |  |
-| spc_rule1_spike | 1.000 | 0.2 |  |
+| spc_rule1_spike | 1.000 | 0.3 |  |
 | spc_rule2_two_of_three | 1.000 | 0.2 |  |
-| spc_rule3_four_of_five | 1.000 | 0.2 |  |
+| spc_rule3_four_of_five | 1.000 | 0.1 |  |
 | spc_rule4_sustained_shift | 1.000 | 0.2 |  |
 | spc_sigma_zero_constant | 1.000 | 0.1 |  |
 | spc_supplier_material_return | 1.000 | 0.2 |  |
 
 ## reorder_golden_tasks
 
-Ran 8 tasks, 2026-07-03T23:46:06.890820 -> 2026-07-03T23:46:06.891772.
+Ran 8 tasks, 2026-07-04T07:52:13.637362 -> 2026-07-04T07:52:13.638313.
 
 | Task | Score | Latency ms | Error |
 |---|---:|---:|---|
@@ -43,11 +43,11 @@ Ran 8 tasks, 2026-07-03T23:46:06.890820 -> 2026-07-03T23:46:06.891772.
 
 ## maintenance_golden_tasks
 
-Ran 8 tasks, 2026-07-03T23:46:06.891812 -> 2026-07-03T23:46:06.892715.
+Ran 8 tasks, 2026-07-04T07:52:13.638351 -> 2026-07-04T07:52:13.639419.
 
 | Task | Score | Latency ms | Error |
 |---|---:|---:|---|
-| pm_combined_wear_and_vibration | 1.000 | 0.1 |  |
+| pm_combined_wear_and_vibration | 1.000 | 0.3 |  |
 | pm_exact_threshold_triggers | 1.000 | 0.1 |  |
 | pm_high_runtime_triggers | 1.000 | 0.1 |  |
 | pm_low_risk_no_order | 1.000 | 0.1 |  |
@@ -62,12 +62,12 @@ Ran 8 tasks, 2026-07-03T23:46:06.891812 -> 2026-07-03T23:46:06.892715.
 
 | Report | Tasks | Mean score | Pass rate | p50 ms | p95 ms |
 |---|---:|---:|---:|---:|---:|
-| quality_agent_solo | 12 | 0.9167 | 91.67% | 0.0 | 0.0 |
-| quality_council | 12 | 0.6667 | 66.67% | 0.4 | 0.6 |
+| quality_agent_solo | 12 | 1.0000 | 100.00% | 0.0 | 0.0 |
+| quality_council | 12 | 1.0000 | 100.00% | 0.5 | 0.9 |
 
 ## quality_agent_solo
 
-Ran 12 tasks, 2026-07-03T23:46:06.892827 -> 2026-07-03T23:46:06.892907.
+Ran 12 tasks, 2026-07-04T07:52:13.639579 -> 2026-07-04T07:52:13.639656.
 
 | Task | Score | Latency ms | Error |
 |---|---:|---:|---|
@@ -76,7 +76,7 @@ Ran 12 tasks, 2026-07-03T23:46:06.892827 -> 2026-07-03T23:46:06.892907.
 | d03_minor_many_defects | 1.000 | 0.0 |  |
 | d04_major_economical_rework | 1.000 | 0.0 |  |
 | d05_major_cheap_rework | 1.000 | 0.0 |  |
-| d06_major_uneconomical_rework | 0.000 | 0.0 |  |
+| d06_major_uneconomical_rework | 1.000 | 0.0 |  |
 | d07_critical_small_lot | 1.000 | 0.0 |  |
 | d08_critical_large_lot | 1.000 | 0.0 |  |
 | d09_supplier_major | 1.000 | 0.0 |  |
@@ -86,22 +86,22 @@ Ran 12 tasks, 2026-07-03T23:46:06.892827 -> 2026-07-03T23:46:06.892907.
 
 ## quality_council
 
-Ran 12 tasks, 2026-07-03T23:46:06.892956 -> 2026-07-03T23:46:06.897827.
+Ran 12 tasks, 2026-07-04T07:52:13.639701 -> 2026-07-04T07:52:13.646671.
 
 | Task | Score | Latency ms | Error |
 |---|---:|---:|---|
-| d01_minor_control_signal_only | 1.000 | 0.6 |  |
-| d02_minor_few_defects | 0.000 | 0.6 |  |
-| d03_minor_many_defects | 0.000 | 0.4 |  |
-| d04_major_economical_rework | 1.000 | 0.4 |  |
-| d05_major_cheap_rework | 1.000 | 0.4 |  |
-| d06_major_uneconomical_rework | 0.000 | 0.4 |  |
-| d07_critical_small_lot | 1.000 | 0.3 |  |
-| d08_critical_large_lot | 1.000 | 0.4 |  |
-| d09_supplier_major | 1.000 | 0.4 |  |
-| d10_supplier_critical | 1.000 | 0.4 |  |
-| d11_supplier_minor_defects | 0.000 | 0.3 |  |
-| d12_major_cheap_vs_valuable | 1.000 | 0.3 |  |
+| d01_minor_control_signal_only | 1.000 | 0.9 |  |
+| d02_minor_few_defects | 1.000 | 0.7 |  |
+| d03_minor_many_defects | 1.000 | 0.5 |  |
+| d04_major_economical_rework | 1.000 | 0.6 |  |
+| d05_major_cheap_rework | 1.000 | 0.5 |  |
+| d06_major_uneconomical_rework | 1.000 | 0.6 |  |
+| d07_critical_small_lot | 1.000 | 0.6 |  |
+| d08_critical_large_lot | 1.000 | 0.5 |  |
+| d09_supplier_major | 1.000 | 0.6 |  |
+| d10_supplier_critical | 1.000 | 0.5 |  |
+| d11_supplier_minor_defects | 1.000 | 0.5 |  |
+| d12_major_cheap_vs_valuable | 1.000 | 0.4 |  |
 
 ## Comparison
 
@@ -110,16 +110,16 @@ Best mean score: **quality_agent_solo**
 | Task | quality_agent_solo | quality_council |
 |---|---:|---:|
 | d01_minor_control_signal_only | 1.000 | 1.000 |
-| d02_minor_few_defects | 1.000 | 0.000 |
-| d03_minor_many_defects | 1.000 | 0.000 |
+| d02_minor_few_defects | 1.000 | 1.000 |
+| d03_minor_many_defects | 1.000 | 1.000 |
 | d04_major_economical_rework | 1.000 | 1.000 |
 | d05_major_cheap_rework | 1.000 | 1.000 |
-| d06_major_uneconomical_rework | 0.000 | 0.000 |
+| d06_major_uneconomical_rework | 1.000 | 1.000 |
 | d07_critical_small_lot | 1.000 | 1.000 |
 | d08_critical_large_lot | 1.000 | 1.000 |
 | d09_supplier_major | 1.000 | 1.000 |
 | d10_supplier_critical | 1.000 | 1.000 |
-| d11_supplier_minor_defects | 1.000 | 0.000 |
+| d11_supplier_minor_defects | 1.000 | 1.000 |
 | d12_major_cheap_vs_valuable | 1.000 | 1.000 |
 
 ## Experiment: Dispatch Policy Eval
@@ -128,19 +128,19 @@ Best mean score: **quality_agent_solo**
 
 | Report | Tasks | Mean score | Pass rate | p50 ms | p95 ms |
 |---|---:|---:|---:|---:|---:|
-| dispatch_policy_eval | 5 | 0.8150 | 100.00% | 2.6 | 2.7 |
+| dispatch_policy_eval | 5 | 0.8150 | 100.00% | 2.4 | 2.9 |
 
 ## dispatch_policy_eval
 
-Ran 5 tasks, 2026-07-03T23:46:06.898578 -> 2026-07-03T23:46:06.911584.
+Ran 5 tasks, 2026-07-04T07:52:13.647524 -> 2026-07-04T07:52:13.659956.
 
 | Task | Score | Latency ms | Error |
 |---|---:|---:|---|
 | dispatch_cr | 0.822 | 2.5 |  |
-| dispatch_edd | 0.824 | 2.7 |  |
-| dispatch_fifo | 0.824 | 2.7 |  |
-| dispatch_spt | 0.802 | 2.6 |  |
-| dispatch_wspt | 0.803 | 2.4 |  |
+| dispatch_edd | 0.824 | 2.9 |  |
+| dispatch_fifo | 0.824 | 2.3 |  |
+| dispatch_spt | 0.802 | 2.4 |  |
+| dispatch_wspt | 0.803 | 2.3 |  |
 
 ## Dispatch Rule Ranking (168h, 3 replications, seed 42)
 

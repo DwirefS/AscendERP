@@ -212,3 +212,51 @@ First-ever CI runs for this repo's pipeline (it had never passed on any branch):
 
 End-to-end is now: local suite 228 green · smoke 7 green · live HTTP verified ·
 one-command demo · Mission Control dashboard · **green CI on GitHub**.
+
+---
+
+# Phase 8 — The backlog starts landing: entropy management + council upgrade
+
+Backlog items 1–2 from FABLES_REVIEW_AND_ENHANCEMENTS Part IV, each shipped
+with eval evidence per doctrine.
+
+## Entropy management (item 1 — done by the main session, commit c5510f8)
+
+- `src/core/memory/entropy.py`: `EntropyManager` runs the whitepaper-§6.4
+  decay chain (compress → summarize → archive → purge) against the live
+  episodic/semantic/procedural schemas per `DEFAULT_POLICIES` matching the
+  whitepaper tables (episodic 90d/1y/7y; SOX never purged; semantic customer
+  summarize; procedural version-only). Purge is dry-run unless
+  `governance_approval=True`; JSONL journal; injectable clock.
+- 4 live-Postgres functional tests (`tests/unit/memory/test_entropy.py`),
+  skipping cleanly when the DB is down. The organism's excretory system.
+
+## Quality council upgrade (item 2 — D-022, this commit)
+
+- **The measurement that demanded it:** WS-3's own A/B test scored the
+  QualityCouncil **0.6667** vs the solo QualityAgent's **0.9167** on the
+  12-case NCR disposition rubric. The council read a fixed
+  severity→disposition table: defective minor-NCR units shipped as
+  USE_AS_IS (d02/d03/d11), and neither subject weighed rework economics
+  (d06: rework 120/u on 100/u parts → both said REWORK, rubric says SCRAP).
+- **The fix:** `QualityCouncil.decide()` now deliberates per member —
+  quality engineer (defective units with a spec violation never ship
+  as-is), manufacturing engineer (REWORK only while
+  `rework_cost_per_unit < unit_value`, else SCRAP), compliance officer
+  (unchanged: critical → SCRAP/RETURN_TO_SUPPLIER + HITL). Member positions
+  travel in `member_assessments` + rationale. Backward compatible: the new
+  economics kwargs default to None; all pre-existing council tests pass
+  unmodified. The solo agent's `_recommend_disposition` reads the same two
+  optional economics fields, and the eval passes each case's full inputs to
+  both subjects (fair fight; rubric and expected answers untouched).
+- **Measured (seed 42, `make eval`):** council **0.6667 → 1.0000**, solo
+  **0.9167 → 1.0000**. The council no longer loses — it ties the upgraded
+  solo agent at 1.0 on this rubric; the next eval must add cases where
+  deliberation beats a single policy (conflicting evidence, incomplete
+  inputs) to separate them again.
+
+## Current totals
+
+**250 passed, 9 skipped, 0 failed** with Postgres up (240 passed / 19
+skipped without it — the 10 DB tests skip cleanly) · scorecard regenerated
+(`eval_reports/manufacturing_scorecard.{md,json}`) · 22 ADRs.
