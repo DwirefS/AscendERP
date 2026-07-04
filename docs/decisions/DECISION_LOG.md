@@ -518,7 +518,7 @@ presented modeled projections (99.999% savings, 87%/67% cost reductions,
 the audit called this the single largest credibility liability.
 
 **Decision.** The status block became an honest three-tier section —
-**Working & verified** (250 tests, green CI, live demos) / **Implemented,
+**Working & verified** (270 tests, green CI, live demos) / **Implemented,
 evidence pending** / **Vision (whitepaper)** — plus a "Predicted 2025 →
 Confirmed 2026" section (MCP/A2A won; agents-as-app-layer per Gartner;
 governance-first per the EU AI Act; memory-as-moat). Every projection-in-

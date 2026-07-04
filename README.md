@@ -16,7 +16,7 @@
 
 ```bash
 pip install -e ".[dev]"          # minimal core, ~2 min
-make test                        # 250 tests, green
+make test                        # 270 tests, green
 make demo                        # manufacturing ERP end-to-end in your terminal
 make serve                       # gateway on :8000
 # then open http://localhost:8000/manufacturing/ui  ← Mission Control dashboard
@@ -38,7 +38,7 @@ must be **measured or labeled**), everything in this repository sits in
 exactly one of three tiers. Nothing has been deleted — vision content below
 is retained, and labeled.
 
-### Tier 1 — Working & verified (250 tests, green CI, live demos)
+### Tier 1 — Working & verified (270 tests, green CI, live demos)
 
 - **Governed agent harness**: budgets, policy gates, hash-chained audit
   receipts (durable to Postgres when a database is reachable, in-memory
