@@ -178,6 +178,12 @@ class AgentHarness:
         skills_used: List[str],
         cost: Dict[str, Any],
     ) -> Receipt:
+        # Model Mesh governance (D-025): if a routing decision travelled in the
+        # context, record which model decided what in the receipt's cost dict.
+        routing = (getattr(context, "metadata", None) or {}).get("routing_decision")
+        if routing is not None:
+            fragment = getattr(routing, "to_receipt_fragment", None)
+            cost = {**cost, "routing_decision": fragment() if callable(fragment) else routing}
         receipt = Receipt(
             agent_id=self._agent_id,
             agent_type=self._agent_type,
