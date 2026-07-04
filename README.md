@@ -16,7 +16,7 @@
 
 ```bash
 pip install -e ".[dev]"          # minimal core, ~2 min
-make test                        # 225+ tests, green
+make test                        # 250 tests, green
 make demo                        # manufacturing ERP end-to-end in your terminal
 make serve                       # gateway on :8000
 # then open http://localhost:8000/manufacturing/ui  ← Mission Control dashboard
@@ -31,31 +31,68 @@ See [`flavors/manufacturing/README.md`](flavors/manufacturing/README.md),
 the [master plan](docs/plans/MASTER_ENHANCEMENT_PLAN.md), and the
 [decision log](docs/decisions/DECISION_LOG.md).
 
-##  📊 **Implementation Status: 75% Complete (Production-Ready Core)**
+## 📊 Implementation Status — the honest three tiers
 
-**All 4 Priority Steps Complete ✅** | **7/7 Core Features ✅** | **Infrastructure Ready ✅**
+Per the documentation policy ([D-012](docs/decisions/DECISION_LOG.md): claims
+must be **measured or labeled**), everything in this repository sits in
+exactly one of three tiers. Nothing has been deleted — vision content below
+is retained, and labeled.
 
-👉 **[See What's Actually Implemented →](docs/IMPLEMENTED.md)**
+### Tier 1 — Working & verified (250 tests, green CI, live demos)
 
-### Quick Start (5 Minutes)
-```bash
-# Install dependencies
-pip install -r requirements-observability.txt requirements-azure-ai.txt
+- **Governed agent harness**: budgets, policy gates, hash-chained audit
+  receipts (durable to Postgres when a database is reachable, in-memory
+  otherwise), human-in-the-loop approval queue.
+- **Manufacturing flavor end-to-end**: six PRREEL agents, decision councils,
+  plant digital twin, swarm what-if scenarios, AutoOptimize loops, markdown
+  Agent Skills, Mission Control API + dashboard (`make demo`, `make serve`).
+- **Memory substrate**: PostgreSQL + pgvector with entropy management
+  (compress → summarize → archive → purge), tested against a live database.
+- **Evidence engine**: golden-task evals with published scorecards — the
+  real measured numbers live in
+  [`eval_reports/manufacturing_scorecard.md`](eval_reports/manufacturing_scorecard.md).
+- **SelfOps agents**, local-first profile (no cloud account needed), honest CI.
 
-# Run complete demo
-python examples/complete_ants_demo.py
+### Tier 2 — Implemented, evidence pending
 
-# Start DevUI (Visual Debugging)
-export ANTS_DEVUI_ENABLED=true
-python -m src.devtools.devui_server
-# Open http://localhost:8090
-```
+Real code, plausible design — but the quantified claims are **hypotheses the
+evidence engine (WS-3) will test**, not measurements:
+
+- Meta-agent framework (discovery → generation → sandboxed registry, ~2.4K LOC).
+- Swarm/pheromone coordination (the swarm-vs-plain-queue benchmark has not
+  been run yet).
+- MoE routing, model routing, stem-cell differentiation, agent sleep/wake —
+  the cost/savings figures quoted later in this README are illustrative
+  projections until telemetry lands.
+
+### Tier 3 — Vision (whitepaper)
+
+The whitepapers and the sections of this README describing the full digital
+organism (100K+ agent swarms, autonomous SOC, quantum routing, edge fleets)
+are **architectural vision**, staged in
+[`docs/plans/PHILOSOPHY_TO_REALITY.md`](docs/plans/PHILOSOPHY_TO_REALITY.md)
+and labeled speculation in [`docs/essays/`](docs/essays/README.md).
 
 📖 **Key Resources:**
-- [Architecture Diagrams](docs/architecture-diagrams.md) - 10 Professional Mermaid Diagrams
-- [Complete Demo](examples/complete_ants_demo.py) - All 9 Features in Action
-- [Observability Guide](docs/observability-devui-guide.md) - DevUI + OpenTelemetry Setup
 - [What's Implemented](docs/IMPLEMENTED.md) - Detailed Status Breakdown
+- [Decision Log](docs/decisions/DECISION_LOG.md) - Every ADR, including the honesty policy
+- [Architecture Diagrams](docs/architecture-diagrams.md) - 10 Professional Mermaid Diagrams
+- [Complete Demo](examples/complete_ants_demo.py) - `python examples/complete_ants_demo.py`
+- [Observability Guide](docs/observability-devui-guide.md) - DevUI + OpenTelemetry Setup
+
+## 🔭 Predicted 2025 → Confirmed 2026
+
+This project made its architectural bets in 2025. The industry confirmed
+several of them — earned credibility, previously buried in the audit:
+
+| Our call (2025) | 2026 reality |
+|---|---|
+| MCP + A2A as the protocol pair | MCP won agent↔tool; A2A won agent↔agent, both in enterprise production |
+| Agents as the application layer | Gartner: 40%+ of enterprise apps embedding role-specific agents by end-2026 |
+| Governance/receipts as foundation, not bolt-on | EU AI Act enforcement made runtime agent governance the enterprise buying criterion |
+| Memory as the differentiator | Agent-memory frameworks became the hottest 2026 infrastructure category |
+| Human-in-loop → human-on-loop maturation | Now industry-standard vocabulary for controlled autonomy |
+| Sleep/wake, model routing, warm pools | Standard practice (serverless agents, LLM gateways/routers) |
 
 ---
 
@@ -126,7 +163,7 @@ This is the fundamental reimagining: **from imperative programming to goal-drive
 - **Differentiation on demand**: Agent specializes into Finance, HR, Operations, etc. based on context
 - **Multi-cloud DNA**: Agent code is cloud-agnostic, can deploy to Azure, AWS, GCP, on-premise
 - **Resilient replication**: If an agent fails, another stem cell differentiates to replace it
-- **Cost optimization**: Deploy minimal "stem cell pool" that differentiates as needed (67% cost reduction)
+- **Cost optimization**: Deploy minimal "stem cell pool" that differentiates as needed (projected 67% cost reduction — a Tier-2 hypothesis, not yet measured)
 
 **Biological Parallel**:
 ```
@@ -258,7 +295,7 @@ ANTS implements biological swarm patterns from nature:
 - **Collective Intelligence**: Each agent's learning benefits the entire swarm
 - **Emergent Optimization**: No central control—efficiency emerges from local interactions
 - **Self-Extension**: Meta-agents create tools for other agents on-demand
-- **Adaptive Scaling**: Agents sleep/wake based on demand (87% cost reduction)
+- **Adaptive Scaling**: Agents sleep/wake based on demand (projected 87% cost reduction — hypothesis pending telemetry)
 - **Success Reinforcement**: Working patterns naturally dominate through pheromone strength
 - **Danger Avoidance**: Failed paths marked, swarm routes around obstacles
 
@@ -314,10 +351,10 @@ Agent needs Stripe → Requests capability via pheromone
     Agent continues work with Stripe tools (total: 31s)
 ```
 
-**Cost Impact:**
+**Cost Impact (illustrative projection — a hypothesis the evidence engine will test, not a measurement):**
 - Traditional: 8 hours developer time @ $100/hr = **$800**
 - ANTS Meta-Agent: 31 seconds compute = **$0.01**
-- **Savings: 99.999%**
+- Projected savings: 99.999%
 
 **Components:**
 - **IntegrationBuilderAgent** (600 lines): Generates MCP tool code using GPT-4o
@@ -881,7 +918,9 @@ if budget > finance_council.config.budget_authority:
         data={"finance_recommendation": finance_decision, ...}
     )
 
-# Result: 90%+ accuracy through collective intelligence
+# Hypothesis: higher accuracy through collective intelligence.
+# Our own measured council-vs-solo numbers so far live in
+# eval_reports/manufacturing_scorecard.md and decision log D-022.
 ```
 
 **Comprehensive Example**: `examples/collective_intelligence_example.py` - Full end-to-end demonstration with MoE analysis, Finance Council deliberation, Executive Council ratification, and dual-objective optimization (559 lines).
@@ -889,7 +928,7 @@ if budget > finance_council.config.budget_authority:
 **Documentation**: See `WHITEPAPER_3_COLLECTIVE_INTELLIGENCE.md` for complete theoretical foundations, research citations, mathematical proofs, and implementation roadmap (2,082 lines).
 
 **Key Innovation**: ANTS is the first enterprise AI platform to integrate:
-- Decision-making councils (proven 20-30% accuracy improvement)
+- Decision-making councils (literature reports 20-30% accuracy improvement; our own measured result is in [`eval_reports/manufacturing_scorecard.md`](eval_reports/manufacturing_scorecard.md) and D-022 — we publish what we measure)
 - Mixture of Experts routing (production-ready, matches GPT-4o)
 - Hierarchical organizational alignment (Executive → Department → Team)
 - Dual-objective optimization (sustainability AND profitability)
@@ -1062,7 +1101,10 @@ Ascend_EOS is designed for four high-impact verticals:
 2. **Swarm Intelligence Design**: Ant colony → code mapping
 3. **Collective Intelligence**: 2,082 lines - Councils, MoE, research foundations (NEW!)
 
-**Implementation Coverage:**
+**Implementation Coverage** (self-assessed "code written" completeness, not
+verified claims — the measured tiers live in the
+[Implementation Status](#-implementation-status--the-honest-three-tiers)
+section at the top):
 - **Collective Intelligence Architecture**: **100%** ✅ (Phase 1 complete)
 - Meta-Agent Framework: **100%** ✅
 - Swarm Coordination: **100%** ✅
@@ -1132,7 +1174,12 @@ Ascend_EOS is designed for four high-impact verticals:
 
 ---
 
-## 💰 Cost Impact Summary
+## 💰 Cost Impact Hypotheses
+
+> **Label per D-012:** every number in this section is a modeled projection —
+> a **hypothesis the evidence engine (WS-3) will test**, not an observed
+> result. The measured numbers the platform can stand behind today are in
+> [`eval_reports/manufacturing_scorecard.md`](eval_reports/manufacturing_scorecard.md).
 
 ### Meta-Agent Framework
 - **Traditional integration**: 8 hours @ $100/hr = $800
@@ -1231,7 +1278,10 @@ docker-compose up -d
 
 ---
 
-## 🎬 Real-World Examples
+## 🎬 Illustrative Examples
+
+> Worked scenarios showing intended behavior — labeled per D-012 as
+> demonstrations, not observed production runs.
 
 ### Example 1: Autonomous Capability Acquisition
 
@@ -1274,8 +1324,8 @@ for invoice in pending_invoices:
 # → Work naturally flows to available agents
 # → Load balancing emerges from swarm behavior
 
-# Result: 1000 invoices processed in 8 minutes
-# Traditional: 3 hours of manual work
+# Illustrative scenario (hypothesis, not a benchmark run):
+# 1000 invoices processed in 8 minutes vs ~3 hours of manual work
 ```
 
 ### Example 3: Collective Learning via Semantic Memory
@@ -1629,6 +1679,6 @@ If this project inspires you or helps your work, please give it a ⭐️ on GitH
 **Version**: 0.1.0-alpha
 **Status**: Experimental Research Project
 **License**: Apache-2.0
-**Last Updated**: December 22, 2025
+**Last Updated**: July 4, 2026
 
 </div>

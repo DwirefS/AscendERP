@@ -69,6 +69,8 @@ class MissionControlState:
     approval_queue: Any = None
     optimize_history: List[Dict[str, Any]] = field(default_factory=list)
     started_at: datetime = field(default_factory=datetime.utcnow)
+    receipt_db: Any = None
+    _sink_wire_attempted: bool = False
 
     def ensure_governance(self):
         """Lazily create the shared receipt chain + approval queue."""
@@ -77,7 +79,58 @@ class MissionControlState:
 
             self.receipt_chain = self.receipt_chain or ReceiptChain()
             self.approval_queue = self.approval_queue or ApprovalQueue()
+        self._maybe_wire_durable_sink()
         return self.receipt_chain, self.approval_queue
+
+    def _maybe_wire_durable_sink(self) -> None:
+        """
+        Best-effort durable receipts (backlog item 6, D-023).
+
+        Attempted once, in the background, and only when an event loop is
+        running. If ``ANTS_DATABASE_URL`` (or the default local Postgres) is
+        unreachable, Mission Control degrades silently to the in-memory
+        receipt chain — the DB is an audit upgrade, never a dependency.
+        """
+        if self._sink_wire_attempted:
+            return
+        self._sink_wire_attempted = True
+        import asyncio
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            logger.debug("mission_control_receipts_in_memory", reason="no event loop")
+            return
+        loop.create_task(self._wire_durable_sink())
+
+    async def _wire_durable_sink(self) -> None:
+        import asyncio
+        import os
+
+        try:
+            from src.core.harness.receipts import PostgresReceiptSink
+            from src.core.memory.database import DatabaseClient, DatabaseConfig
+
+            dsn = os.environ.get("ANTS_DATABASE_URL")
+            client = DatabaseClient(dsn) if dsn else DatabaseClient(DatabaseConfig())
+            await asyncio.wait_for(client.connect(), timeout=3.0)
+            sink = PostgresReceiptSink(client)
+            await sink.ensure_schema()
+        except Exception as exc:  # degrade silently: in-memory governance
+            logger.debug("mission_control_receipts_in_memory", reason=str(exc))
+            return
+
+        self.receipt_db = client
+        if self.receipt_chain is not None:
+            self.receipt_chain.sink = sink
+            # Backfill anything appended before the sink came up.
+            for receipt in self.receipt_chain.receipts:
+                try:
+                    await sink.store(receipt)
+                except Exception as exc:
+                    logger.warning("receipt_backfill_failed", error=str(exc))
+                    break
+        logger.info("mission_control_receipts_durable", db=client.connection_string.split("@")[-1])
 
 
 AGENT_TYPES = [

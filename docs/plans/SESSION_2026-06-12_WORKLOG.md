@@ -260,3 +260,57 @@ with eval evidence per doctrine.
 **250 passed, 9 skipped, 0 failed** with Postgres up (240 passed / 19
 skipped without it — the 10 DB tests skip cleanly) · scorecard regenerated
 (`eval_reports/manufacturing_scorecard.{md,json}`) · 22 ADRs.
+
+---
+
+# Phase 9 — Durable governance + README truth pass (backlog items 6 + 10)
+
+## Durable receipts (item 6, receipts half — D-023)
+
+- `src/core/harness/receipts.py`: `PostgresReceiptSink` writes sealed
+  receipts to the existing `audit.receipts` table via `DatabaseClient`;
+  `ensure_schema()` extends the legacy table with
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for the chain fields
+  (receipt_id, prev_hash, JSONB actions/policy_decisions/skills_used/cost,
+  receipt_created_at) so legacy `insert_receipt` rows coexist.
+- `ReceiptChain(sink=...)`: every append schedules a fire-and-forget,
+  append-order-serialized `sink.store()` wrapped in try/except + structlog
+  warning — **availability over durability**, documented in the class
+  docstring: a DB outage never blocks an agent run.
+  `ReceiptChain.load_from_sink(db, tenant_id)` restores and verifies;
+  raises `ValueError` on tampered rows. `flush_sink()` for tests/shutdown.
+- Mission Control (`ensure_governance`) wires the sink best-effort:
+  `ANTS_DATABASE_URL` or default local Postgres, 3s timeout, single
+  attempt, backfills pre-sink receipts, degrades silently to in-memory.
+- 6 tests in `tests/unit/memory/test_receipt_sink.py` (entropy-style live-DB
+  skip): round-trip + verify()=True + field fidelity, tamper detection on
+  load, empty tenant, tenant isolation, legacy-row coexistence, and
+  append-through-dead-sink (the availability guarantee). All pass.
+- Still open from item 6: approvals → Postgres; CLEAR computed live.
+
+## README truth pass (item 10 — D-024)
+
+- "Implementation Status: 75% Complete (Production-Ready Core)" replaced by
+  the honest three tiers: Working & verified (250 tests, green CI, live
+  demos) / Implemented, evidence pending / Vision (whitepaper). Quickstart
+  untouched.
+- New "Predicted 2025 → Confirmed 2026" credibility section (MCP/A2A,
+  agents-as-app-layer, governance-first, memory-as-moat, HOTL, sleep/wake).
+- Results-voice projections reframed as hypotheses the evidence engine will
+  test, each pointing at `eval_reports/manufacturing_scorecard.md`:
+  Cost Impact Summary → "Cost Impact Hypotheses" (D-012 label), meta-agent
+  99.999% savings, 87%/67% cost reductions, "90%+ accuracy" example,
+  "proven 20-30%" → literature-reported, "Real-World Examples" →
+  "Illustrative Examples", Implementation Coverage marked self-assessed.
+  Nothing deleted — retiered.
+- `docs/essays/README.md` created: the labeled-speculation tier's home per
+  D-021; moving whitepaper sections into it remains the author's call.
+
+## Current totals (after Phase 9)
+
+**270 passed, 9 skipped, 0 failed** with Postgres up (was 264 after the
+Model Mesh session; +6 receipt-sink tests, of which 5 skip cleanly without
+a DB and the dead-sink availability test always runs) · 25 ADRs (D-023
+durable receipts, D-024 README truth pass; D-025 landed in the parallel
+Model Mesh session) · backlog items 6 (receipts half) and 10 ticked in
+FABLES_REVIEW Part IV.

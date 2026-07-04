@@ -15,8 +15,10 @@ from src.core.harness.policy import (
 )
 from src.core.harness.receipts import (
     GENESIS_HASH,
+    PostgresReceiptSink,
     Receipt,
     ReceiptChain,
+    ReceiptSink,
     canonical_json,
     hash_inputs,
 )
@@ -32,8 +34,10 @@ __all__ = [
     "GENESIS_HASH",
     "HarnessOutcome",
     "PolicyDecision",
+    "PostgresReceiptSink",
     "Receipt",
     "ReceiptChain",
+    "ReceiptSink",
     "ThresholdPolicy",
     "canonical_json",
     "hash_inputs",

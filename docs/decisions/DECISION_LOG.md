@@ -462,3 +462,117 @@ loses — it ties the upgraded solo agent at 1.0 on this rubric; the remaining
 separation must come from cases where deliberation beats a single policy
 (conflicting evidence, incomplete inputs), which is the next eval to write.
 Full suite green after the change.
+
+---
+
+## D-023 — Durable receipts: Postgres sink behind the hash chain, availability over durability
+
+**Date:** 2026-07-04 · **Status:** Accepted
+
+**Context.** Backlog item 6 (FABLES_REVIEW Part IV): the hash-chained
+receipt chain — the governance spine of the harness — lived only in process
+memory, so a restart erased the audit trail the whole "prove your agent did
+what you claim" pitch rests on. `audit.receipts` already existed in the
+episodic schema (`DatabaseClient.initialize_schemas` /
+`insert_receipt`), but predates the chained format: it computes its own hash
+and stores neither `prev_hash` nor the chain fields, so it cannot round-trip
+a verifiable chain.
+
+**Decision.** `src/core/harness/receipts.py` gains `PostgresReceiptSink`:
+`ensure_schema()` extends `audit.receipts` with
+`ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for the chain fields (`receipt_id`,
+`prev_hash`, `agent_type`, `inputs_hash`, `actions`/`policy_decisions`/
+`skills_used`/`cost` JSONB, `receipt_created_at`), so legacy
+`insert_receipt` rows and chained receipts coexist in one audit table (legacy
+rows have `receipt_id IS NULL` and are excluded from chain loads).
+`ReceiptChain(sink=...)` schedules `sink.store(receipt)` on every append as a
+background task, serialized in append order and wrapped in try/except +
+structlog warning. This is a deliberate **availability-over-durability**
+choice: a database outage degrades the audit trail to in-memory but never
+blocks or fails an agent run. `ReceiptChain.load_from_sink(db, tenant_id)`
+restores a tenant's chain and raises `ValueError` when `verify()` fails —
+tampering with stored receipts is detected at load. Mission Control's
+`ensure_governance` wires the sink best-effort (`ANTS_DATABASE_URL` or
+default local Postgres, 3s timeout, one attempt, backfill of pre-sink
+receipts) and degrades silently — Mission Control keeps working without a DB.
+
+**Why.** Durable, tamper-evident receipts convert the EU-AI-Act-era
+governance pitch from demo to artifact — and the fire-and-forget contract
+keeps the harness honest about which failure mode it prefers: losing a
+receipt's durability beats halting production agents. 6 live-DB tests
+(`tests/unit/memory/test_receipt_sink.py`, entropy-style skip when Postgres
+is down) cover round-trip + verify, tamper detection, tenant isolation,
+legacy coexistence, and append-through-dead-sink.
+
+---
+
+## D-024 — README truth pass: three-tier status, hypotheses labeled, credibility section
+
+**Date:** 2026-07-04 · **Status:** Accepted
+
+**Context.** Backlog item 10; PHILOSOPHY_TO_REALITY §3.5–3.6 and D-012.
+The README led with "Implementation Status: 75% Complete (Production-Ready
+Core)" while its own disclaimer said "not production-ready software," and
+presented modeled projections (99.999% savings, 87%/67% cost reductions,
+"90%+ accuracy", "proven 20-30% improvement") in observed-result voice —
+the audit called this the single largest credibility liability.
+
+**Decision.** The status block became an honest three-tier section —
+**Working & verified** (250 tests, green CI, live demos) / **Implemented,
+evidence pending** / **Vision (whitepaper)** — plus a "Predicted 2025 →
+Confirmed 2026" section (MCP/A2A won; agents-as-app-layer per Gartner;
+governance-first per the EU AI Act; memory-as-moat). Every projection-in-
+results-voice was reframed as a hypothesis the evidence engine will test,
+pointing at `eval_reports/manufacturing_scorecard.md` for the numbers we can
+stand behind; "Real-World Examples" became "Illustrative Examples"; the
+"Cost Impact Summary" became "Cost Impact Hypotheses" with a D-012 label.
+No vision content was deleted — it was retiered. `docs/essays/README.md`
+establishes the labeled-speculation tier's home (D-021); moving whitepaper
+sections into it stays the author's call.
+
+**Why.** A measured 1.0 on an 11-task SPC rubric is worth more to a
+skeptical CTO than an unmeasured 2,000% ROI. The README is the engineering
+claims path, and D-012 applies to it with full force; the vision keeps its
+place — one tier down, correctly labeled.
+
+---
+
+## D-025 — Model Mesh v1 — capability-tiered, sensitivity-gated model routing
+
+**Date:** 2026-07-04 · **Status:** Accepted
+
+**Context.** The author's model-spectrum vision (FABLES_REVIEW Part II-B):
+not every decision deserves a frontier model. The 2026 specialized-model
+landscape made the middle rungs real — Nemotron-3-Nano-class self-hostable
+MoE models for the lightweight-agent tier, TabPFN-style tabular foundation
+models, TimesFM-style time-series forecasters, function-calling small models
+for tool schemas — while deterministic code (SPC rules, reorder-point
+formulas) remains the correct "model" for a large share of ERP decisions.
+The existing `model_router.py` scores LLMs against LLMs; it has no notion of
+the rules tier, of data sensitivity, or of stakes, and its decisions leave no
+trace in the governance receipts.
+
+**Decision.** `src/core/inference/model_mesh.py` adds a four-tier mesh
+(RULES < SPECIALIZED < LOCAL < FRONTIER) with a documented routing
+algorithm: filter by capability match → data-sensitivity gate → latency →
+budget, then choose by the **lowest-sufficient-tier principle** with a
+deterministic (cost, name) tie-break. Two governance rules are hard:
+1. **PII never routes to a spec lacking "pii" clearance** — even when it is
+   the only capable model, `route()` returns `chosen=None` (with the full
+   rejected list) rather than leaking data; the default `frontier_cloud`
+   spec is deliberately NOT PII-cleared, while local/rules tiers are.
+2. **Critical stakes escalate**: `stakes=="critical"` rejects tiers below
+   LOCAL and inverts the preference to favor FRONTIER — judgment calls with
+   real consequences do not go to lookup tables.
+`route()` never raises on no-match, and unavailable specs (uninstalled small
+models, unset `ANTS_OLLAMA_URL`/`ANTS_FRONTIER_API_KEY`) still flow through
+the filters and are skipped only at selection time with reason
+"unavailable", so every decision shows what the full mesh would have chosen.
+Decisions carry `to_receipt_fragment()`, and the AgentHarness copies
+`context.metadata["routing_decision"]` into the receipt's cost dict — the
+hash-chained audit trail now records which model decided what.
+`DEFAULT_MESH()` registers an honest starter set: two live RULES specs
+(spc_rules, reorder_rules), two placeholder SPECIALIZED specs
+(tabular_small, timeseries_small — available=False until installed), and
+env-gated LOCAL/FRONTIER specs. 14 unit tests
+(`tests/unit/inference/test_model_mesh.py`); full suite green.

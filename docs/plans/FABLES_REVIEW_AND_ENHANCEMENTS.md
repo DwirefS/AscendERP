@@ -342,13 +342,15 @@ philosophy.
 | 1 | Entropy management (decay/summarize/archive/purge as DataOps job) — ✅ shipped (c5510f8) | Highest-leverage unbuilt idea; completes the memory thesis | `src/core/memory/` + selfops | ~1 wk |
 | 2 | Council upgrade: evidence-weighted deliberation + economics terms — ✅ shipped (this commit): council 0.6667 → 1.0000 (solo 0.9167 → 1.0000) | Fix the measured 0.67; re-run the eval; publish the delta | `flavors/*/councils`, core council | ~1 wk |
 | 3 | Composition root + async task fabric | Injectable system; long-running work off-request | `src/main.py`, bus workers | 1–2 wk |
-| 4 | Model Mesh v1 (route: rules/TimesFM-style/TabPFN-style/local/frontier + receipts record model) | Your model-spectrum vision, governed | `src/core/inference/` | 2 wk |
+| 4 | Model Mesh v1 (route: rules/TimesFM-style/TabPFN-style/local/frontier + receipts record model) — ✅ shipped (D-025): 4-tier mesh, PII hard rule, lowest-sufficient-tier routing, receipts record the routing decision; 14 tests | Your model-spectrum vision, governed | `src/core/inference/model_mesh.py` | 2 wk |
 | 5 | Landing-zone drivers (transactional/streaming/object/partner/exhaust; local+azure) | Data-plane formalization | `data/landing/` | 2 wk |
-| 6 | Receipts/approvals → Postgres; CLEAR computed live | Durable audit; measured Assurance | harness + gateway | ~1 wk |
+| 6 | Receipts/approvals → Postgres; CLEAR computed live — ✅ receipts half shipped (D-023): `PostgresReceiptSink` + `ReceiptChain(sink=...)` + `load_from_sink` tamper detection; Mission Control wires best-effort, degrades to in-memory; 6 live-DB tests. Approvals→Postgres + live CLEAR remain open | Durable audit; measured Assurance | harness + gateway | ~1 wk |
 | 7 | Meta-agent provenance demo (discover→generate→sandbox→promote→receipt, live API) | The flagship idea, on stage | meta agents + registry | 1–2 wk |
 | 8 | Generative UI: Mission Control panels per flavor from a manifest | "Custom UI for every human" made real | mission_control | 2 wk |
 | 9 | Agent identity layer (delegation chains; Entra in azure profile, signed tokens local) | The missing trust fabric | core/security | 2 wk |
-| 10 | README truth pass + essays move + "predicted 2025→confirmed 2026" | Credibility conversion | docs (WS-4) | days |
+| 10 | README truth pass + essays move + "predicted 2025→confirmed 2026" — ✅ shipped (D-024): three-tier status, hypotheses labeled per D-012, credibility section, `docs/essays/` home created (whitepaper moves stay the author's call) | Credibility conversion | docs (WS-4) | days |
 
 Items 1–2 have landed with eval evidence, per doctrine (entropy: c5510f8;
-council upgrade: Part I §5.5, council 0.6667 → 1.0000). Item 3 is next up.
+council upgrade: Part I §5.5, council 0.6667 → 1.0000), item 4 has landed
+as Model Mesh v1 (D-025), item 6's receipts half as D-023, and item 10 as
+D-024. Item 3 is next up.
