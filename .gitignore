@@ -226,3 +226,6 @@ azure.json
 *_private.json
 *_private.yaml
 *_private.yml
+
+# Evidence engine outputs: markdown scorecard is committed, JSON is local
+eval_reports/*.json

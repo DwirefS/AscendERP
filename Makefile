@@ -35,3 +35,6 @@ serve: ## Run the API gateway locally with auto-reload
 
 demo: ## Run the manufacturing end-to-end demo (no server needed)
 	ENCRYPTION_MASTER_KEY=dev-only-key python examples/manufacturing_end_to_end_demo.py
+
+eval: ## Run the evidence engine (golden tasks + experiments)
+	ENCRYPTION_MASTER_KEY=dev-only-key python -m flavors.manufacturing.evals
